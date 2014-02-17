@@ -7,6 +7,7 @@ sys.path.append("../lib")
 
 import logging
 from time import time
+from collections import nametuple
 
 import numpy as np
 
@@ -15,17 +16,33 @@ import theano.tensor as T
 from theano.tensor.shared_randomstreams import RandomStreams
 
 from unrolled_scan import unrolled_scan
+from model import Model 
 
 _logger = logging.getLogger(__name__)
 
 #theano.config.compute_test_value = 'warn'
 theano_rng = RandomStreams(seed=2341)
 
+#------------------------------------------------------------------------------
+
 def sigmoid_(x):
     return T.nnet.sigmoid(x)*0.9999 + 0.000005
 
-class NADE:
-    def __init__(self, n_vis, n_hid, batch_size=100):
+#------------------------------------------------------------------------------
+
+class NADE(Model):
+    def __init__(self, hyper_params)
+        self.add_hyper_param('n_vis', help='no. observed binary variables')
+        self.add_hyper_param('n_vis', help='no. latent binary variables')
+        self.add_hyper_param('batch_size', default=100)
+
+        self.add_model_param('c', help='encoder bias')
+        self.add_model_param('b', help='decoder bias')
+        self.add_model_param('W', help='encoder weights')
+        self.add_model_param('V', help='decoder weights')
+        
+        super(NADE, self, hyper_params)
+
         self.n_vis = n_vis
         self.n_hid = n_hid
         self.batch_size = batch_size
@@ -55,14 +72,8 @@ class NADE:
 
 
     def loglikelihood(self, X):
-        batch_size = self.batch_size
-        n_vis = self.n_vis
-        n_hid = self.n_hid
-
-        b = self.c    # decoder bias
-        c = self.b    # encoder bias
-        W = self.W    # these are shared_vars
-        V = self.V    # these are shared_vars
+        n_vis, n_hid, batch_size = self.get_hyper_params(['n_vis', 'n_hid', 'batch_size'])
+        b, c, W, v = get.get_model_params(['b', 'c', 'W', 'V'])
         
         vis = X
         vis.tag.test_value = np.zeros( (batch_size, n_vis), dtype='float32')
