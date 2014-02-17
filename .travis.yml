@@ -1,0 +1,17 @@
+language: python
+python:
+  - "2.7"
+  - "3.2"
+#  - "3.3"
+
+# install dependencies
+before_install:
+  - sudo apt-get install -qq libatlas3gf-base libatlas-dev liblapack-dev gfortran zlib1g-dev libhdf5-serial-dev
+
+install:
+  - "pip install numpy"
+  - "pip install scipy"
+  - "pip install theano"
+
+# run tests
+script: nosetests -v
