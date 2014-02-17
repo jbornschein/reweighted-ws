@@ -3,44 +3,45 @@ import unittest
 # unit under test
 from dataset import *
 
-datasets_to_test = [ToyData, MNIST]
-array_pairs = [ ('train_x', 'train_y'), 
-                ('valid_x', 'valid_y'), 
-                ('test_x', 'test_y') ]
+def skip_dataset(reason):
+    raise unittest.SkipTest(reason)
 
-def check_dtype(ds):
-    for x, y in array_pairs:
-        for attr in [x, y]:
-            array = getattr(ds, attr, None)
-            if array is None:
-                continue
-            assert array.dtype == np.float32, "Failed for %s %s" % (ds, attr)
+def check_dtype(d):
+    assert d.X.dtype == np.float32, "Failed for %s" % d
+    assert d.Y.dtype == np.float32, "Failed for %s" % d
 
-def check_same_N(ds):
-    for attr_x, attr_y in array_pairs:
-        x = getattr(ds, attr_x, None)
-        y = getattr(ds, attr_y, None)
-        if x is None or y is None:
-            continue
-    
-        assert x.shape[0] == y.shape[0], "Failed for %s %s" % (ds, attr_x)
+def check_same_N(d):
+    N = d.n_datapoints
+    assert d.X.shape[0] == N, "Failed for %s" % d
+    assert d.Y.shape[0] == N, "Failed for %s" % d
 
-def check_range(ds):
-    for x, y in array_pairs:
-        for attr in [x, y]:
-            array = getattr(ds, attr, None)
-            if array is None:
-                continue
-            
-            assert array.min() >= 0., "Failed for DS %s %s" % (ds, attr)
-            print array.max()
-            assert array.max() <= 1., "Failed for DS %s %s" % (ds, attr)
+def check_range(d):
+    assert d.X.min() >= 0., "Failed for %s" % d
+    assert d.X.max() <= 1., "Failed for %s" % d
+    assert d.Y.min() >= 0., "Failed for %s" % d
+    assert d.Y.max() <= 1., "Failed for %s" % d
 
-def test_dtype():
-    for DS in datasets_to_test:
-        ds = DS()
+#-----------------------------------------------------------------------------
 
-        yield check_dtype, ds
-        yield check_same_N, ds
-        yield check_range, ds
+test_matrix = {
+    (ToyData, 'train'): (check_dtype, check_same_N, check_range),
+    (ToyData, 'valid'): (check_dtype, check_same_N, check_range),
+    (ToyData, 'test' ): (check_dtype, check_same_N, check_range),
+    (MNIST, 'train'): (check_dtype, check_same_N, check_range),
+    (MNIST, 'valid'): (check_dtype, check_same_N, check_range),
+    (MNIST, 'test' ): (check_dtype, check_same_N, check_range),
+}
+
+def test_datasets():
+    for (ds_class, which_set), tests in test_matrix.iteritems():
+        try:
+            data = ds_class(which_set=which_set)
+        except IOError:
+            data = None
+           
+        for a_test in tests:
+            if data is None:
+                yield skip_test, ("Could not load %s - IOError" % ds_class)
+            else:
+                yield a_test, data
  

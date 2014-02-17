@@ -13,49 +13,51 @@ import numpy as np
 _logger = logging.getLogger()
 
 class DataSet(object):
-    def _update_N(self):    
-        self.train_N = self.train_x.shape[0]
-        self.valid_N = self.valid_x.shape[0]
-        self.test_N  = self.test_x.shape[0]
-
-        assert self.train_N == self.train_y.shape[0]
-        assert self.valid_N == self.valid_y.shape[0]
-        assert self.test_N  == self.test_y.shape[0]
+    pass
 
 class ToyData(DataSet):
-    def __init__(self):
+    def __init__(self, which_set='train'):
         _logger.info("generating toy data")
 
-        x = np.array(
+        self.which_set = which_set
+
+        X = np.array(
             [[1., 1., 1., 1., 0., 0., 0., 0.],
              [0., 0., 0., 0., 1., 1., 1., 1.]], dtype='float32')
+        Y = np.array([[1., 0.], [0., 1.]], dtype='float32')
 
-        l = np.array([[1., 0.], [0., 1.]], dtype='float32')
-
-        self.train_x = np.concatenate([x]*10)
-        self.train_y = np.concatenate([l]*10)
-
-        self.valid_x = np.concatenate([x]*2)
-        self.valid_y = np.concatenate([l]*2)
-
-        self.test_x = np.concatenate([x]*5)
-        self.test_y = np.concatenate([l]*5)
+        if which_set == 'train':
+            self.X = np.concatenate([X]*10)
+            self.Y = np.concatenate([Y]*10)
+        elif which_set == 'valid':
+            self.X = np.concatenate([X]*2)
+            self.Y = np.concatenate([Y]*2)
+        elif which_set == 'test':
+            self.X = np.concatenate([X]*2)
+            self.Y = np.concatenate([Y]*2)
+        else:
+            raise ValueError("Unknown dataset %s" % which_set)
         
-        self._update_N()
+        self.n_datapoints = self.X.shape[0]
 
 
 class MNIST(DataSet):
-    def __init__(self, fname="mnist.pkl.gz"):
+    def __init__(self, which_set='train', fname="mnist.pkl.gz"):
         _logger.info("loading MNIST data")
 
         with gzip.open(fname) as f:
             (train_x, train_y), (valid_x, valid_y), (test_x, test_y) = pickle.load(f)
 
-        self.train_x, self.train_y = self.preprocess(train_x, train_y)
-        self.valid_x, self.valid_y = self.preprocess(valid_x, valid_y)
-        self.test_x , self.test_y  = self.preprocess(test_x, test_y)
-
-        self._update_N()
+        if which_set == 'train':
+            self.X, self.Y = self.preprocess(train_x, train_y)
+        elif which_set == 'valid':
+            self.X, self.Y = self.preprocess(valid_x, valid_y)
+        elif which_set == 'test':
+            self.X , self.Y  = self.preprocess(test_x, test_y)
+        else:
+            raise ValueError("Unknown dataset %s" % which_set)
+ 
+        self.n_datapoints = self.X.shape[0]
 
     def preprocess(self, x, y):
         N = x.shape[0]
@@ -72,8 +74,6 @@ class MNIST(DataSet):
             one_hot[n, y[n]] = 1.
 
         return x.astype('float32'), one_hot.astype('float32')
-
-
 
 def permute_cols(x, idx=None):
     if isinstance(x, list) or isinstance(x, tuple):

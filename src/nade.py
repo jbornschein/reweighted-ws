@@ -49,7 +49,10 @@ class NADE:
         self.V = theano.shared(V, name='V')
         self.V.tag.test_value = V
 
-    def f_post(self):
+        self.model_params = [self.b, self.c, self.W, self.V]
+
+
+    def loglikelihood(self, X):
         batch_size = self.batch_size
         n_vis = self.n_vis
         n_hid = self.n_hid
@@ -59,7 +62,7 @@ class NADE:
         W = self.W    # these are shared_vars
         V = self.V    # these are shared_vars
         
-        vis = T.fmatrix('vis')
+        vis = X
         vis.tag.test_value = np.zeros( (batch_size, n_vis), dtype='float32')
 
         learning_rate = T.fscalar('learning_rate')
@@ -82,7 +85,8 @@ class NADE:
                     sequences=[vis.T, W, V.T, b],
                     outputs_info=[a_init, post_init],
                 )
-        total_post = T.mean(post[-1,:])
+
+        return post[-1,:]
         #------------------------------------------------------------------
         """
         i_init    = T.arange(0, n_vis, 2)
@@ -109,7 +113,7 @@ class NADE:
         total_post = T.mean(post[-1,:])
         """
         #------------------------------------------------------------------
-        
+        """
         gb = b + learning_rate * T.grad(total_post, b)
         gc = c + learning_rate * T.grad(total_post, c)
         gV = V + learning_rate * T.grad(total_post, V)
@@ -118,6 +122,7 @@ class NADE:
         updates = OrderedDict([ (b, gb), (c, gc), (V, gV), (W, gW) ] )
         
         return theano.function([vis, learning_rate], [post, total_post, gb, gc, gW, gV], updates=updates, allow_input_downcast=True)
+        """
 
     def f_sample(self):
         batch_size = self.batch_size

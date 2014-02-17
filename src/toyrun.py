@@ -17,7 +17,7 @@ import theano.tensor as T
 
 from datalog import dlog, StoreToH5, TextPrinter
 
-from dataset import ToyData, MNIST
+from dataset import ToyData
 from training import BatchedSGD
 from nade import NADE
 
@@ -56,14 +56,14 @@ if __name__ == "__main__":
     dlog.set_handler(["L", "LL_epoch"], TextPrinter)
 
     _logger.info("loading data...")
-    data_train = MNIST(which_set='train')
-    data_valid = MNIST(which_set='valid')
+    data_train = ToyData(which_set='train')
+    data_valid = ToyData(which_set='valid')
 
     batch_size = 10
-    learning_rate = 0.0005
+    learning_rate = 0.5
 
     N, n_vis = data_train.X.shape
-    n_hid = 100
+    n_hid = 10
 
     _logger.info("instatiating model")
     nade = NADE(n_vis, n_hid, batch_size=batch_size)
