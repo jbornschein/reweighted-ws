@@ -16,12 +16,13 @@ from theano.tensor.shared_randomstreams import RandomStreams
 
 from unrolled_scan import unrolled_scan
 
+_logger = logging.getLogger(__name__)
+
 #theano.config.compute_test_value = 'warn'
 theano_rng = RandomStreams(seed=2341)
 
 def sigmoid_(x):
     return T.nnet.sigmoid(x)*0.9999 + 0.000005
-
 
 class NADE:
     def __init__(self, n_vis, n_hid, batch_size=100):

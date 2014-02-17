@@ -10,7 +10,7 @@ import gzip
 
 import numpy as np
 
-_logger = logging.getLogger()
+_logger = logging.getLogger(__name__)
 
 class DataSet(object):
     pass

@@ -15,8 +15,7 @@ import theano.tensor as T
 
 from datalog import dlog, StoreToH5, TextPrinter
 
-
-_logger = logging.getLogger()
+_logger = logging.getLogger(__name__)
 
 class Trainer(object):
     pass
@@ -91,9 +90,7 @@ class BatchedSGD(Trainer):
 
         t0 = time()
         for batch_idx in xrange(n_batches):
-
             LL = self.f_sgd_step(batch_idx, learning_rate)
-
             _logger.info("SGD step (%4d of %4d)\tLL=%f" % (batch_idx, n_batches, LL))
         t = time()-t0
         
