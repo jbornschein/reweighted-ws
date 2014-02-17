@@ -65,7 +65,7 @@ class MNIST(DataSet):
     
         perm = np.random.permutation(N)
         x = x[perm,:]
-        y = y[perm,:]
+        y = y[perm]
 
         x = 1.*(x > 0.5)       # binarize x
 

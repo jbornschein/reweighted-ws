@@ -3,7 +3,7 @@ import unittest
 # unit under test
 from dataset import *
 
-def skip_dataset(reason):
+def skip_check(reason):
     raise unittest.SkipTest(reason)
 
 def check_dtype(d):
@@ -39,9 +39,9 @@ def test_datasets():
         except IOError:
             data = None
            
-        for a_test in tests:
+        for a_check in tests:
             if data is None:
-                yield skip_test, ("Could not load %s - IOError" % ds_class)
+                yield skip_check, ("Could not load %s - IOError" % ds_class)
             else:
-                yield a_test, data
+                yield a_check, data
  
