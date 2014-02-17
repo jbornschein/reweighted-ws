@@ -1,3 +1,4 @@
 *.pyc
 .*.swp
+*.h5
 notebooks/.ipynb_checkpoints/

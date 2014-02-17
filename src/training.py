@@ -15,8 +15,7 @@ import theano.tensor as T
 
 from datalog import dlog, StoreToH5, TextPrinter
 
-
-_logger = logging.getLogger()
+_logger = logging.getLogger(__name__)
 
 class Trainer(object):
     pass
@@ -89,10 +88,8 @@ class BatchedSGD(Trainer):
     def perform_epoch(self, learning_rate):
         n_batches = self.data_train.n_datapoints // self.batch_size
         for batch_idx in xrange(n_batches):
-
             LL = self.f_sgd_step(batch_idx, learning_rate)
-
-            _logger.info("SGD step (%d of %d)\tLL=%f" % (batch_idx, n_batches, LL))
+            _logger.info("SGD step (%4d of %4d)\tLL=%f" % (batch_idx, n_batches, LL))
 
 #    def evaluate_loglikelihood(self, data):
 #        total_LL, LL = self.f_loglikelihood(data)

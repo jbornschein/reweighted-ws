@@ -52,7 +52,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
 
     _logger.info("setting up datalogger...")
-    dlog.set_handler("*", StoreToH5, "mnist-experiment5.h5")
+    dlog.set_handler("*", StoreToH5, "mnist-experiment-dump.h5")
     dlog.set_handler(["L", "LL_epoch"], TextPrinter)
 
     _logger.info("loading data...")
