@@ -6,7 +6,6 @@ import sys
 sys.path.append("../lib")
 
 import logging
-from collections import OrderedDict 
 from time import time
 
 import numpy as np
@@ -14,6 +13,8 @@ import numpy as np
 import theano 
 import theano.tensor as T
 from theano.tensor.shared_randomstreams import RandomStreams
+
+from unrolled_scan import unrolled_scan
 
 #theano.config.compute_test_value = 'warn'
 theano_rng = RandomStreams(seed=2341)
@@ -80,48 +81,36 @@ class NADE:
             a    = a + T.outer(vis_i, Wi)
             return a, post
 
-        [a, post], updates = theano.scan(
+        #[a, post], updates = theano.scan(
+        #            fn=one_iter,
+        #            sequences=[vis.T, W, V.T, b],
+        #            outputs_info=[a_init, post_init],
+        #        )
+
+        [a, post], updates = unrolled_scan(
                     fn=one_iter,
                     sequences=[vis.T, W, V.T, b],
                     outputs_info=[a_init, post_init],
+                    unroll=8
                 )
 
         return post[-1,:]
         #------------------------------------------------------------------
         """
-        i_init    = T.arange(0, n_vis, 2)
-        def two_iter(i, a, post, vis):
-            hid  = T.nnet.sigmoid(a)
-            pi   = T.nnet.sigmoid(T.dot(hid, V[:,i] + b[i]))
-            post = post + T.cast(T.log(pi*vis[:,i] + (1-pi)*(1-vis[:,i])), dtype='float32')
-            a    = a + T.outer(vis[:,i], W[i,:])
-
-            hid  = T.nnet.sigmoid(a)
-            pi   = T.nnet.sigmoid(T.dot(hid, V[:,i+1] + b[i+1]))
-            post = post + T.cast(T.log(pi*vis[:,i+1] + (1-pi)*(1-vis[:,i+1])), dtype='float32')
-            a    = a + T.outer(vis[:,i+1], W[i+1,:])
-
+        def unrolled_iter(vis_i, Wi, Vi, bi, a, post):
+            a, post = one_iter(vis_i[0], Wi[0], Vi[0], bi[0], a, post)
+            a, post = one_iter(vis_i[1], Wi[1], Vi[1], bi[1], a, post)
+            a, post = one_iter(vis_i[2], Wi[2], Vi[2], bi[2], a, post)
+            a, post = one_iter(vis_i[3], Wi[3], Vi[3], bi[3], a, post)
             return a, post
- 
-        [a, post], updates = theano.scan(
-                    fn=two_iter,
-                    sequences=i_init,
-                    outputs_info=[a_init, post_init],
-                    non_sequences=[vis],
-                    n_steps=n_vis//2
-                )
-        total_post = T.mean(post[-1,:])
-        """
-        #------------------------------------------------------------------
-        """
-        gb = b + learning_rate * T.grad(total_post, b)
-        gc = c + learning_rate * T.grad(total_post, c)
-        gV = V + learning_rate * T.grad(total_post, V)
-        gW = W + learning_rate * T.grad(total_post, W)
 
-        updates = OrderedDict([ (b, gb), (c, gc), (V, gV), (W, gW) ] )
-        
-        return theano.function([vis, learning_rate], [post, total_post, gb, gc, gW, gV], updates=updates, allow_input_downcast=True)
+    
+        sequences = [vis.T.reshape((n_vis//4,4,batch_size)), 
+                     W.reshape((n_vis//4,4,n_hid)), 
+                     V.T.reshape((n_vis//4,4,n_hid)), 
+                     b.reshape((n_vis//4,2))]
+
+        return post[-1,:]
         """
 
     def f_sample(self):
