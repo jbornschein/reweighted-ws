@@ -2,34 +2,78 @@ import unittest
 
 import numpy as np
 
-
 # Unit Under Test
 from model import * 
 
-
 class ExampleModel(Model):
-    def __init__(self, hyper_params):
+    def __init__(self, **hyper_params):
+        super(ExampleModel, self).__init__(**hyper_params)
+
         self.register_hyper_param("hyper_a")
         self.register_hyper_param("hyper_b", default=23)
-        self.register_hyper_param("hyper_c", default=42, help="help")
+        self.register_hyper_param("hyper_c", default=lambda: 2*21, help="help")
 
         self.register_model_param("model_a")
         self.register_model_param("model_b")
         self.register_model_param("model_c", help="help")
     
-        super(ExampleModel, self).__init__(hyper_params)
+        self.set_hyper_params(hyper_params)
 
 
-class TestModel(unittest.TestCase):
-    def setUp(self):
-        self.model = ExampleModel( {'hyper_a': 0} )
+def test_constructor():
+    model = ExampleModel(hyper_a=0)
 
-    def test_constructor_hyper(self):
-        hyper_a = self.model.get_hyper_param('hyper_a')
-        assert hyper_a == 0
+    hyper_a = model.get_hyper_param('hyper_a')
+    assert hyper_a == 0
 
-    def test_defaults(self):
-        hyper_b, hyper_c = self.model.get_hyper_param(['hyper_b', 'hyper_c'])
-        assert hyper_b == 23
-        assert hyper_c == 42
+def test_hyper_defaults():
+    model = ExampleModel()
+
+    assert model.get_hyper_param('hyper_b') == 23, model.get_hyper_param('hyper_b')
+    assert model.get_hyper_param('hyper_c') == 42, model.get_hyper_param('hyper_c')
+
+def test_hyper_setget():
+    model = ExampleModel()
+
+    model.set_hyper_param('hyper_b', 1)
+    model.set_hyper_param('hyper_c', 2)
+    assert model.get_hyper_param('hyper_b') == 1
+    assert model.get_hyper_params(['hyper_b', 'hyper_c']) == [1, 2]
+
+    model.set_hyper_params({'hyper_b': 23, 'hyper_c': 42})
+    assert model.get_hyper_param('hyper_b') == 23
+    assert model.get_hyper_params(['hyper_b', 'hyper_c']) == [23, 42]
+
+def test_model_setget():
+    model = ExampleModel()
+
+    model.set_model_param('model_b', 1)
+    model.set_model_param('model_c', 2)
+    assert model.get_model_param('model_b').get_value() == 1
+    #assert model.get_model_params(['model_b', 'model_c']) == [1, 2]
+
+    model.set_model_params({'model_b': 23, 'model_c': 42})
+    assert model.get_model_param('model_b').get_value() == 23
+    #assert model.get_model_params(['model_b', 'model_c']) == [23, 42]
+
+def test_get_all_model_params():
+    model = ExampleModel()
+
+    print model.get_model_params()
         
+
+        
+    #def test_hyper_get_set_attr(self):
+    #    model = self.model
+    #
+    #    assert model.hyper_b == 23
+    #    model.hyper_b = 11
+    #    assert model.hyper_b == 11
+    #    model.hyper_b = 23
+    #    assert model.hyper_b == 23
+    #
+    #def test_model_get_set_attr(self):
+    #    model = self.model
+    #
+    #    model.model_a = 11
+    #    assert model.model_a == 11

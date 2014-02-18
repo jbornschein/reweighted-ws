@@ -13,7 +13,7 @@ def unrolled_scan(fn, sequences=None, outputs_info=None, non_sequences=None,
          mode=None, name=None, profile=False, unroll=8):
     """ Unrolling version of theano.scan """
     if unroll == 1:
-        return theano.scan(unrolled_fn, sequences=sequences, 
+        return theano.scan(fn, sequences=sequences, 
                     outputs_info=outputs_info, 
                     non_sequences=non_sequences,
                     n_steps=n_steps, truncate_gradient=truncate_gradient, 

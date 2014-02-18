@@ -3,11 +3,9 @@
 from __future__ import division
 
 import sys
-sys.path.append("../lib")
+sys.path.insert(0, "../lib")
 
 import logging
-from time import time
-from collections import nametuple
 
 import numpy as np
 
@@ -15,8 +13,8 @@ import theano
 import theano.tensor as T
 from theano.tensor.shared_randomstreams import RandomStreams
 
+from model import Model, default_weights
 from unrolled_scan import unrolled_scan
-from model import Model 
 
 _logger = logging.getLogger(__name__)
 
@@ -31,49 +29,24 @@ def sigmoid_(x):
 #------------------------------------------------------------------------------
 
 class NADE(Model):
-    def __init__(self, hyper_params)
-        self.add_hyper_param('n_vis', help='no. observed binary variables')
-        self.add_hyper_param('n_vis', help='no. latent binary variables')
-        self.add_hyper_param('batch_size', default=100)
+    def __init__(self, **hyper_params):
+        super(NADE, self).__init__()
 
-        self.add_model_param('c', help='encoder bias')
-        self.add_model_param('b', help='decoder bias')
-        self.add_model_param('W', help='encoder weights')
-        self.add_model_param('V', help='decoder weights')
+        self.register_hyper_param('n_vis', help='no. observed binary variables')
+        self.register_hyper_param('n_hid', help='no. latent binary variables')
+        self.register_hyper_param('batch_size', default=100)
+        self.register_hyper_param('unroll_scan', default=1)
+
+        self.register_model_param('c', help='encoder bias', default=lambda: np.zeros(self.n_vis))
+        self.register_model_param('b', help='decoder bias', default=lambda: np.zeros(self.n_hid))
+        self.register_model_param('W', help='encoder weights', default=lambda: default_weights(self.n_vis, self.n_hid) )
+        self.register_model_param('V', help='decoder weights', default=lambda: default_weights(self.n_hid, self.n_vis) )
         
-        super(NADE, self, hyper_params)
+        self.set_hyper_params(hyper_params)
 
-        self.n_vis = n_vis
-        self.n_hid = n_hid
-        self.batch_size = batch_size
-
-        # 
-        c = np.zeros( (n_vis), dtype='float32')         # endoder bias
-        b = np.zeros( (n_hid), dtype='float32')         # decoder bias
-        #W = np.zeros( (n_vis, n_hid), dtype='float32')  # encoder weights
-        #V = np.zeros( (n_hid, n_vis), dtype='float32')  # decoder weights
-
-        # random
-        #c = np.random.normal( size=(n_vis)).astype(np.float)         # endoder bias
-        #b = np.random.normal( size=(n_hid)).astype(np.float)         # decoder bias
-        W = (2*np.random.normal( size=(n_vis, n_hid)).astype("float32")-1) / n_vis  # encoder weights
-        V = (2*np.random.normal( size=(n_hid, n_vis)).astype("float32")-1) / n_vis  # decoder weights
-
-        self.b = theano.shared(b, name='b')
-        self.b.tag.test_value = b
-        self.c = theano.shared(c, name='c')
-        self.c.tag.test_value = c
-        self.W = theano.shared(W, name='W')
-        self.W.tag.test_value = W
-        self.V = theano.shared(V, name='V')
-        self.V.tag.test_value = V
-
-        self.model_params = [self.b, self.c, self.W, self.V]
-
-
-    def loglikelihood(self, X):
+    def f_loglikelihood(self, X):
         n_vis, n_hid, batch_size = self.get_hyper_params(['n_vis', 'n_hid', 'batch_size'])
-        b, c, W, v = get.get_model_params(['b', 'c', 'W', 'V'])
+        b, c, W, V = self.get_model_params(['b', 'c', 'W', 'V'])
         
         vis = X
         vis.tag.test_value = np.zeros( (batch_size, n_vis), dtype='float32')
@@ -93,47 +66,17 @@ class NADE(Model):
             a    = a + T.outer(vis_i, Wi)
             return a, post
 
-        #[a, post], updates = theano.scan(
-        #            fn=one_iter,
-        #            sequences=[vis.T, W, V.T, b],
-        #            outputs_info=[a_init, post_init],
-        #        )
-
         [a, post], updates = unrolled_scan(
                     fn=one_iter,
                     sequences=[vis.T, W, V.T, b],
                     outputs_info=[a_init, post_init],
-                    unroll=8
+                    unroll=self.unroll_scan
                 )
-
         return post[-1,:]
-        #------------------------------------------------------------------
-        """
-        def unrolled_iter(vis_i, Wi, Vi, bi, a, post):
-            a, post = one_iter(vis_i[0], Wi[0], Vi[0], bi[0], a, post)
-            a, post = one_iter(vis_i[1], Wi[1], Vi[1], bi[1], a, post)
-            a, post = one_iter(vis_i[2], Wi[2], Vi[2], bi[2], a, post)
-            a, post = one_iter(vis_i[3], Wi[3], Vi[3], bi[3], a, post)
-            return a, post
-
-    
-        sequences = [vis.T.reshape((n_vis//4,4,batch_size)), 
-                     W.reshape((n_vis//4,4,n_hid)), 
-                     V.T.reshape((n_vis//4,4,n_hid)), 
-                     b.reshape((n_vis//4,2))]
-
-        return post[-1,:]
-        """
 
     def f_sample(self):
-        batch_size = self.batch_size
-        n_vis = self.n_vis
-        n_hid = self.n_hid
-
-        b = self.c    # decoder bias
-        c = self.b    # encoder bias
-        W = self.W    # these are shared_vars
-        V = self.V    # these are shared_vars
+        n_vis, n_hid, batch_size = self.get_hyper_params(['n_vis', 'n_hid', 'batch_size'])
+        b, c, W, V = get.get_model_params(['b', 'c', 'W', 'V'])
 
         # 0th iteration 
         a_init   = T.zeros(batch_size)[:,None] + c
@@ -147,13 +90,12 @@ class NADE(Model):
             a  = a + T.outer(vi[:,0], Wi)
             return a, vi.reshape([batch_size])
         
-        [a, vis], updates = theano.scan(
+        [a, vis], updates = unrolled_scan(
                     fn=one_iter,
                     sequences=[W, V.T, b], 
                     outputs_info=[a_init, vis_init],
+                    unroll=self.unroll_scan
                 )
-
-        #theano.printing.debugprint(vis)
         return theano.function([], vis[:,:].T, allow_input_downcast=True)
        
 if __name__ == "__main__":
@@ -162,8 +104,8 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     _logger = logging.getLogger("nade.py")
 
-    n_vis, n_hid = 8, 3
-    nade = NADE(n_vis=n_vis, n_hid=n_hid, batch_size=10)
+    nade = NADE(n_vis=8, n_hid=3)
+
     f_sample = nade.f_sample()
     f_post = nade.f_post()
 

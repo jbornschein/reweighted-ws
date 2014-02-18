@@ -1,10 +1,10 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 from __future__ import division
 
 import sys
 sys.path.append("../lib")
-#sys.setrecursionlimit(10000)
+# sys.setrecursionlimit(10000)
 
 import logging
 from time import time
@@ -12,7 +12,7 @@ import cPickle as pickle
 
 import numpy as np
 
-import theano 
+import theano
 import theano.tensor as T
 
 from datalog import dlog, StoreToH5, TextPrinter
@@ -24,27 +24,27 @@ from nade import NADE
 _logger = logging.getLogger()
 
 #-----------------------------------------------------------------------------
-# 
+#
 # class Experiment(object):
-#     def __init__(self): 
+#     def __init__(self):
 #         pass`
-# 
-#     def set_dataset(self, dataset): 
+#
+#     def set_dataset(self, dataset):
 #         self.dataset = dataset
-# 
+#
 #     def set_model(self, model):
 #         self.model = model
-# 
+#
 #     def read_paramfile(self, fname):
 #         self.param_fname = fname
-# 
+#
 #         params = {}
-# 
+#
 #     def run_learning(self):
 #         epoch = 0
 #         while not end_learning:
 #             epoch += 1
-# 
+#
 #-----------------------------------------------------------------------------
 
 #=============================================================================
@@ -63,10 +63,10 @@ if __name__ == "__main__":
     learning_rate = 0.5
 
     N, n_vis = data_train.X.shape
-    n_hid = 10
+    n_hid = 16
 
     _logger.info("instatiating model")
-    nade = NADE(n_vis, n_hid, batch_size=batch_size)
+    nade = NADE(n_vis=n_vis, n_hid=n_hid, batch_size=batch_size)
 
     _logger.info("instatiating trainer")
     trainer = BatchedSGD(batch_size=batch_size)
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     trainer.set_model(nade)
     trainer.compile()
 
-    print "="*77
+    print "=" * 77
     epochs = 0
     end_learning = False
 
@@ -85,24 +85,24 @@ if __name__ == "__main__":
 
         trainer.perform_epoch(learning_rate)
 
-        #for b in xrange(N//batch_size):
+        # for b in xrange(N//batch_size):
         #    first = batch_size*b
         #    last  = first + batch_size
         #    batch_x = train_x[first:last]
         #
 #            _, L, gb, gc, gW, gV = f_post(batch_x, learning_rate)
-        
+
 #            dlog.progress("Prcessing minibatch %d" % b, b/(N//batch_size))
 #            dlog.append("L", L)
-#            #print "gb:", gb
-#            #print "b:", nade.b.get_value()
-#            
+# print "gb:", gb
+# print "b:", nade.b.get_value()
+#
 #            LL_epoch += L
 #        LL_epoch = LL_epoch / (N//batch_size)
 #        LL.append(LL_epoch)
 #
 #        dlog.append_all( {
-#            "LL_epoch": LL_epoch, 
+#            "LL_epoch": LL_epoch,
 #            "b": nade.b.get_value(),
 #            "c": nade.c.get_value(),
 #            "W": nade.W.get_value(),
@@ -112,18 +112,14 @@ if __name__ == "__main__":
 #        if epochs % 1 == 0:
 #            print "--- %d ----" % epochs
 #            print "LL:", LL_epoch
-#            #print "post: ", post
-#            #print "gb:", gb
-#            #print "b:", nade.b.get_value()
-#            #print "c:", nade.c.get_value()
+# print "post: ", post
+# print "gb:", gb
+# print "b:", nade.b.get_value()
+# print "c:", nade.c.get_value()
 #        epochs += 1
-#    
-#        # Converged?
-#        end_learning = LL_epoch <= np.max(LL[-6:-1]) 
+#
+# Converged?
+#        end_learning = LL_epoch <= np.max(LL[-6:-1])
 #        end_learning |= epochs > 10000
-    t = time()-t0
-    print "Time per epoch: %f" % (t/epochs)
-    
-
-
-
+#    t = time() - t0
+#    print "Time per epoch: %f" % (t / epochs)

@@ -57,11 +57,11 @@ class BatchedSGD(Trainer):
         last  = first + self.batch_size
         batch = self.train_X[first:last]
 
-        LL = model.loglikelihood(batch)
+        LL = model.f_loglikelihood(batch)
         total_LL = T.mean(LL)
 
         updates = OrderedDict()
-        for p in model.model_params:  
+        for p in model.get_model_params().itervalues():
             updates[p] = p + learning_rate * T.grad(total_LL, p)
 
         self.f_sgd_step = theano.function(  
@@ -76,7 +76,7 @@ class BatchedSGD(Trainer):
 
         data = T.fmatrix('data')
 
-        LL = model.loglikelihood(data)
+        LL = model.f_loglikelihood(data)
         total_LL = T.mean(LL)
 
         self.f_loglikelihood = theano.function(
