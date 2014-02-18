@@ -36,6 +36,7 @@ class BatchedSGD(Trainer):
         if data_train is not None:
             self.data_train = data_train
             self.train_X = theano.shared(data_train.X, "train_X")
+            self.train_Y = theano.shared(data_train.Y, "train_Y")
 
         if data_valid is not None:
             self.data_valid = data_valid
@@ -48,16 +49,18 @@ class BatchedSGD(Trainer):
         model = self.model
 
         #---------------------------------------------------------------------
-        _logger.debug("compiling f_sgd_step")
+        _logger.info("compiling f_sgd_step")
 
         learning_rate = T.fscalar('learning_rate')
         batch_idx = T.iscalar('batch_idx')
     
         first = batch_idx*self.batch_size
         last  = first + self.batch_size
-        batch = self.train_X[first:last]
+        X_batch = self.train_X[first:last]
+        Y_batch = self.train_Y[first:last]
+        
 
-        LL = model.f_loglikelihood(batch)
+        LL = model.f_loglikelihood(X_batch, Y_batch)
         total_LL = T.mean(LL)
 
         updates = OrderedDict()
@@ -74,13 +77,14 @@ class BatchedSGD(Trainer):
         #---------------------------------------------------------------------
         _logger.debug("compiling f_loglikelihood")
 
-        data = T.fmatrix('data')
+        X = T.fmatrix('X')
+        Y = T.fmatrix('Y')
 
-        LL = model.f_loglikelihood(data)
+        LL = model.f_loglikelihood(X, Y)
         total_LL = T.mean(LL)
 
         self.f_loglikelihood = theano.function(
-                            inputs=[data], 
+                            inputs=[X, Y], 
                             outputs=[total_LL, LL],
                             name="f_loglikelihood",
                             allow_input_downcast=True)
