@@ -12,6 +12,7 @@ before_install:
   - sudo apt-get install -qq libatlas3gf-base libatlas-dev liblapack-dev gfortran zlib1g-dev libhdf5-serial-dev python-numpy python-scipy
 
 install:
+  - pip install recordtype
   - pip install theano
 
 # run tests
