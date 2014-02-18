@@ -1,7 +1,6 @@
 language: python
 python:
   - "2.7"
-  - "3.2"
 #  - "3.3"
 
 virtualenv:
@@ -9,10 +8,12 @@ virtualenv:
 
 # install dependencies
 before_install:
+  - lsb_release -a
   - sudo apt-get install -qq libatlas3gf-base libatlas-dev liblapack-dev gfortran zlib1g-dev libhdf5-serial-dev python-numpy python-scipy
 
 install:
-  - "pip install theano"
+  - pip install theano
 
 # run tests
-script: nosetests -v
+script: 
+  - nosetests -v
