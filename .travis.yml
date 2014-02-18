@@ -9,7 +9,9 @@ virtualenv:
 # install dependencies
 before_install:
   - lsb_release -a
-  - sudo apt-get install -qq libatlas3gf-base libatlas-dev liblapack-dev gfortran zlib1g-dev libhdf5-serial-dev python-numpy python-scipy
+  - sudo apt-get install -qq libatlas3gf-base libatlas-dev liblapack-dev gfortran zlib1g-dev libhdf5-serial-dev python-numpy python-scipy python-tables
+  - python -c "import numpy; print numpy.__version__"
+  - python -c "import scipy; print scipy.__version__"
 
 install:
   - pip install recordtype
