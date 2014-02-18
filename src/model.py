@@ -18,7 +18,7 @@ _logger = logging.getLogger(__name__)
 #------------------------------------------------------------------------------
 
 def default_weights(n_in, n_out):
-    return (2*np.random.normal( size=(n_in, n_in))-1) / n_out
+    return (2*np.random.normal( size=(n_in, n_out))-1) / n_in
 
 #------------------------------------------------------------------------------
 
@@ -114,6 +114,7 @@ class Model(object):
         if not isinstance(val, T.sharedvar.SharedVariable):
             val = np.asarray(val, dtype='float32')
             val = theano.shared(val, key)
+            val.tag.test_value = val
         param.value = val
      
     def set_model_params(self, d):

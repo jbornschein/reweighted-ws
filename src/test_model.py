@@ -2,6 +2,8 @@ import unittest
 
 import numpy as np
 
+from collections import OrderedDict
+
 # Unit Under Test
 from model import * 
 
@@ -50,7 +52,7 @@ def test_model_setget():
     model.set_model_param('model_b', 1)
     model.set_model_param('model_c', 2)
     assert model.get_model_param('model_b').get_value() == 1
-    #assert model.get_model_params(['model_b', 'model_c']) == [1, 2]
+    assert model.get_model_param('model_c').get_value() == 2
 
     model.set_model_params({'model_b': 23, 'model_c': 42})
     assert model.get_model_param('model_b').get_value() == 23
@@ -59,10 +61,12 @@ def test_model_setget():
 def test_get_all_model_params():
     model = ExampleModel()
 
-    print model.get_model_params()
-        
+    model.set_model_param('model_a', 1)
+    all_params = model.get_model_params()
+   
+    assert type(all_params) == OrderedDict
+    assert len(all_params) == 3
 
-        
     #def test_hyper_get_set_attr(self):
     #    model = self.model
     #

@@ -19,6 +19,7 @@ from unrolled_scan import unrolled_scan
 _logger = logging.getLogger(__name__)
 
 #theano.config.compute_test_value = 'warn'
+theano.config.exception_verbosity = 'high'
 theano_rng = RandomStreams(seed=2341)
 
 #------------------------------------------------------------------------------
@@ -37,8 +38,8 @@ class NADE(Model):
         self.register_hyper_param('batch_size', default=100)
         self.register_hyper_param('unroll_scan', default=1)
 
-        self.register_model_param('c', help='encoder bias', default=lambda: np.zeros(self.n_vis))
-        self.register_model_param('b', help='decoder bias', default=lambda: np.zeros(self.n_hid))
+        self.register_model_param('c', help='hidden bias' , default=lambda: np.zeros(self.n_hid))
+        self.register_model_param('b', help='visible bias', default=lambda: np.zeros(self.n_vis))
         self.register_model_param('W', help='encoder weights', default=lambda: default_weights(self.n_vis, self.n_hid) )
         self.register_model_param('V', help='decoder weights', default=lambda: default_weights(self.n_hid, self.n_vis) )
         
