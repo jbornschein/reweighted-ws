@@ -67,17 +67,18 @@ def test_get_all_model_params():
     assert type(all_params) == OrderedDict
     assert len(all_params) == 3
 
-    #def test_hyper_get_set_attr(self):
-    #    model = self.model
-    #
-    #    assert model.hyper_b == 23
-    #    model.hyper_b = 11
-    #    assert model.hyper_b == 11
-    #    model.hyper_b = 23
-    #    assert model.hyper_b == 23
-    #
-    #def test_model_get_set_attr(self):
-    #    model = self.model
-    #
-    #    model.model_a = 11
-    #    assert model.model_a == 11
+def test_hyper_attr():
+    model = ExampleModel()
+
+    
+    assert model.hyper_b == 23
+    assert model.hyper_c == 42
+
+    model.hyper_a = 11
+    assert model.hyper_a == 11
+
+def test_model_attr():
+    model = ExampleModel()
+
+    model.model_a = 23.5
+    assert np.allclose(model.model_a.get_value(), 23.5)
