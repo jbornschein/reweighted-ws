@@ -93,12 +93,18 @@ class BatchedSGD(Trainer):
         n_batches = self.data_train.n_datapoints // self.batch_size
 
         t0 = time()
+        LL_epoch = 0
         for batch_idx in xrange(n_batches):
             LL = self.f_sgd_step(batch_idx, learning_rate)
+            LL_epoch += LL
+
             _logger.info("SGD step (%4d of %4d)\tLL=%f" % (batch_idx, n_batches, LL))
+            dlog.append("LL_step", LL)
         t = time()-t0
+        LL_epoch /= n_batches
         
         _logger.info("Time per epoch %f s; %f ms per SGD step" % (t, t/n_batches*1000))
+        return LL_epoch
 
 #    def evaluate_loglikelihood(self, data):
 #        total_LL, LL = self.f_loglikelihood(data)

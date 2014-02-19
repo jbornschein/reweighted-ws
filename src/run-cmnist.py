@@ -40,15 +40,15 @@ if __name__ == "__main__":
 
     N, n_vis  = data_train.X.shape
     N, n_cond = data_train.Y.shape
-    n_hid = 100
+    n_hid = 500
 
     _logger.info("instatiating model")
-    nade = CNADE(n_vis=n_vis, n_hid=n_hid, n_cond=n_cond, batch_size=batch_size)
+    model = CNADE(n_vis=n_vis, n_hid=n_hid, n_cond=n_cond, batch_size=batch_size)
 
     _logger.info("instatiating trainer")
     trainer = BatchedSGD(batch_size=batch_size)
     trainer.set_data(data_train, data_valid)
-    trainer.set_model(nade)
+    trainer.set_model(model)
     trainer.compile()
 
     print "=" * 77
@@ -61,6 +61,10 @@ if __name__ == "__main__":
         LL_epoch = 0.
 
         trainer.perform_epoch(learning_rate)
+        
+        all_params = model.get_model_params()
+        all_params = {key: val.get_value() for key, val in all_params.iteritems()}
+        dlog.append_all(all_params)
 
         # for b in xrange(N//batch_size):
         #    first = batch_size*b

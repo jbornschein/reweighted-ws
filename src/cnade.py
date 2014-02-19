@@ -25,7 +25,7 @@ theano_rng = RandomStreams(seed=2341)
 #------------------------------------------------------------------------------
 
 def sigmoid_(x):
-    return T.nnet.sigmoid(x)*0.9999 + 0.000005
+    return T.cast(T.nnet.sigmoid(x)*0.9999 + 0.000005, dtype='float32')
 
 #------------------------------------------------------------------------------
 
@@ -69,8 +69,7 @@ class CNADE(Model):
         post_init = T.zeros(batch_size, dtype=np.float32)
 
         def one_iter(vis_i, Wi, Vi, bi, a, post):
-            hid  = T.nnet.sigmoid(a)
-            #pi   = T.nnet.sigmoid(T.dot(hid, Vi) + bi)
+            hid  = sigmoid_(a)
             pi   = sigmoid_(T.dot(hid, Vi) + bi)
             post = post + T.cast(T.log(pi*vis_i + (1-pi)*(1-vis_i)), dtype='float32')
             a    = a + T.outer(vis_i, Wi)
@@ -84,27 +83,36 @@ class CNADE(Model):
                 )
         return post[-1,:]
 
-    def f_sample(self):
-        n_vis, n_hid, batch_size = self.get_hyper_params(['n_vis', 'n_hid', 'batch_size'])
-        b, c, W, V = get.get_model_params(['b', 'c', 'W', 'V'])
+    def f_sample(self, Y):
+        n_vis, n_hid, n_cond, batch_size = self.get_hyper_params(['n_vis', 'n_hid', 'n_cond', 'batch_size'])
+        b, c, W, V, Ub, Uc = self.get_model_params(['b', 'c', 'W', 'V', 'Ub', 'Uc'])
+
+        cond = Y
 
         # 0th iteration 
-        a_init   = T.zeros(batch_size)[:,None] + c
-        vis_init = T.zeros( (batch_size), dtype=np.float32 )
-        
-        def one_iter(Wi, Vi, bi, a, vis):
-            h = T.nnet.sigmoid(a)
-            pi = T.nnet.sigmoid(T.dot(h, Vi) + bi)
-            pi = T.shape_padright(pi)
-            vi = 1.*(theano_rng.uniform([batch_size,1]) <= pi)
-            a  = a + T.outer(vi[:,0], Wi)
-            return a, vi.reshape([batch_size])
-        
-        [a, vis], updates = unrolled_scan(
+        #------------------------------------------------------------------
+        b_cond = b + T.dot(cond, Ub)    # shape (batch, n_vis)
+        c_cond = c + T.dot(cond, Uc)    # shape (batch, n_hid)
+    
+        a_init    = c_cond
+        post_init = T.zeros(batch_size, dtype=np.float32)
+        vis_init  = T.zeros(batch_size, dtype=np.float32)
+
+
+        def one_iter(Wi, Vi, bi, a, vis_i, post):
+            hid   = sigmoid_(a)
+            pi    = sigmoid_(T.dot(hid, Vi) + bi)
+            vis_i = 1.*(theano_rng.uniform([batch_size]) <= pi)
+            post  = post + T.cast(T.log(pi*vis_i + (1-pi)*(1-vis_i)), dtype='float32')
+            a     = a + T.outer(vis_i, Wi)
+            return a, vis_i, post
+
+        [a, vis, post], updates = unrolled_scan(
                     fn=one_iter,
-                    sequences=[W, V.T, b], 
-                    outputs_info=[a_init, vis_init],
+                    sequences=[W, V.T, b_cond.T], 
+                    outputs_info=[a_init, vis_init, post_init],
                     unroll=self.unroll_scan
                 )
-        return theano.function([], vis[:,:].T, allow_input_downcast=True)
+
+        return vis.T, post[-1,:]
 

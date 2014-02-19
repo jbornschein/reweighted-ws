@@ -8,23 +8,39 @@ import theano.tensor as T
 # Unit Under Test
 from nade import * 
 
-
+params = {
+    'n_vis':  16, 
+    'n_hid':  32,
+}
 
 def test_constructor():
-    nade = NADE()
-    assert nade.batch_size == 100
+    model =NADE()
+    assert model.batch_size == 100
 
 def test_constructor2():
-    nade = NADE(n_vis=16, n_hid=32)
-    assert nade.n_vis == 16
-    assert nade.n_hid == 32
+    model = NADE(**params)
+    assert model.n_vis == 16
+    assert model.n_hid == 32
 
 def test_loglikelihood():
-    nade = NADE(n_vis=16, n_hid=32)
+    model = NADE(**params)
 
     X = T.fmatrix('X')
 
-    LL = nade.f_loglikelihood(X)
-    LL_total = LL.mean()
+    L = model.f_loglikelihood(X)
+    L_total = L.mean()
     
-    f_loglikelihood = theano.function([X], LL_total, name='loglikelihood')
+    do_loglikelihood = theano.function([X], L_total, name='loglikelihood')
+
+
+#@unittest.skip("NOT IMPLEMENTED")
+def test_sample():
+    model = NADE(**params)
+
+    X = model.f_sample()
+    
+    do_sample = theano.function([], X, name='sample')
+
+    # Now, actual values!
+    X = do_sample()
+
