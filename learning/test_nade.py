@@ -14,33 +14,38 @@ params = {
 }
 
 def test_constructor():
-    model =NADE()
-    assert model.batch_size == 100
-
-def test_constructor2():
     model = NADE(**params)
     assert model.n_vis == 16
     assert model.n_hid == 32
 
 def test_loglikelihood():
+    batch_size = 100
     model = NADE(**params)
 
     X = T.fmatrix('X')
+    X.tag.test_value = np.zeros( (batch_size, model.n_vis), dtype='float32')
 
     L = model.f_loglikelihood(X)
-    L_total = L.mean()
     
-    do_loglikelihood = theano.function([X], L_total, name='loglikelihood')
+    do_loglikelihood = theano.function([X], L, name='loglikelihood')
+
+    X_ = np.zeros( (batch_size, model.n_vis), dtype=np.float32)
+    L_ = do_loglikelihood(X_)
+   
+    assert L_.shape == (batch_size,)
 
 
 #@unittest.skip("NOT IMPLEMENTED")
 def test_sample():
+    n_samples = 10
     model = NADE(**params)
 
-    X = model.f_sample()
-    
-    do_sample = theano.function([], X, name='sample')
+    X, P = model.f_sample(n_samples)
+    do_sample = theano.function([], [X, P], name='sample')
 
     # Now, actual values!
-    X = do_sample()
+    X_, P_ = do_sample()
+
+    assert X_.shape == (n_samples, model.n_vis)
+    assert P_.shape == (n_samples,)
 

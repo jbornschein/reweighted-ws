@@ -26,7 +26,6 @@ class NADE(Model):
         self.register_hyper_param('n_vis', help='no. observed binary variables')
         self.register_hyper_param('n_hid', help='no. latent binary variables')
         self.register_hyper_param('clamp_sigmoid', default=False)
-        self.register_hyper_param('batch_size', default=100)
         self.register_hyper_param('unroll_scan', default=1)
 
         self.register_model_param('c', help='hidden bias' , default=lambda: np.zeros(self.n_hid))
@@ -43,18 +42,15 @@ class NADE(Model):
             return T.nnet.sigmoid(x)
 
     def f_loglikelihood(self, X):
-        n_vis, n_hid, batch_size = self.get_hyper_params(['n_vis', 'n_hid', 'batch_size'])
+        n_vis, n_hid = self.get_hyper_params(['n_vis', 'n_hid'])
         b, c, W, V = self.get_model_params(['b', 'c', 'W', 'V'])
         
+        batch_size = X.shape[0]
         vis = X
-        vis.tag.test_value = np.zeros( (batch_size, n_vis), dtype='float32')
-
-        learning_rate = T.fscalar('learning_rate')
-        learning_rate.tag.test_value = 0.0
 
         #------------------------------------------------------------------
-        a_init    = T.zeros((batch_size, n_hid), dtype=np.float32) + c
-        post_init = T.zeros(batch_size, dtype=np.float32)
+        a_init    = T.zeros([batch_size, n_hid], dtype=np.float32) + c
+        post_init = T.zeros([batch_size], dtype=np.float32)
 
         def one_iter(vis_i, Wi, Vi, bi, a, post):
             hid  = self.f_sigmoid(a)
@@ -71,18 +67,18 @@ class NADE(Model):
                 )
         return post[-1,:]
 
-    def f_sample(self):
-        n_vis, n_hid, batch_size = self.get_hyper_params(['n_vis', 'n_hid', 'batch_size'])
+    def f_sample(self, n_samples=100):
+        n_vis, n_hid = self.get_hyper_params(['n_vis', 'n_hid'])
         b, c, W, V = self.get_model_params(['b', 'c', 'W', 'V'])
 
-        a_init    = T.zeros((batch_size, n_hid), dtype=np.float32) + c
-        post_init = T.zeros(batch_size, dtype=np.float32)
-        vis_init  = T.zeros(batch_size, dtype=np.float32)
+        a_init    = T.zeros((n_samples, n_hid), dtype=np.float32) + c
+        post_init = T.zeros(n_samples, dtype=np.float32)
+        vis_init  = T.zeros(n_samples, dtype=np.float32)
 
         def one_iter(Wi, Vi, bi, a, vis_i, post):
             hid  = self.f_sigmoid(a)
             pi   = self.f_sigmoid(T.dot(hid, Vi) + bi)
-            vis_i = 1.*(theano_rng.uniform([batch_size]) <= pi)
+            vis_i = 1.*(theano_rng.uniform([n_samples]) <= pi)
             post  = post + T.cast(T.log(pi*vis_i + (1-pi)*(1-vis_i)), dtype='float32')
             a     = a + T.outer(vis_i, Wi)
             return a, vis_i, post

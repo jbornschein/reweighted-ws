@@ -27,7 +27,6 @@ class CNADE(Model):
         self.register_hyper_param('n_hid', help='no. latent binary variables')
         self.register_hyper_param('n_cond', help='no. conditioning binary variables')
         self.register_hyper_param('clamp_sigmoid', default=False)
-        self.register_hyper_param('batch_size', default=100)
         self.register_hyper_param('unroll_scan', default=1)
 
         self.register_model_param('b',  help='visible bias', default=lambda: np.zeros(self.n_vis))
@@ -46,24 +45,19 @@ class CNADE(Model):
             return T.nnet.sigmoid(x)
 
     def f_loglikelihood(self, X, Y):
-        n_vis, n_hid, n_cond, batch_size = self.get_hyper_params(['n_vis', 'n_hid', 'n_cond', 'batch_size'])
+        n_vis, n_hid, n_cond = self.get_hyper_params(['n_vis', 'n_hid', 'n_cond'])
         b, c, W, V, Ub, Uc = self.get_model_params(['b', 'c', 'W', 'V', 'Ub', 'Uc'])
         
+        batch_size = X.shape[0]
         vis = X
-        vis.tag.test_value = np.zeros( (batch_size, n_vis), dtype='float32')
-
         cond = Y
-        cond.tag.test_value = np.zeros( (batch_size, n_vis), dtype='float32')
-
-        learning_rate = T.fscalar('learning_rate')
-        learning_rate.tag.test_value = 0.0
 
         #------------------------------------------------------------------
         b_cond = b + T.dot(cond, Ub)    # shape (batch, n_vis)
         c_cond = c + T.dot(cond, Uc)    # shape (batch, n_hid)
     
         a_init    = c_cond
-        post_init = T.zeros(batch_size, dtype=np.float32)
+        post_init = T.zeros([batch_size], dtype=np.float32)
 
         def one_iter(vis_i, Wi, Vi, bi, a, post):
             hid  = self.f_sigmoid(a)
@@ -81,19 +75,19 @@ class CNADE(Model):
         return post[-1,:]
 
     def f_sample(self, Y):
-        n_vis, n_hid, n_cond, batch_size = self.get_hyper_params(['n_vis', 'n_hid', 'n_cond', 'batch_size'])
+        n_vis, n_hid, n_cond = self.get_hyper_params(['n_vis', 'n_hid', 'n_cond'])
         b, c, W, V, Ub, Uc = self.get_model_params(['b', 'c', 'W', 'V', 'Ub', 'Uc'])
 
+        batch_size = Y.shape[0]
         cond = Y
 
-        # 0th iteration 
         #------------------------------------------------------------------
         b_cond = b + T.dot(cond, Ub)    # shape (batch, n_vis)
         c_cond = c + T.dot(cond, Uc)    # shape (batch, n_hid)
     
         a_init    = c_cond
-        post_init = T.zeros(batch_size, dtype=np.float32)
-        vis_init  = T.zeros(batch_size, dtype=np.float32)
+        post_init = T.zeros([batch_size], dtype=np.float32)
+        vis_init  = T.zeros([batch_size], dtype=np.float32)
 
         def one_iter(Wi, Vi, bi, a, vis_i, post):
             hid  = self.f_sigmoid(a)
