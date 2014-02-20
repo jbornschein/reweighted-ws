@@ -102,7 +102,7 @@ class BatchedSGD(Trainer):
             LL_epoch += LL
 
             _logger.info("SGD step (%4d of %4d)\tLL=%f" % (batch_idx, n_batches, LL))
-            dlog.append("LL_step", LL)
+            dlog.append("L_step", LL)
         t = time()-t0
         LL_epoch /= n_batches
         

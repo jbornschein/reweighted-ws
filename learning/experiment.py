@@ -97,6 +97,14 @@ class Experiment(object):
         self.set_trainer(params['trainer'])
         self.set_termination(params['termination'])
 
+    def dlog_model_params(self):
+        model = self.model
+
+        _logger.info("Saving model params to H5")
+        for name, val in model.get_model_params().iteritems():
+            val = val.get_value()
+            dlog.append(name, val)
+
     def run_experiment(self):
         self.sanity_check()
 
@@ -109,13 +117,17 @@ class Experiment(object):
         trainer.set_model(model)
         trainer.compile()
 
+        self.dlog_model_params()
         termination.reset()
         continue_learning = True
         epoch = 0
         LL = []
         while continue_learning:
             L = trainer.perform_epoch()
-            
+                
+            dlog.append("L", L)
+            self.dlog_model_params()
+
             # Converged?
             continue_learning = termination.continue_learning(L)
 
