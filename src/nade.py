@@ -22,19 +22,13 @@ _logger = logging.getLogger(__name__)
 theano.config.exception_verbosity = 'high'
 theano_rng = RandomStreams(seed=2341)
 
-#------------------------------------------------------------------------------
-
-def sigmoid_(x):
-    return T.nnet.sigmoid(x)*0.9999 + 0.000005
-
-#------------------------------------------------------------------------------
-
 class NADE(Model):
     def __init__(self, **hyper_params):
         super(NADE, self).__init__()
 
         self.register_hyper_param('n_vis', help='no. observed binary variables')
         self.register_hyper_param('n_hid', help='no. latent binary variables')
+        self.register_hyper_param('clamp_sigmoid', default=False)
         self.register_hyper_param('batch_size', default=100)
         self.register_hyper_param('unroll_scan', default=1)
 
@@ -44,6 +38,12 @@ class NADE(Model):
         self.register_model_param('V', help='decoder weights', default=lambda: default_weights(self.n_hid, self.n_vis) )
         
         self.set_hyper_params(hyper_params)
+
+    def f_sigmoid(self, x):
+        if self.clamp_sigmoid:
+            return T.nnet.sigmoid(x)*0.9999 + 0.000005
+        else:
+            return T.nnet.sigmoid(x)
 
     def f_loglikelihood(self, X):
         n_vis, n_hid, batch_size = self.get_hyper_params(['n_vis', 'n_hid', 'batch_size'])
@@ -60,9 +60,8 @@ class NADE(Model):
         post_init = T.zeros(batch_size, dtype=np.float32)
 
         def one_iter(vis_i, Wi, Vi, bi, a, post):
-            hid  = T.nnet.sigmoid(a)
-            #pi   = T.nnet.sigmoid(T.dot(hid, Vi) + bi)
-            pi   = sigmoid_(T.dot(hid, Vi) + bi)
+            hid  = self.f_sigmoid(a)
+            pi   = self.f_sigmoid(T.dot(hid, Vi) + bi)
             post = post + T.cast(T.log(pi*vis_i + (1-pi)*(1-vis_i)), dtype='float32')
             a    = a + T.outer(vis_i, Wi)
             return a, post
@@ -84,8 +83,8 @@ class NADE(Model):
         vis_init  = T.zeros(batch_size, dtype=np.float32)
 
         def one_iter(Wi, Vi, bi, a, vis_i, post):
-            hid   = sigmoid_(a)
-            pi    = sigmoid_(T.dot(hid, Vi) + bi)
+            hid  = self.f_sigmoid(a)
+            pi   = self.f_sigmoid(T.dot(hid, Vi) + bi)
             vis_i = 1.*(theano_rng.uniform([batch_size]) <= pi)
             post  = post + T.cast(T.log(pi*vis_i + (1-pi)*(1-vis_i)), dtype='float32')
             a     = a + T.outer(vis_i, Wi)
