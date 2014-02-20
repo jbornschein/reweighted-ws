@@ -3,7 +3,6 @@
 from __future__ import division
 
 import sys
-sys.path.append("../lib")
 # sys.setrecursionlimit(10000)
 
 import logging
@@ -15,40 +14,57 @@ import numpy as np
 import theano
 import theano.tensor as T
 
-from datalog import dlog, StoreToH5, TextPrinter
-
-from dataset import ToyData, MNIST
-from training import BatchedSGD
-from cnade import CNADE
+from learning.utils.datalog import dlog, StoreToH5, TextPrinter
+from learning.experiment import Experiment
 
 _logger = logging.getLogger()
 
 #=============================================================================
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
+    import argparse 
 
-    _logger.info("setting up datalogger...")
-    dlog.set_handler("*", StoreToH5, "mnist-experiment-dump.h5")
-    dlog.set_handler(["L", "LL_epoch"], TextPrinter)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--verbose', '-v', action='count')
+    parser.add_argument('param_file')
+    args = parser.parse_args()
+
+
+    logging.basicConfig(level=logging.INFO)
+
+    print "="*77
+    print "== Starting experiment: %s" % args.param_file
+
+    experiment = Experiment.from_param_file(args.param_file)
+    experiment.setup_output_dir(args.param_file)
+    experiment.setup_logging()
+    experiment.setup_experiment()
+
+    print "=="
+    
+    experiment.run_experiment()
+
+
+    exit(0)
 
     _logger.info("loading data...")
-    data_train = MNIST(which_set='train')
-    data_valid = MNIST(which_set='valid')
+    data_train = ToyData(which_set='train')
+    data_valid = ToyData(which_set='valid')
 
     batch_size = 10
-    learning_rate = 0.0005
+    learning_rate = 0.5
 
-    N, n_vis  = data_train.X.shape
-    N, n_cond = data_train.Y.shape
-    n_hid = 500
+    N, n_vis = data_train.X.shape
+    n_hid = 20
+
+    print data_train.X.shape
 
     _logger.info("instatiating model")
-    model = CNADE(n_vis=n_vis, n_hid=n_hid, n_cond=n_cond, batch_size=batch_size)
+    nade = NADE(n_vis=n_vis, n_hid=n_hid, batch_size=batch_size)
 
     _logger.info("instatiating trainer")
     trainer = BatchedSGD(batch_size=batch_size)
     trainer.set_data(data_train, data_valid)
-    trainer.set_model(model)
+    trainer.set_model(nade)
     trainer.compile()
 
     print "=" * 77
@@ -61,10 +77,6 @@ if __name__ == "__main__":
         LL_epoch = 0.
 
         trainer.perform_epoch(learning_rate)
-        
-        all_params = model.get_model_params()
-        all_params = {key: val.get_value() for key, val in all_params.iteritems()}
-        dlog.append_all(all_params)
 
         # for b in xrange(N//batch_size):
         #    first = batch_size*b
@@ -102,5 +114,5 @@ if __name__ == "__main__":
 # Converged?
 #        end_learning = LL_epoch <= np.max(LL[-6:-1])
 #        end_learning |= epochs > 10000
-    t = time() - t0
-    print "Time per epoch: %f" % (t / epochs)
+#    t = time() - t0
+#    print "Time per epoch: %f" % (t / epochs)

@@ -2,9 +2,6 @@
 
 from __future__ import division
 
-import sys
-sys.path.insert(0, "../lib")
-
 import logging
 
 import numpy as np
@@ -14,7 +11,7 @@ import theano.tensor as T
 from theano.tensor.shared_randomstreams import RandomStreams
 
 from model import Model, default_weights
-from unrolled_scan import unrolled_scan
+from utils.unrolled_scan import unrolled_scan
 
 _logger = logging.getLogger(__name__)
 
@@ -22,23 +19,20 @@ _logger = logging.getLogger(__name__)
 theano.config.exception_verbosity = 'high'
 theano_rng = RandomStreams(seed=2341)
 
-class CNADE(Model):
+class NADE(Model):
     def __init__(self, **hyper_params):
-        super(CNADE, self).__init__()
+        super(NADE, self).__init__()
 
         self.register_hyper_param('n_vis', help='no. observed binary variables')
         self.register_hyper_param('n_hid', help='no. latent binary variables')
-        self.register_hyper_param('n_cond', help='no. conditioning binary variables')
         self.register_hyper_param('clamp_sigmoid', default=False)
         self.register_hyper_param('batch_size', default=100)
         self.register_hyper_param('unroll_scan', default=1)
 
-        self.register_model_param('b',  help='visible bias', default=lambda: np.zeros(self.n_vis))
-        self.register_model_param('c',  help='hidden bias' , default=lambda: np.zeros(self.n_hid))
-        self.register_model_param('Ub', help='cond. weights Ub', default=lambda: default_weights(self.n_cond, self.n_vis) )
-        self.register_model_param('Uc', help='cond. weights Uc', default=lambda: default_weights(self.n_cond, self.n_hid) )
-        self.register_model_param('W',  help='encoder weights', default=lambda: default_weights(self.n_vis, self.n_hid) )
-        self.register_model_param('V',  help='decoder weights', default=lambda: default_weights(self.n_hid, self.n_vis) )
+        self.register_model_param('c', help='hidden bias' , default=lambda: np.zeros(self.n_hid))
+        self.register_model_param('b', help='visible bias', default=lambda: np.zeros(self.n_vis))
+        self.register_model_param('W', help='encoder weights', default=lambda: default_weights(self.n_vis, self.n_hid) )
+        self.register_model_param('V', help='decoder weights', default=lambda: default_weights(self.n_hid, self.n_vis) )
         
         self.set_hyper_params(hyper_params)
 
@@ -48,24 +42,18 @@ class CNADE(Model):
         else:
             return T.nnet.sigmoid(x)
 
-    def f_loglikelihood(self, X, Y):
-        n_vis, n_hid, n_cond, batch_size = self.get_hyper_params(['n_vis', 'n_hid', 'n_cond', 'batch_size'])
-        b, c, W, V, Ub, Uc = self.get_model_params(['b', 'c', 'W', 'V', 'Ub', 'Uc'])
+    def f_loglikelihood(self, X):
+        n_vis, n_hid, batch_size = self.get_hyper_params(['n_vis', 'n_hid', 'batch_size'])
+        b, c, W, V = self.get_model_params(['b', 'c', 'W', 'V'])
         
         vis = X
         vis.tag.test_value = np.zeros( (batch_size, n_vis), dtype='float32')
-
-        cond = Y
-        cond.tag.test_value = np.zeros( (batch_size, n_vis), dtype='float32')
 
         learning_rate = T.fscalar('learning_rate')
         learning_rate.tag.test_value = 0.0
 
         #------------------------------------------------------------------
-        b_cond = b + T.dot(cond, Ub)    # shape (batch, n_vis)
-        c_cond = c + T.dot(cond, Uc)    # shape (batch, n_hid)
-    
-        a_init    = c_cond
+        a_init    = T.zeros((batch_size, n_hid), dtype=np.float32) + c
         post_init = T.zeros(batch_size, dtype=np.float32)
 
         def one_iter(vis_i, Wi, Vi, bi, a, post):
@@ -77,24 +65,17 @@ class CNADE(Model):
 
         [a, post], updates = unrolled_scan(
                     fn=one_iter,
-                    sequences=[vis.T, W, V.T, b_cond.T],
+                    sequences=[vis.T, W, V.T, b],
                     outputs_info=[a_init, post_init],
                     unroll=self.unroll_scan
                 )
         return post[-1,:]
 
-    def f_sample(self, Y):
-        n_vis, n_hid, n_cond, batch_size = self.get_hyper_params(['n_vis', 'n_hid', 'n_cond', 'batch_size'])
-        b, c, W, V, Ub, Uc = self.get_model_params(['b', 'c', 'W', 'V', 'Ub', 'Uc'])
+    def f_sample(self):
+        n_vis, n_hid, batch_size = self.get_hyper_params(['n_vis', 'n_hid', 'batch_size'])
+        b, c, W, V = self.get_model_params(['b', 'c', 'W', 'V'])
 
-        cond = Y
-
-        # 0th iteration 
-        #------------------------------------------------------------------
-        b_cond = b + T.dot(cond, Ub)    # shape (batch, n_vis)
-        c_cond = c + T.dot(cond, Uc)    # shape (batch, n_hid)
-    
-        a_init    = c_cond
+        a_init    = T.zeros((batch_size, n_hid), dtype=np.float32) + c
         post_init = T.zeros(batch_size, dtype=np.float32)
         vis_init  = T.zeros(batch_size, dtype=np.float32)
 
@@ -108,7 +89,7 @@ class CNADE(Model):
 
         [a, vis, post], updates = unrolled_scan(
                     fn=one_iter,
-                    sequences=[W, V.T, b_cond.T], 
+                    sequences=[W, V.T, b], 
                     outputs_info=[a_init, vis_init, post_init],
                     unroll=self.unroll_scan
                 )
