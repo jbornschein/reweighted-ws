@@ -9,6 +9,7 @@ import numpy as np
 import theano 
 import theano.tensor as T
 from theano.tensor.shared_randomstreams import RandomStreams
+from theano.printing import Print
 
 from model import Model, default_weights
 from utils.unrolled_scan import unrolled_scan
@@ -32,12 +33,12 @@ class ISB(Model):
         self.register_hyper_param('n_vis', help='no. observed binary variables')
         self.register_hyper_param('n_hid', help='no. latent binary variables')
         self.register_hyper_param('n_qhid', help='no. latent binary variables')
-        self.register_hyper_param('clamp_sigmoid', default=False)
+        self.register_hyper_param('clamp_sigmoid', default=True)
         self.register_hyper_param('n_samples', default=100)
         self.register_hyper_param('unroll_scan', default=1)
 
         # Sigmoid Belief Layer
-        self.register_model_param('P_a', help='P hidden prior', default=lambda: np.ones(self.n_hid)/2.)
+        self.register_model_param('P_a', help='P hidden prior', default=lambda: np.zeros(self.n_hid))
         self.register_model_param('P_b', help='P visible bias', default=lambda: np.zeros(self.n_vis))
         self.register_model_param('P_W', help='P weights', default=lambda: default_weights(self.n_hid, self.n_vis) )
 
@@ -50,6 +51,8 @@ class ISB(Model):
         self.register_model_param('Q_V',  help='Q decoder weights', default=lambda: default_weights(self.n_qhid, self.n_hid) )
 
         self.set_hyper_params(hyper_params)
+        self.Q_params = ['Q_b', 'Q_c', 'Q_Ub', 'Q_Uc', 'Q_W', 'Q_V']
+        self.P_params = ['P_a', 'P_b', 'P_W']
 
     def f_sigmoid(self, x):
         if self.clamp_sigmoid:
@@ -57,42 +60,8 @@ class ISB(Model):
         else:
             return T.nnet.sigmoid(x)
 
-    def f_q(self, X, Y):
-        n_vis, n_qhid, n_cond = self.get_hyper_params(['n_vis', 'n_qhid', 'n_cond'])
-        b, c, W, V, Ub, Uc = self.get_model_params(['b', 'c', 'W', 'V', 'Ub', 'Uc'])
-        
-        batch_size = X.shape[0]
-
-        vis = X
-        cond = Y
-
-        learning_rate = T.fscalar('learning_rate')
-        learning_rate.tag.test_value = 0.0
-
-        #------------------------------------------------------------------
-        b_cond = b + T.dot(cond, Ub)    # shape (batch, n_vis)
-        c_cond = c + T.dot(cond, Uc)    # shape (batch, n_hid)
-    
-        a_init    = c_cond
-        post_init = T.zeros([batch_size], dtype=np.float32)
-
-        def one_iter(vis_i, Wi, Vi, bi, a, post):
-            hid  = self.f_sigmoid(a)
-            pi   = self.f_sigmoid(T.dot(hid, Vi) + bi)
-            post = post + T.cast(T.log(pi*vis_i + (1-pi)*(1-vis_i)), dtype='float32')
-            a    = a + T.outer(vis_i, Wi)
-            return a, post
-
-        [a, post], updates = unrolled_scan(
-                    fn=one_iter,
-                    sequences=[vis.T, W, V.T, b_cond.T],
-                    outputs_info=[a_init, post_init],
-                    unroll=self.unroll_scan
-                )
-        return post[-1,:]
-
     def f_loglikelihood(self, X, Y=None):
-        n_samples, = self.get_hyper_params(['n_samples'])
+        n_hid, n_samples = self.get_hyper_params(['n_hid', 'n_samples'])
         #b, c, W, V, Ub, Uc = self.get_model_params(['b', 'c', 'W', 'V', 'Ub', 'Uc'])
 
         batch_size = X.shape[0]
@@ -101,31 +70,43 @@ class ISB(Model):
         X = f_replicate_batch(X, n_samples)
 
         # Get samples from q
-        H, lQ = self.f_q_sample(X)   # batch*n_samples  
+        #H, lQ = self.f_q_sample_flat(X)   # batch*n_samples  
+        H, lQ = self.f_q_sample(X)
+
+        #H  = Print('H')(H)
+        #lQ = Print('lQ')(lQ)
 
         # Calculate log P(X, H)
         lP = self.f_p(X, H)
 
-        # Approximate log P(X)
-        lPx = T.shape_padright(lP)
-        lPx = lPx.reshape( (batch_size, n_samples) )
-        lPx_max = T.max(lPx, axis=1)
-        lPx = lPx - T.shape_padright(lPx_max)
-        lPx = T.log(T.sum(T.exp(lPx), axis=1))
-        lPx = T.shape_padright(lPx)
-        #lPx = f_replicate_batch(lPx, n_samples)
+        def logsumexp1(A):
+            A = A.reshape( (batch_size, n_samples) )
+            A_max = T.max(A, axis=1)
+            A_ = A - T.shape_padright(A_max)
+            A = T.log(T.sum(T.exp(A_), axis=1))
+            A = A + A_max
+            return T.shape_padright(A)
 
-        lP = lP.reshape( (batch_size, n_samples) )
-        lQ = lQ.reshape( (batch_size, n_samples) )
+        # Approximate log P(X)
+        lPx = logsumexp1(lP-lQ)
+
+        #lP  = Print('lP')(lP)
+        #lPx = Print('lPx')(lPx)
+
+        H   =  H.reshape( (batch_size, n_samples, n_hid) )
+        lP  = lP.reshape( (batch_size, n_samples) )
+        lQ  = lQ.reshape( (batch_size, n_samples) )
+        #lQl = lQl.reshape( (batch_size, n_samples) )
 
         # calc. sampling weights
         w = T.exp(lP-lQ-lPx) 
+        #w = Print('w')(w)
 
-        print "lP:  ", lP.tag.test_value.shape
-        print "lQ:  ", lQ.tag.test_value.shape
-        print "lPx: ", lPx.tag.test_value.shape
-        print "w:   ", w.tag.test_value.shape
-
+        #print "lP:  ", lP.tag.test_value.shape
+        #print "lQ:  ", lQ.tag.test_value.shape
+        #print "H:   ", w.tag.test_value.shape
+        #print "lPx: ", lPx.tag.test_value.shape
+        #print "w:   ", w.tag.test_value.shape
 
         return lP, lQ, H, w
 
@@ -134,17 +115,51 @@ class ISB(Model):
         W, a, b = self.get_model_params(['P_W', 'P_a', 'P_b'])
 
         # Prior P(H)
-        lpH = T.cast(T.log(a*H + (1-a)*(1-H)), dtype='float32')
+        p_hid = self.f_sigmoid(a)
+        lpH = T.log(p_hid*H + (1-p_hid)*(1-H))
         lpH = T.sum(lpH, axis=1)
         
         # Posterior P(X|H)
         pX = self.f_sigmoid(T.dot(H, W) + b)
-        lpXH = T.cast(T.log(pX*X + (1-pX)*(1-X)), dtype='float32')
+        lpXH = T.log(pX*X + (1-pX)*(1-X))
         lpXH = T.sum(lpXH, axis=1)
 
-        return lpH + lpXH
+        lP = lpH + lpXH
+        #lP  = Print('lP')(lP)
+        return lP
+
+    def f_p_sample(self, n_samples):
+        n_vis, n_hid = self.get_hyper_params(['n_vis', 'n_hid'])
+        W, a, b = self.get_model_params(['P_W', 'P_a', 'P_b'])
+
+        # samples hiddens
+        p_hid = self.f_sigmoid(a)
+        H = T.cast(theano_rng.uniform((n_samples, n_hid)) <= p_hid, dtype='float32')
+
+        # sample visible given hiddens
+        p_vis = self.f_sigmoid(T.dot(H, W) + b)
+        X = T.cast(theano_rng.uniform((n_samples, n_vis)) <= p_vis, dtype='float32')
+
+        return H, X
 
     #------------------------ Q ---------------------------------------------
+    def f_q_sample_flat(self, X):
+        n_vis, n_hid, n_qhid = self.get_hyper_params(['n_vis', 'n_hid', 'n_qhid'])
+        b, c, W, V, Ub, Uc = self.get_model_params(['Q_b', 'Q_c', 'Q_W', 'Q_V', 'Q_Ub', 'Q_Uc'])
+
+        H_ = np.zeros((256, 8), dtype='float32')
+        for i in xrange(256):
+            for j in xrange(8):
+                if i & (1 << j): 
+                    H_[i,7-j] = 1.
+        
+        batch_size = 1 # X.shape[0] // 256
+
+        #H_ = f_replicate_batch(theano.shared(H_), batch_size)
+        H_ = theano.shared(H_)
+        Q_ = theano.shared((np.ones(256*batch_size)/256))
+        return H_, Q_
+
     def f_q_sample(self, X):
         n_vis, n_hid, n_qhid = self.get_hyper_params(['n_vis', 'n_hid', 'n_qhid'])
         b, c, W, V, Ub, Uc = self.get_model_params(['Q_b', 'Q_c', 'Q_W', 'Q_V', 'Q_Ub', 'Q_Uc'])
@@ -164,7 +179,7 @@ class ISB(Model):
             hid  = self.f_sigmoid(a)
             pi   = self.f_sigmoid(T.dot(hid, Vi) + bi)
             vis_i = 1.*(theano_rng.uniform([batch_size]) <= pi)
-            post  = post + T.cast(T.log(pi*vis_i + (1-pi)*(1-vis_i)), dtype='float32')
+            post  = post + vis_i*T.log(pi) + (1-vis_i)*T.log(1-pi)
             a     = a + T.outer(vis_i, Wi)
             return a, vis_i, post
 
@@ -176,4 +191,34 @@ class ISB(Model):
                 )
 
         return vis.T, post[-1,:]
+
+
+    def f_q(self, vis, cond):
+        n_vis, n_hid, n_qhid = self.get_hyper_params(['n_vis', 'n_hid', 'n_qhid'])
+        b, c, W, V, Ub, Uc = self.get_model_params(['Q_b', 'Q_c', 'Q_W', 'Q_V', 'Q_Ub', 'Q_Uc'])
+
+        batch_size = cond.shape[0]
+
+        #------------------------------------------------------------------
+        b_cond = b + T.dot(cond, Ub)    # shape (batch, n_vis)
+        c_cond = c + T.dot(cond, Uc)    # shape (batch, n_hid)
+    
+        a_init    = c_cond
+        post_init = T.zeros([batch_size], dtype=np.float32)
+
+        def one_iter(vis_i, Wi, Vi, bi, a, post):
+            hid  = self.f_sigmoid(a)
+            pi   = self.f_sigmoid(T.dot(hid, Vi) + bi)
+            #post = post + T.cast(T.log(pi*vis_i + (1-pi)*(1-vis_i)), dtype='float32')
+            post = post + vis_i*T.log(pi) + (1-vis_i)*T.log(1-pi)
+            a    = a + T.outer(vis_i, Wi)
+            return a, post
+
+        [a, post], updates = unrolled_scan(
+                    fn=one_iter,
+                    sequences=[vis.T, W, V.T, b_cond.T],
+                    outputs_info=[a_init, post_init],
+                    unroll=self.unroll_scan
+                )
+        return post[-1,:]
 
