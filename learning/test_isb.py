@@ -44,8 +44,6 @@ def test_q_sample():
     batch_size = 10
     N = batch_size * model.n_samples
 
-    model = ISB(**params)
-
     X, Xv = testing.fmatrix( (N, model.n_vis), "X")
     H, lQ = model.f_q_sample(X)
 
@@ -70,6 +68,19 @@ def test_p():
     pXHv = do_p(Xv, Hv)
     assert pXHv.shape == (N,)
     
+def test_p_sample():
+    model = ISB(**params)
+
+    n_samples = 10
+
+    H, X = model.f_p_sample(n_samples)
+
+    do_p_sample = theano.function([], [H, X], name="f_p_sample")
+
+    Hv, Xv = do_p_sample()
+
+    assert Hv.shape == (n_samples, model.n_hid)
+    assert Xv.shape == (n_samples, model.n_vis)
 
 
 def test_loglikelihood():
@@ -83,12 +94,11 @@ def test_loglikelihood():
 
     lP_, lQ_, H_, w_ = do_loglikelihood(X_)
 
-    print lP_.shape
-    print lQ_.shape
-    print H_.shape
-    print w_.shape
-
-
+    print
+    print "lP.shape: ", lP_.shape
+    print "lP.shape: ", lQ_.shape
+    print "H.shape:  ", H_.shape
+    print "w.shape:  ", w_.shape
 
 
 #def test_sample():
