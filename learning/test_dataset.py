@@ -9,6 +9,8 @@ def skip_check(reason):
 def check_dtype(d):
     assert d.X.dtype == np.float32, "Failed for %s" % d
     assert d.Y.dtype == np.float32, "Failed for %s" % d
+    assert d.X.ndim == 2
+    assert d.Y.ndim == 2
 
 def check_same_N(d):
     N = d.n_datapoints
@@ -24,12 +26,15 @@ def check_range(d):
 #-----------------------------------------------------------------------------
 
 test_matrix = {
-    (ToyData, 'train'): (check_dtype, check_same_N, check_range),
-    (ToyData, 'valid'): (check_dtype, check_same_N, check_range),
-    (ToyData, 'test' ): (check_dtype, check_same_N, check_range),
-    (MNIST, 'train'): (check_dtype, check_same_N, check_range),
-    (MNIST, 'valid'): (check_dtype, check_same_N, check_range),
-    (MNIST, 'test' ): (check_dtype, check_same_N, check_range),
+    (ToyData, 'train') : (check_dtype, check_same_N, check_range),
+    (ToyData, 'valid') : (check_dtype, check_same_N, check_range),
+    (ToyData, 'test' ) : (check_dtype, check_same_N, check_range),
+    (BarsData, 'train'): (check_dtype, check_same_N, check_range),
+    (BarsData, 'valid'): (check_dtype, check_same_N, check_range),
+    (BarsData, 'test' ): (check_dtype, check_same_N, check_range),
+    (MNIST, 'train')   : (check_dtype, check_same_N, check_range),
+    (MNIST, 'valid')   : (check_dtype, check_same_N, check_range),
+    (MNIST, 'test' )   : (check_dtype, check_same_N, check_range),
 }
 
 def test_datasets():

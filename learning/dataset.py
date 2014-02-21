@@ -41,6 +41,29 @@ class ToyData(DataSet):
         self.n_datapoints = self.X.shape[0]
 
 
+class BarsData(DataSet):
+    def __init__(self, which_set='train', n_datapoints=1000, D=5):
+        _logger.debug("generating bars data")
+
+        n_vis = D**2
+        n_hid = 2*D
+        bar_prob = 1./n_hid
+        
+        X = np.zeros((n_datapoints, D, D), dtype=np.float32)
+        Y = 1. * (np.random.uniform(size=(n_datapoints, n_hid)) < bar_prob)
+
+        for n in xrange(n_datapoints):
+            for d in xrange(D):
+                if Y[n,d] > 0.5:
+                    X[n,d,:] = 1.0
+                if Y[n,D+d] > 0.5:
+                    X[n,:,d] = 1.0
+
+        self.X = X.reshape((n_datapoints, n_vis)).astype(np.float32)
+        self.Y = Y.astype(np.float32)
+        self.n_datapoints = n_datapoints
+          
+
 class MNIST(DataSet):
     def __init__(self, which_set='train', fname="mnist.pkl.gz"):
         _logger.info("loading MNIST data")
