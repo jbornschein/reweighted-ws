@@ -44,36 +44,47 @@ class Experiment(object):
         self.param_fname = fname
         execfile(fname, self.params)
 
-    def setup_output_dir(self, exp_name=None):
+    def setup_output_dir(self, exp_name=None, with_suffix=True):
         if exp_name is None:
             # Determine experiment name
             if self.param_fname:
                 exp_name = self.param_fname
             else:
                 exp_name = sys.argv[0]
-
-        # Determine suffix
-        if 'PBS_JOBID' in os.environ:
-            job_no = os.environ['PBS_JOBID'].split('.')[0]   # Job Number
-            suffix = "d"+job_no
-        elif 'SLURM_JOBID' in os.environ:
-            job_no = os.environ['SLURM_JOBID']
-            suffix = "d"+job_no
+ 
+        if with_suffix:
+            # Determine suffix
+            if 'PBS_JOBID' in os.environ:
+                job_no = os.environ['PBS_JOBID'].split('.')[0]   # Job Number
+                suffix = "d"+job_no
+            elif 'SLURM_JOBID' in os.environ:
+                job_no = os.environ['SLURM_JOBID']
+                suffix = "d"+job_no
+            else:
+                suffix = time.strftime("%Y-%m-%d-%H-%M")
+    
+            if not with_suffix:
+                suffix = "-"
+    
+            suffix_counter = 0
+            dirname = "output/%s.%s" % (exp_name, suffix)
+            while True:
+                try:
+                   os.makedirs(dirname)
+                except OSError, e:
+                    if e.errno != errno.EEXIST:
+                        raise e
+                    suffix_counter += 1
+                    dirname = "output/%s.%s+%d" % (exp_name, suffix, suffix_counter)
+                else:
+                    break
         else:
-            suffix = time.strftime("%Y-%m-%d-%H-%M")
-
-        suffix_counter = 0
-        dirname = "output/%s.%s" % (exp_name, suffix)
-        while True:
+            dirname = "output/%s" % (exp_name)
             try:
-               os.makedirs(dirname)
+                os.makedirs(dirname)
             except OSError, e:
                 if e.errno != errno.EEXIST:
                     raise e
-                suffix_counter += 1
-                dirname = "output/%s.%s+%d" % (exp_name, suffix, suffix_counter)
-            else:
-                break
                 
         out_dir = dirname+"/"
         self.out_dir = out_dir

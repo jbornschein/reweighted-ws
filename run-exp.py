@@ -25,6 +25,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--verbose', '-v', action='count')
+    parser.add_argument('--overwrite', action='store_true')
     parser.add_argument('param_file')
     args = parser.parse_args()
 
@@ -35,7 +36,7 @@ if __name__ == "__main__":
     print "== Starting experiment: %s" % args.param_file
 
     experiment = Experiment.from_param_file(args.param_file)
-    experiment.setup_output_dir(args.param_file)
+    experiment.setup_output_dir(args.param_file, with_suffix=(not args.overwrite))
     experiment.setup_logging()
     experiment.setup_experiment()
 
