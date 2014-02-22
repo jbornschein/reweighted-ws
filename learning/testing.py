@@ -5,7 +5,7 @@ import theano
 import theano.tensor as T
 
 theano.config.exception_verbosity = 'high'
-theano.config.compute_test_value = 'raise'
+theano.config.compute_test_value = 'warn'
 
 floatX = theano.config.floatX
 

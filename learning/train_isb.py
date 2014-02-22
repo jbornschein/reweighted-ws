@@ -20,16 +20,20 @@ from training import Trainer
 _logger = logging.getLogger(__name__)
 
 class TrainISB(Trainer):
-    def __init__(self, batch_size=100, learning_rate=1., momentum=True, beta=.95):  
+    def __init__(self, batch_size=100, learning_rate=1., momentum=True, beta=.95, 
+                calc_Lp_true=False):
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         self.momentum = False
         self.beta = beta
+
+        self.calc_Lp_true = calc_Lp_true
     
         self.model = None
         self.data_train = None
         self.data_valid = None
         self.data_test = None
+
     
     def set_model(self, model):
         self.model = model
@@ -110,6 +114,19 @@ class TrainISB(Trainer):
                             on_unused_input='warn')
 
         #---------------------------------------------------------------------
+        if self.calc_Lp_true:
+            _logger.info("compiling true_loglikelihood")
+            Lp_true = model.f_true_loglikelihood(self.train_X)
+            Lp_true = T.mean(Lp_true)
+
+            self.do_true_LL  = theano.function(
+                                inputs=[],
+                                outputs=Lp_true, 
+                                name="true_LL",
+                                allow_input_downcast=True,
+                                on_unused_input='warn')
+
+        #---------------------------------------------------------------------
         #_logger.debug("compiling f_loglikelihood")
         #
         #X = T.fmatrix('X')
@@ -151,11 +168,17 @@ class TrainISB(Trainer):
             dlog.append("L_step",  total_Lp)
             dlog.append("Lp_step", total_Lq)
             dlog.append("Lq_step", total_Lq)
-        t = time()-t0
         Lp_epoch /= n_batches
         Lq_epoch /= n_batches
         
         _logger.info("LogLikelihoods: Lp=%f \t Lq=%f" % (Lp_epoch, Lq_epoch))
+
+        if self.calc_Lp_true:
+            Lp_true = self.do_true_LL()
+            _logger.info(" with Lp_true=%f " % (Lp_true))
+            dlog.append("Lp_true", Lp_true)
+
+        t = time()-t0
         _logger.info("Runtime: %5.2f s/epoch; %f ms/(SGD step)" % (t, t/n_batches*1000))
         return Lp_epoch
 

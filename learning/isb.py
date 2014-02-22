@@ -21,12 +21,21 @@ floatX = theano.config.floatX
 theano.config.exception_verbosity = 'high'
 theano_rng = RandomStreams(seed=2341)
 
+def gen_binary_matrix(n_bits):
+    n_bits = int(n_bits)
+    rows = 2**n_bits
+    M = np.zeros((rows, n_bits), dtype=floatX)
+    for i in xrange(rows):
+        for j in xrange(n_bits):
+            if i & (1 << j): 
+                M[i,7-j] = 1.
+    return M
+
 def f_replicate_batch(X, repeat):
     X_ = X.dimshuffle((0, 'x', 1))
     X_ = X_ + T.zeros((X.shape[0], repeat, X.shape[1]), dtype=floatX)
     X_ = X_.reshape( [X_.shape[0]*repeat, X.shape[1]] )
     return X_
-
 
 class ISB(Model):
     def __init__(self, **hyper_params):
@@ -104,13 +113,35 @@ class ISB(Model):
         w = T.exp(lP-lQ-lPx) 
         #w = Print('w')(w)
 
-        #print "lP:  ", lP.tag.test_value.shape
-        #print "lQ:  ", lQ.tag.test_value.shape
-        #print "H:   ", w.tag.test_value.shape
-        #print "lPx: ", lPx.tag.test_value.shape
-        #print "w:   ", w.tag.test_value.shape
-
         return lP, lQ, H, w
+
+    def f_true_loglikelihood(self, X):
+        """ compute the true log-posterior of the datapoints in X
+            using a full binary matrix. Will only work for n_hid << 20 
+        """
+        n_vis, n_hid, n_qhid = self.get_hyper_params(['n_vis', 'n_hid', 'n_qhid'])
+
+        if n_hid > 20:
+            _logger.error("You should not call f_true_loglikelihood with n_hid >> 15"
+                            " but n_hid=%d" %  n_hid)
+
+        H_all = gen_binary_matrix(n_hid)
+        H_all = theano.shared(H_all, name='H_all')
+
+        def one_iter(X_i):
+            lP = self.f_p(X_i, H_all)
+            lP_max = T.max(lP)
+            lP = T.log(T.sum(T.exp(lP-lP_max)))+lP_max
+            return lP
+
+        post, updates = unrolled_scan(
+                    fn=one_iter,
+                    sequences=[X],
+                    outputs_info=None, #[a_init],
+                    unroll=self.unroll_scan
+                )
+        return post
+
 
     #------------------------ P ---------------------------------------------
     def f_p(self, X, H):
@@ -149,12 +180,8 @@ class ISB(Model):
         n_vis, n_hid, n_qhid = self.get_hyper_params(['n_vis', 'n_hid', 'n_qhid'])
         b, c, W, V, Ub, Uc = self.get_model_params(['Q_b', 'Q_c', 'Q_W', 'Q_V', 'Q_Ub', 'Q_Uc'])
 
-        H_ = np.zeros((256, 8), dtype=floatX)
-        for i in xrange(256):
-            for j in xrange(8):
-                if i & (1 << j): 
-                    H_[i,7-j] = 1.
-        
+        H_ = gen_binary_matrix(n_hid)
+       
         batch_size = 1 # X.shape[0] // 256
 
         #H_ = f_replicate_batch(theano.shared(H_), batch_size)
@@ -193,7 +220,6 @@ class ISB(Model):
                     outputs_info=[a_init, vis_init, post_init],
                     unroll=self.unroll_scan
                 )
-
         return vis.T, post[-1,:]
 
 

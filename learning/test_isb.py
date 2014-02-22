@@ -11,11 +11,13 @@ import testing
 from isb import ISB, f_replicate_batch
 
 params = {
-    'n_vis'     : 16, 
-    'n_hid'     : 32,
-    'n_qhid'    : 16,
+    'n_vis'     : 8, 
+    'n_hid'     : 8,
+    'n_qhid'    : 8,
     'n_samples' : 10
 }
+
+
 
 def test_constructor():
     model = ISB(**params)
@@ -96,20 +98,21 @@ def test_loglikelihood():
 
     print
     print "lP.shape: ", lP_.shape
-    print "lP.shape: ", lQ_.shape
+    print "lQ.shape: ", lQ_.shape
     print "H.shape:  ", H_.shape
     print "w.shape:  ", w_.shape
 
+def test_true_loglikelihood():
+    N = 20
+    model = ISB(**params)
 
-#def test_sample():
-#    model = CNADE(**params)
-#
-#    Y = T.fmatrix('Y')
-#    X = model.f_sample(Y)
-#    
-#    do_sample = theano.function([Y], X, name='sample')
-#
-#    # Now, actual values!
-#    Y = np.zeros( (model.batch_size, model.n_cond), dtype=np.float32 )
-#    X = do_sample(Y)
-#
+    X, Xv = testing.fmatrix( (N, model.n_vis), name="X")
+
+    lP = model.f_true_loglikelihood(X)
+    do_true_loglikelihood = theano.function([X], [lP], name='true_loglikelihood')
+
+    lPv, = do_true_loglikelihood(Xv)
+
+    print "lP.shape: ", lPv.shape
+    assert lPv.shape == (N,)
+
