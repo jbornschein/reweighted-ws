@@ -35,6 +35,7 @@ class TrainISB(Trainer):
     def set_data(self, data_train=None, data_valid=None, data_test=None):
         if data_train is not None:
             self.data_train = data_train
+            
             self.train_X = theano.shared(data_train.X, "train_X")
             self.train_Y = theano.shared(data_train.Y, "train_Y")
 
@@ -59,56 +60,101 @@ class TrainISB(Trainer):
         X_batch = self.train_X[first:last]
         Y_batch = self.train_Y[first:last]
         
+        Lp, Lq, H, w = model.f_loglikelihood(X_batch, Y_batch)
 
-        Lp, Lq = model.f_loglikelihood(X_batch, Y_batch)
-        total_Lp = T.mean(Lp)
-        total_Lq = T.mean(Lq)
+        #w = Print('w')(w)
+        total_Lp = T.sum(T.sum(Lp*w, axis=1))
+        total_Lq = T.sum(T.sum(Lq*w, axis=1))
 
         updates = OrderedDict()
-        for p in model.get_model_params().itervalues():
-            updates[p] = p + learning_rate * T.grad(total_Lp, p)
-            updates[p] = p + learning_rate * T.grad(total_Lq, p)
+        for pname in model.P_params:
+            p = model.get_model_param(pname)
 
-        self.f_sgd_step = theano.function(  
+            dTheta_old = theano.shared(p.get_value()*0., name=("dLp/d%s_old"%pname))
+            updates[dTheta_old] = dTheta_old
+
+            curr_grad = learning_rate*T.grad(total_Lp, p, consider_constant=[w])
+
+            dTheta = beta*updates[dTheta_old] + (1-beta)*curr_grad
+
+            updates[dTheta_old] = dTheta
+            updates[p] = p + dTheta
+            
+        for pname in model.Q_params:
+            p = model.get_model_param(pname)
+
+            dTheta_old = theano.shared(p.get_value()*0., name=("dLq/d%s_old"%pname))
+            updates[dTheta_old] = dTheta_old
+
+            curr_grad = learning_rate*T.grad(total_Lq, p, consider_constant=[w])
+
+            dTheta = beta*updates[dTheta_old] + (1-beta)*curr_grad
+
+            updates[dTheta_old] = dTheta
+            updates[p] = p + dTheta
+ 
+
+        #!!!!
+        total_Lp = total_Lp / self.batch_size
+        total_Lq = total_Lq / self.batch_size
+
+        self.do_sgd_step = theano.function(  
                             inputs=[batch_idx, learning_rate], 
-                            outputs=total_LL,
+                            outputs=[total_Lp, total_Lq], #, Lp, Lq, w],
                             updates=updates,
-                            name="f_sgd_step",
-                            allow_input_downcast=True)
+                            name="sgd_step",
+                            allow_input_downcast=True,
+                            on_unused_input='warn')
 
         #---------------------------------------------------------------------
-        _logger.debug("compiling f_loglikelihood")
-
-        X = T.fmatrix('X')
-        Y = T.fmatrix('Y')
-
-        LL = model.f_loglikelihood(X, Y)
-        total_LL = T.mean(LL)
-
-        self.f_loglikelihood = theano.function(
-                            inputs=[X, Y], 
-                            outputs=[total_LL, LL],
-                            name="f_loglikelihood",
-                            allow_input_downcast=True)
+        #_logger.debug("compiling f_loglikelihood")
+        #
+        #X = T.fmatrix('X')
+        #
+        #Lp, Lq, H, w = model.f_loglikelihood(X)
+        #total_LL = T.mean(T.sum(Lp*w, axis=1))
+        #
+        #self.f_loglikelihood = theano.function(
+        #                    inputs=[X], 
+        #                    outputs=[total_LL, Lp*w],
+        #                    name="f_loglikelihood",
+        #                    allow_input_downcast=True)
 
     def perform_epoch(self):
+        model = self.model
         learning_rate = self.learning_rate
 
         n_batches = self.data_train.n_datapoints // self.batch_size
 
         t0 = time()
-        LL_epoch = 0
+        Lp_epoch = 0
+        Lq_epoch = 0
         for batch_idx in xrange(n_batches):
-            LL = self.f_sgd_step(batch_idx, learning_rate)
-            LL_epoch += LL
+            #total_Lp, total_Lq, Lp, Lq, w = self.do_sgd_step(batch_idx, learning_rate)
+            total_Lp, total_Lq, = self.do_sgd_step(batch_idx, learning_rate)
 
-            _logger.info("SGD step (%4d of %4d)\tLL=%f" % (batch_idx, n_batches, LL))
-            dlog.append("L_step", LL)
+            #assert np.isfinite(w).all()
+            #assert np.isfinite(Lp).all()
+            #assert np.isfinite(Lq).all()
+            assert np.isfinite(total_Lp)
+            assert np.isfinite(total_Lq)
+            Lp_epoch += total_Lp
+            Lq_epoch += total_Lq
+
+            for name, p in model.get_model_params().iteritems():
+                assert np.isfinite(p.get_value()).all(), "%s contains NaN or infs" % name
+
+            _logger.debug("SGD step (%4d of %4d)\tLp=%f Lq=%f" % (batch_idx, n_batches, total_Lp, total_Lq))
+            dlog.append("L_step",  total_Lp)
+            dlog.append("Lp_step", total_Lq)
+            dlog.append("Lq_step", total_Lq)
         t = time()-t0
-        LL_epoch /= n_batches
+        Lp_epoch /= n_batches
+        Lq_epoch /= n_batches
         
-        _logger.info("Time per epoch %f s; %f ms per SGD step" % (t, t/n_batches*1000))
-        return LL_epoch
+        _logger.info("LogLikelihoods: Lp=%f \t Lq=%f" % (Lp_epoch, Lq_epoch))
+        _logger.info("Runtime: %5.2f s/epoch; %f ms/(SGD step)" % (t, t/n_batches*1000))
+        return Lp_epoch
 
 #    def evaluate_loglikelihood(self, data):
 #        total_LL, LL = self.f_loglikelihood(data)

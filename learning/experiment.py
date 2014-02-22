@@ -98,7 +98,7 @@ class Experiment(object):
 
         results_fname = os.path.join(self.out_dir, "results.h5")
         dlog.set_handler("*", StoreToH5, results_fname)
-        dlog.set_handler(["L", "L_sgd"], TextPrinter)
+        #dlog.set_handler(["L", "L_sgd"], TextPrinter)
         
     def setup_experiment(self):
         params = self.params
@@ -134,6 +134,8 @@ class Experiment(object):
         epoch = 0
         LL = []
         while continue_learning:
+            epoch = epoch + 1
+            _logger.info("Performing epoch %d..." % epoch)
             L = trainer.perform_epoch()
                 
             dlog.append("L", L)

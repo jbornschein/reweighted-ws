@@ -30,7 +30,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 
-    logging.basicConfig(level=logging.INFO)
+    FORMAT = '%(module)-15s %(message)s'
+    logging.basicConfig(format=FORMAT, level=logging.INFO)
 
     print "="*77
     print "== Starting experiment: %s" % args.param_file
