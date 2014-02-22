@@ -16,12 +16,14 @@ from utils.unrolled_scan import unrolled_scan
 
 _logger = logging.getLogger(__name__)
 
+floatX = theano.config.floatX
+
 theano.config.exception_verbosity = 'high'
 theano_rng = RandomStreams(seed=2341)
 
 def f_replicate_batch(X, repeat):
     X_ = X.dimshuffle((0, 'x', 1))
-    X_ = X_ + T.zeros((X.shape[0], repeat, X.shape[1]), dtype='float32')
+    X_ = X_ + T.zeros((X.shape[0], repeat, X.shape[1]), dtype=floatX)
     X_ = X_.reshape( [X_.shape[0]*repeat, X.shape[1]] )
     return X_
 
@@ -134,11 +136,11 @@ class ISB(Model):
 
         # samples hiddens
         p_hid = self.f_sigmoid(a)
-        H = T.cast(theano_rng.uniform((n_samples, n_hid)) <= p_hid, dtype='float32')
+        H = T.cast(theano_rng.uniform((n_samples, n_hid)) <= p_hid, dtype=floatX)
 
         # sample visible given hiddens
         p_vis = self.f_sigmoid(T.dot(H, W) + b)
-        X = T.cast(theano_rng.uniform((n_samples, n_vis)) <= p_vis, dtype='float32')
+        X = T.cast(theano_rng.uniform((n_samples, n_vis)) <= p_vis, dtype=floatX)
 
         return H, X
 
@@ -147,7 +149,7 @@ class ISB(Model):
         n_vis, n_hid, n_qhid = self.get_hyper_params(['n_vis', 'n_hid', 'n_qhid'])
         b, c, W, V, Ub, Uc = self.get_model_params(['Q_b', 'Q_c', 'Q_W', 'Q_V', 'Q_Ub', 'Q_Uc'])
 
-        H_ = np.zeros((256, 8), dtype='float32')
+        H_ = np.zeros((256, 8), dtype=floatX)
         for i in xrange(256):
             for j in xrange(8):
                 if i & (1 << j): 
@@ -172,20 +174,22 @@ class ISB(Model):
         c_cond = c + T.dot(cond, Uc)    # shape (batch, n_hid)
 
         a_init    = c_cond
-        post_init = T.zeros([batch_size], dtype=np.float32)
-        vis_init  = T.zeros([batch_size], dtype=np.float32)
+        post_init = T.zeros([batch_size], dtype=floatX)
+        vis_init  = T.zeros([batch_size], dtype=floatX)
+        urand     = theano_rng.uniform([n_hid, batch_size])  # uniform random numbers
 
-        def one_iter(Wi, Vi, bi, a, vis_i, post):
+        def one_iter(Wi, Vi, bi, urand_i, a, vis_i, post):
             hid  = self.f_sigmoid(a)
             pi   = self.f_sigmoid(T.dot(hid, Vi) + bi)
-            vis_i = 1.*(theano_rng.uniform([batch_size]) <= pi)
-            post  = post + vis_i*T.log(pi) + (1-vis_i)*T.log(1-pi)
+            vis_i = 1.*(urand_i <= pi)
+            #post  = T.cast(post + vis_i*T.log(pi) + (1-vis_i)*T.log(1-pi), dtype=floatX)
+            post  = post + T.log(vis_i*pi + (1-vis_i)*(1-pi))
             a     = a + T.outer(vis_i, Wi)
             return a, vis_i, post
 
         [a, vis, post], updates = unrolled_scan(
                     fn=one_iter,
-                    sequences=[W, V.T, b_cond.T], 
+                    sequences=[W, V.T, b_cond.T, urand], 
                     outputs_info=[a_init, vis_init, post_init],
                     unroll=self.unroll_scan
                 )
@@ -204,13 +208,13 @@ class ISB(Model):
         c_cond = c + T.dot(cond, Uc)    # shape (batch, n_hid)
     
         a_init    = c_cond
-        post_init = T.zeros([batch_size], dtype=np.float32)
+        post_init = T.zeros([batch_size], dtype=floatX)
 
         def one_iter(vis_i, Wi, Vi, bi, a, post):
             hid  = self.f_sigmoid(a)
             pi   = self.f_sigmoid(T.dot(hid, Vi) + bi)
-            #post = post + T.cast(T.log(pi*vis_i + (1-pi)*(1-vis_i)), dtype='float32')
-            post = post + vis_i*T.log(pi) + (1-vis_i)*T.log(1-pi)
+            post = post + T.cast(T.log(pi*vis_i + (1-pi)*(1-vis_i)), dtype=floatX)
+            #post = post + vis_i*T.log(pi) + (1-vis_i)*T.log(1-pi)
             a    = a + T.outer(vis_i, Wi)
             return a, post
 

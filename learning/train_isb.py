@@ -12,6 +12,7 @@ import numpy as np
 
 import theano 
 import theano.tensor as T
+from theano.printing import Print
 
 from utils.datalog import dlog, StoreToH5, TextPrinter
 from training import Trainer

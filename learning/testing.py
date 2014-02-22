@@ -7,6 +7,8 @@ import theano.tensor as T
 theano.config.exception_verbosity = 'high'
 theano.config.compute_test_value = 'raise'
 
+floatX = theano.config.floatX
+
 
 def iscalar(name=None):
     Av = 1
@@ -27,7 +29,7 @@ def ivector(size, name=None):
     return A, Av
 
 def fvector(size, name=None):
-    Av = np.zeros(size, dtype=np.float32)
+    Av = np.zeros(size, dtype=floatX)
     A  = T.fscalar(name=name)
     A.tag.test_value = Av
     return A, Av
@@ -39,7 +41,7 @@ def imatrix(shape, name=None):
     return A, Av
 
 def fmatrix(shape, name=None):
-    Av = np.zeros(shape, dtype=np.float32)
+    Av = np.zeros(shape, dtype=floatX)
     A  = T.fmatrix(name=name)
     A.tag.test_value = Av
     return A, Av
