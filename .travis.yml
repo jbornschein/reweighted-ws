@@ -19,4 +19,4 @@ install:
 
 # run tests
 script: 
-  - nosetests -v
+  - THEANO_FLAGS="floatX=float32" nosetests -v
