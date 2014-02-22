@@ -20,9 +20,11 @@ from training import Trainer
 _logger = logging.getLogger(__name__)
 
 class TrainISB(Trainer):
-    def __init__(self, batch_size=100, learning_rate=1.):  
+    def __init__(self, batch_size=100, learning_rate=1., momentum=True, beta=.95):  
         self.batch_size = batch_size
         self.learning_rate = learning_rate
+        self.momentum = False
+        self.beta = beta
     
         self.model = None
         self.data_train = None
@@ -48,6 +50,7 @@ class TrainISB(Trainer):
     def compile(self):
         """ Theano-compile neccessary functions """
         model = self.model
+        beta = self.beta 
 
         #---------------------------------------------------------------------
         _logger.info("compiling f_sgd_step")
