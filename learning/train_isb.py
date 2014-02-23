@@ -163,13 +163,14 @@ class TrainISB(Trainer):
     def calc_test_LL(self):
         t0 = time()
         n_test = 1000
+        batch_size = 100
         for spl in self.recalc_LL:
             if spl == 'exact':
                 Lp_recalc = self.do_exact_LL()
             else:
                 Lp_recalc = 0.
                 Lq_recalc = 0.
-                for batch_idx in xrange(n_test // self.batch_size ):
+                for batch_idx in xrange(n_test // batch_size):
                     Lp, Lq = self.do_likelihood(batch_idx, spl) 
                     Lp_recalc += Lp
                     Lq_recalc += Lq
