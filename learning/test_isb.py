@@ -91,8 +91,8 @@ def test_loglikelihood():
 
     X, X_ = testing.fmatrix( (N, model.n_vis), name="X")
 
-    lP, lQ, H, w = model.f_loglikelihood(X)
-    do_loglikelihood = theano.function([X], [lP, lQ, H, w], name='loglikelihood')
+    lP, lQ, lPx, lQx, H, w = model.f_loglikelihood(X)
+    do_loglikelihood = theano.function([X], [lP, lQ, lPx, lQx, H, w], name='loglikelihood')
 
     lP_, lQ_, lPx_, lQx, H_, w_ = do_loglikelihood(X_)
 
@@ -108,10 +108,10 @@ def test_true_loglikelihood():
 
     X, Xv = testing.fmatrix( (N, model.n_vis), name="X")
 
-    lP = model.f_true_loglikelihood(X)
-    do_true_loglikelihood = theano.function([X], [lP], name='true_loglikelihood')
+    lP = model.f_exact_loglikelihood(X)
+    do_exact_loglikelihood = theano.function([X], [lP], name='true_loglikelihood')
 
-    lPv, = do_true_loglikelihood(Xv)
+    lPv, = do_exact_loglikelihood(Xv)
 
     print "lP.shape: ", lPv.shape
     assert lPv.shape == (N,)
