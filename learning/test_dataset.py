@@ -1,5 +1,7 @@
 import unittest
 
+import numpy as np
+
 # unit under test
 from dataset import *
 
@@ -50,3 +52,39 @@ def test_datasets():
             else:
                 yield a_check, data
  
+#-----------------------------------------------------------------------------
+
+def test_FromModel():
+    from isb import ISB
+    D = 5
+    n_vis = D**2
+    n_hid = 2*D
+
+    # Ground truth params
+    W_bars = np.zeros([n_hid, D, D])
+    for d in xrange(D):
+        W_bars[  d, d, :] = 4.
+        W_bars[D+d, :, d] = 4.
+    W_bars = W_bars.reshape( (n_hid, n_vis) )
+    P_a = -np.log(D/2-1)*np.ones(n_hid)
+    P_b = -2*np.ones(n_vis)
+    
+    # Instantiate model...
+    model_params = {
+        "n_vis":  n_vis,
+        "n_hid":  n_hid,
+    }
+    model = ISB(**model_params)
+    model.set_model_param('P_W', W_bars)
+    model.set_model_param('P_a', P_a)
+    model.set_model_param('P_b', P_b)
+    
+    # ...and generate data
+    n_datapoints = 1000
+    data = FromModel(model=model, n_datapoints=n_datapoints)
+    
+    assert data.X.shape == (n_datapoints, n_vis)
+    
+    yield check_dtype, data
+    yield check_range, data
+

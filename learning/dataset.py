@@ -10,11 +10,16 @@ import gzip
 
 import numpy as np
 
+import theano
+import theano.tensor as T
+
 _logger = logging.getLogger(__name__)
 
 class DataSet(object):
     pass
 
+
+#-----------------------------------------------------------------------------
 class ToyData(DataSet):
     def __init__(self, which_set='train'):
         _logger.info("generating toy data")
@@ -40,7 +45,7 @@ class ToyData(DataSet):
         
         self.n_datapoints = self.X.shape[0]
 
-
+#-----------------------------------------------------------------------------
 class BarsData(DataSet):
     def __init__(self, which_set='train', n_datapoints=1000, D=5):
         _logger.debug("generating bars data")
@@ -62,8 +67,8 @@ class BarsData(DataSet):
         self.X = X.reshape((n_datapoints, n_vis)).astype(np.float32)
         self.Y = Y.astype(np.float32)
         self.n_datapoints = n_datapoints
-          
 
+#-----------------------------------------------------------------------------
 class MNIST(DataSet):
     def __init__(self, which_set='train', fname="mnist.pkl.gz"):
         _logger.info("loading MNIST data")
@@ -98,6 +103,39 @@ class MNIST(DataSet):
 
         return x.astype('float32'), one_hot.astype('float32')
 
+#-----------------------------------------------------------------------------
+class FromModel(DataSet):
+    def __init__(self, model, n_datapoints=10000):
+        batch_size = 100
+    
+        n_samples = T.iscalar('n_samples')
+        H, X = model.f_p_sample(n_samples)
+
+        do_sample = theano.function(
+                        inputs=[n_samples], 
+                        outputs=[H, X],
+                        name='sample_p')
+
+        n_vis = model.n_vis
+        n_hid = model.n_hid
+
+        X = np.empty( (n_datapoints, n_vis), dtype=np.float32)
+        Y = np.empty( (n_datapoints, n_hid), dtype=np.float32)
+
+        for b in xrange(n_datapoints//batch_size):
+            first = b*batch_size
+            last  = first + batch_size
+            Y[first:last], X[first:last] = do_sample(batch_size)
+        remain = n_datapoints % batch_size
+        if remain > 0:
+            Y[last:], X[last:] = do_sample(remain)
+        
+        self.n_datapoints = n_datapoints
+        self.X = X
+        self.Y = Y
+        
+
+#-----------------------------------------------------------------------------
 def permute_cols(x, idx=None):
     if isinstance(x, list) or isinstance(x, tuple):
         if idx is None:
