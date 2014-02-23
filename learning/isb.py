@@ -37,6 +37,11 @@ def f_replicate_batch(X, repeat):
     X_ = X_.reshape( [X_.shape[0]*repeat, X.shape[1]] )
     return X_
 
+def f_logsumexp(A, axis=None):
+    A_max = T.max(A, axis=axis, keepdims=True)
+    B = T.log(T.sum(T.exp(A-A_max), axis=axis, keepdims=True))+A_max
+    return B
+
 class ISB(Model):
     def __init__(self, **hyper_params):
         super(ISB, self).__init__()
@@ -71,9 +76,12 @@ class ISB(Model):
         else:
             return T.nnet.sigmoid(x)
 
-    def f_loglikelihood(self, X, Y=None):
-        n_hid, n_samples = self.get_hyper_params(['n_hid', 'n_samples'])
+    def f_loglikelihood(self, X, Y=None, n_samples=None):
+        n_hid, = self.get_hyper_params(['n_hid'])
         #b, c, W, V, Ub, Uc = self.get_model_params(['b', 'c', 'W', 'V', 'Ub', 'Uc'])
+
+        if n_samples == None:
+            n_samples = self.n_samples
 
         batch_size = X.shape[0]
 
@@ -90,33 +98,26 @@ class ISB(Model):
         # Calculate log P(X, H)
         lP = self.f_p(X, H)
 
-        def logsumexp1(A):
-            A = A.reshape( (batch_size, n_samples) )
-            A_max = T.max(A, axis=1)
-            A_ = A - T.shape_padright(A_max)
-            A = T.log(T.sum(T.exp(A_), axis=1))
-            A = A + A_max
-            return T.shape_padright(A)
-
-        # Approximate log P(X)
-        lPx = logsumexp1(lP-lQ)
+        H   =  H.reshape( (batch_size, n_samples, n_hid) )
+        lP  = lP.reshape( (batch_size, n_samples) )
+        lQ  = lQ.reshape( (batch_size, n_samples) )
 
         #lP  = Print('lP')(lP)
         #lPx = Print('lPx')(lPx)
 
-        H   =  H.reshape( (batch_size, n_samples, n_hid) )
-        lP  = lP.reshape( (batch_size, n_samples) )
-        lQ  = lQ.reshape( (batch_size, n_samples) )
-        #lQl = lQl.reshape( (batch_size, n_samples) )
+        # Approximate log P(X)
+        lPx = f_logsumexp(lP-lQ, axis=1)-T.log(n_samples)
+        lQx = f_logsumexp(lQ, axis=1)
+        #lPx = T.minimum(lPx, 0.0)
 
         # calc. sampling weights
-        w = T.exp(lP-lQ-lPx) 
+        w = T.exp(lP-lQ-lPx-T.log(n_samples))
         #w = Print('w')(w)
 
-        return lP, lQ, H, w
+        return lP, lQ, lPx, lQx, H, w
 
-    def f_true_loglikelihood(self, X):
-        """ compute the true log-posterior of the datapoints in X
+    def f_exact_loglikelihood(self, X):
+        """ compute the exact log-posterior of the datapoints in X
             using a full binary matrix. Will only work for n_hid << 20 
         """
         n_vis, n_hid, n_qhid = self.get_hyper_params(['n_vis', 'n_hid', 'n_qhid'])
@@ -180,14 +181,17 @@ class ISB(Model):
         n_vis, n_hid, n_qhid = self.get_hyper_params(['n_vis', 'n_hid', 'n_qhid'])
         b, c, W, V, Ub, Uc = self.get_model_params(['Q_b', 'Q_c', 'Q_W', 'Q_V', 'Q_Ub', 'Q_Uc'])
 
-        H_ = gen_binary_matrix(n_hid)
-       
+        #assert self.batch_size == 1
         batch_size = 1 # X.shape[0] // 256
 
+        rows = 2**n_hid
+        H_ = gen_binary_matrix(n_hid)
+        Q_ = np.log(np.ones(rows)/rows)
+
         #H_ = f_replicate_batch(theano.shared(H_), batch_size)
-        H_ = theano.shared(H_)
-        Q_ = theano.shared((np.ones(256*batch_size)/256))
-        return H_, Q_
+        H = theano.shared(H_, name='H_flat')
+        Q = theano.shared(Q_, name='Q_flat')
+        return H, Q
 
     def f_q_sample(self, X):
         n_vis, n_hid, n_qhid = self.get_hyper_params(['n_vis', 'n_hid', 'n_qhid'])

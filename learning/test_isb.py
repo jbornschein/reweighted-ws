@@ -94,7 +94,7 @@ def test_loglikelihood():
     lP, lQ, H, w = model.f_loglikelihood(X)
     do_loglikelihood = theano.function([X], [lP, lQ, H, w], name='loglikelihood')
 
-    lP_, lQ_, H_, w_ = do_loglikelihood(X_)
+    lP_, lQ_, lPx_, lQx, H_, w_ = do_loglikelihood(X_)
 
     print
     print "lP.shape: ", lP_.shape

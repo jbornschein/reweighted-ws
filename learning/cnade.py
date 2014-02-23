@@ -15,7 +15,8 @@ from utils.unrolled_scan import unrolled_scan
 
 _logger = logging.getLogger(__name__)
 
-#theano.config.compute_test_value = 'warn'
+
+
 theano.config.exception_verbosity = 'high'
 theano_rng = RandomStreams(seed=2341)
 
