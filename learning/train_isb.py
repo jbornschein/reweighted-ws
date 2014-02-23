@@ -114,8 +114,9 @@ class TrainISB(Trainer):
         if len(self.recalc_LL) > 0:
             _logger.info("compiling do_loglikelihood")
             batch_size = 100
-            n_samples = T.iscalar('n_samples')
-            batch_idx = T.iscalar('batch_idx')
+            batch_idx  = T.iscalar('batch_idx')
+            batch_size = T.iscalar('batch_idx')
+            n_samples  = T.iscalar('n_samples')
     
             first = batch_idx*batch_size
             last  = first + batch_size
@@ -126,7 +127,7 @@ class TrainISB(Trainer):
             total_Lq = T.sum(lQx)
 
             self.do_likelihood = theano.function(  
-                            inputs=[batch_idx, n_samples], 
+                            inputs=[batch_idx, batch_size, n_samples], 
                             outputs=[total_Lp, total_Lq], #, Lp, Lq, w],
                             name="do_likelihood",
                             allow_input_downcast=True,
@@ -162,8 +163,8 @@ class TrainISB(Trainer):
 
     def calc_test_LL(self):
         t0 = time()
-        n_test = 1000
-        batch_size = 100
+        n_test = min(5000, self.data_train.n_datapoints)
+        batch_size = 1000
         for spl in self.recalc_LL:
             if spl == 'exact':
                 Lp_recalc = self.do_exact_LL()
@@ -171,7 +172,7 @@ class TrainISB(Trainer):
                 Lp_recalc = 0.
                 Lq_recalc = 0.
                 for batch_idx in xrange(n_test // batch_size):
-                    Lp, Lq = self.do_likelihood(batch_idx, spl) 
+                    Lp, Lq = self.do_likelihood(batch_idx, batch_size, spl) 
                     Lp_recalc += Lp
                     Lq_recalc += Lq
                 Lp_recalc  /= n_test
