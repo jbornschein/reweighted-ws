@@ -133,6 +133,7 @@ class Experiment(object):
         continue_learning = True
         epoch = 0
         LL = []
+        trainer.calc_test_LL()
         while continue_learning:
             epoch = epoch + 1
             _logger.info("Performing epoch %d..." % epoch)
@@ -140,6 +141,9 @@ class Experiment(object):
                 
             dlog.append("L", L)
             self.dlog_model_params()
+
+            #
+            trainer.calc_test_LL()
 
             # Converged?
             continue_learning = termination.continue_learning(L)

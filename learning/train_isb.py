@@ -160,6 +160,27 @@ class TrainISB(Trainer):
         #                    name="f_loglikelihood",
         #                    allow_input_downcast=True)
 
+    def calc_test_LL(self):
+        t0 = time()
+        n_test = 1000
+        for spl in self.recalc_LL:
+            if spl == 'exact':
+                Lp_recalc = self.do_exact_LL()
+            else:
+                Lp_recalc = 0.
+                Lq_recalc = 0.
+                for batch_idx in xrange(n_test // self.batch_size ):
+                    Lp, Lq = self.do_likelihood(batch_idx, spl) 
+                    Lp_recalc += Lp
+                    Lq_recalc += Lq
+                Lp_recalc  /= n_test
+                Lq_recalc  /= n_test
+                
+            _logger.info("Test LL with %s samples: Lp_%s=%f " % (spl, spl, Lp_recalc))
+            dlog.append("Lp_%s"%spl, Lp_recalc)
+        t = time()-t0
+        _logger.info("Calculating test LL took %f s"%t)
+
     def perform_epoch(self):
         model = self.model
         learning_rate = self.learning_rate
@@ -193,23 +214,6 @@ class TrainISB(Trainer):
         Lq_epoch  /= n_batches*batch_size
         
         _logger.info("LogLikelihoods: Lp=%f \t \t Lq=%f" % (Lp_epoch, Lq_epoch))
-
-        for spl in self.recalc_LL:
-            if spl == 'exact':
-                Lp_recalc = self.do_exact_LL()
-            else:
-                Lp_recalc = 0.
-                Lq_recalc = 0.
-                for batch_idx in xrange(self.data_train.n_datapoints // 100):
-                    Lp, Lq = self.do_likelihood(batch_idx, spl) 
-                    Lp_recalc += Lp
-                    Lq_recalc += Lq
-                Lp_recalc  /= n_batches*batch_size
-                Lq_recalc  /= n_batches*batch_size
-                
-            _logger.info(" with Lp_%s=%f " % (spl, Lp_recalc))
-            dlog.append("Lp_%s"%spl, Lp_recalc)
-                
                         
 
         t = time()-t0
