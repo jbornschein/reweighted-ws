@@ -56,6 +56,14 @@ class TrainISB(Trainer):
         model = self.model
         beta = self.beta 
 
+        momentum = {}
+        for pname in model.Q_params:
+            p = model.get_model_param(pname)
+            momentum[p] = theano.shared(p.get_value()*0., name=("(dLq/d%s)_old"%pname))
+        for pname in model.P_params:
+            p = model.get_model_param(pname)
+            momentum[p] = theano.shared(p.get_value()*0., name=("(dLp/d%s)_old"%pname))
+
         #---------------------------------------------------------------------
         _logger.info("compiling f_sgd_step")
 
@@ -79,12 +87,10 @@ class TrainISB(Trainer):
         for pname in model.P_params:
             p = model.get_model_param(pname)
 
-            dTheta_old = theano.shared(p.get_value()*0., name=("dLp/d%s_old"%pname))
-            updates[dTheta_old] = dTheta_old
-
+            dTheta_old = momentum[p]
             curr_grad = learning_rate*T.grad(cost_p, p, consider_constant=[w])
 
-            dTheta = beta*updates[dTheta_old] + (1-beta)*curr_grad
+            dTheta = beta*dTheta_old + (1-beta)*curr_grad
 
             updates[dTheta_old] = dTheta
             updates[p] = p + dTheta
@@ -92,12 +98,10 @@ class TrainISB(Trainer):
         for pname in model.Q_params:
             p = model.get_model_param(pname)
 
-            dTheta_old = theano.shared(p.get_value()*0., name=("dLq/d%s_old"%pname))
-            updates[dTheta_old] = dTheta_old
+            dTheta_old = momentum[p]
+            curr_grad = 0.5*learning_rate*T.grad(cost_q, p, consider_constant=[w])
 
-            curr_grad = learning_rate*T.grad(cost_q, p, consider_constant=[w])
-
-            dTheta = beta*updates[dTheta_old] + (2-beta)*curr_grad
+            dTheta = beta*dTheta_old + (1-beta)*curr_grad
 
             updates[dTheta_old] = dTheta
             updates[p] = p + dTheta
@@ -109,6 +113,36 @@ class TrainISB(Trainer):
                             name="sgd_step",
                             allow_input_downcast=True,
                             on_unused_input='warn')
+
+        #---------------------------------------------------------------------
+        _logger.info("compiling do_sleep_step")
+        learning_rate = T.fscalar('learning_rate')
+        n_samples = T.iscalar('n_samples')
+        
+        X, H, lQ = model.f_sleep(n_samples)
+        total_Lq = T.sum(lQ)
+
+        updates = OrderedDict()
+        for pname in model.Q_params:
+            p = model.get_model_param(pname)
+
+            dTheta_old = momentum[p]
+            curr_grad = 0.5*learning_rate*T.grad(total_Lq, p)
+
+            dTheta = beta*dTheta_old + (1-beta)*curr_grad
+
+            updates[dTheta_old] = dTheta
+            updates[p] = p + dTheta
+        
+        self.do_sleep_step = theano.function(  
+                            inputs=[n_samples, learning_rate], 
+                            outputs=total_Lq, 
+                            updates=updates,
+                            name="sleep_step",
+                            allow_input_downcast=True,
+                            on_unused_input='warn')
+
+
 
         #---------------------------------------------------------------------
         if len(self.recalc_LL) > 0:
@@ -183,6 +217,26 @@ class TrainISB(Trainer):
         t = time()-t0
         _logger.info("Calculating test LL took %f s"%t)
 
+    def wintermute(self, min_increase=0.001, max_iter=1000):
+        model = self.model
+        learning_rate = self.learning_rate
+
+        Lq = self.do_sleep_step(100, self.learning_rate)
+        _logger.info("Sleep-enhanced Lq (initial %f)..." % Lq)
+
+        n_iter = 1
+        prev_Lq = -np.inf
+        continue_sleep = True
+        while continue_sleep:
+            n_iter += 1
+            Lq = self.do_sleep_step(100, self.learning_rate)
+            
+            increase = (Lq-prev_Lq) / np.abs(prev_Lq)
+            if np.isnan(increase):
+                increase = +np.inf
+            continue_sleep = (increase > min_increase) and (n_iter < max_iter)
+        _logger.info("Sleep-enhanced Lq in %d steps to %f" % (n_iter, Lq))
+
     def perform_epoch(self):
         model = self.model
         learning_rate = self.learning_rate
@@ -194,8 +248,9 @@ class TrainISB(Trainer):
         Lp_epoch = 0
         Lq_epoch = 0
         for batch_idx in xrange(n_batches):
-            #total_Lp, total_Lq, Lp, Lq, w = self.do_sgd_step(batch_idx, learning_rate)
-            total_Lp, total_Lq = self.do_sgd_step(batch_idx, learning_rate)
+            total_Lq = self.do_sleep_step(batch_size, learning_rate)
+
+            total_Lp, _ = self.do_sgd_step(batch_idx, learning_rate)
 
             #assert np.isfinite(w).all()
             #assert np.isfinite(Lp).all()

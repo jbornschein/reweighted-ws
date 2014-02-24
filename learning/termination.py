@@ -17,7 +17,7 @@ class TerminationCriterium(object):
     pass
 
 class LogLikelihoodIncrease(TerminationCriterium):
-    def __init__(self, min_increase=0.001, interval=3, max_epochs=1000, min_epochs=10):
+    def __init__(self, min_increase=0.001, interval=5, max_epochs=1000, min_epochs=10):
         super(LogLikelihoodIncrease, self).__init__()
         
         self.min_epochs = min_epochs

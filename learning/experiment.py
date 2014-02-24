@@ -133,6 +133,7 @@ class Experiment(object):
         continue_learning = True
         epoch = 0
         LL = []
+        trainer.wintermute()
         trainer.calc_test_LL()
         while continue_learning:
             epoch = epoch + 1

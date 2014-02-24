@@ -143,6 +143,12 @@ class ISB(Model):
                 )
         return post
 
+    def f_sleep(self, n_samples):
+        # Sample from P model
+        H, X = self.f_p_sample(n_samples)
+        Q = self.f_q(H, X)
+
+        return X, H, Q
 
     #------------------------ P ---------------------------------------------
     def f_p(self, X, H):
