@@ -265,8 +265,6 @@ class TrainISB(Trainer):
 
             _logger.debug("SGD step (%4d of %4d)\tLp=%f Lq=%f" % 
                 (batch_idx, n_batches, total_Lp/batch_size, total_Lq/batch_size))
-            dlog.append("L_step" , total_Lp/batch_size)
-            dlog.append("Lq_step", total_Lq/batch_size)
         Lp_epoch  /= n_batches*batch_size
         Lq_epoch  /= n_batches*batch_size
         
