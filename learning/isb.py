@@ -145,7 +145,8 @@ class ISB(Model):
 
     def f_sleep(self, n_samples):
         # Sample from P model
-        H, X = self.f_p_sample(n_samples)
+        H, _ = self.f_ph_sample(n_samples)
+        X, _ = self.f_p_sample(H)
         Q = self.f_q(H, X)
 
         return X, H, Q
@@ -161,26 +162,41 @@ class ISB(Model):
         
         # Posterior P(X|H)
         pX = self.f_sigmoid(T.dot(H, W) + b)
-        lpXH = T.log(pX*X + (1-pX)*(1-X))
+        lpXH = X*T.log(pX) + (1-X)*T.log(1-pX)
         lpXH = T.sum(lpXH, axis=1)
 
         lP = lpH + lpXH
         #lP  = Print('lP')(lP)
         return lP
 
-    def f_p_sample(self, n_samples):
-        n_vis, n_hid = self.get_hyper_params(['n_vis', 'n_hid'])
-        W, a, b = self.get_model_params(['P_W', 'P_a', 'P_b'])
+    def f_ph_sample(self, n_samples):
+        """ Sample 'n_samples' hidden configurations and return H, log-posterior """
+        n_hid, = self.get_hyper_params(['n_hid'])
+        a = self.get_model_params(['P_a'])
 
         # samples hiddens
         p_hid = self.f_sigmoid(a)
         H = T.cast(theano_rng.uniform((n_samples, n_hid)) <= p_hid, dtype=floatX)
 
-        # sample visible given hiddens
+        post = H*T.log(p_hid) + (1-H)*T.log(1-p_hid)
+        post = post.sum(axis=1)
+
+        return H, post
+
+    def f_p_sample(self, H):
+        n_samples = H.shape[0]
+
+        n_vis, = self.get_hyper_params(['n_vis'])
+        W, b = self.get_model_params(['P_W', 'P_b'])
+
+        # sample visible given H
         p_vis = self.f_sigmoid(T.dot(H, W) + b)
         X = T.cast(theano_rng.uniform((n_samples, n_vis)) <= p_vis, dtype=floatX)
 
-        return H, X
+        post = X*T.log(p_vis) + (1-X)*T.log(1-p_vis)
+        post = post.sum(axis=1)
+
+        return X, post
 
     #------------------------ Q ---------------------------------------------
     def f_q_sample_flat(self, X):

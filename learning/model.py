@@ -143,5 +143,11 @@ class Model(object):
             return self.set_hyper_param(name, value)
         return object.__setattr__(self, name, value)
 
+    #------------------------------------------------------------------------
+    
+    def load_model_params_from_h5(self, h5, row=-1):
+        """ Load the model params form an open H5 file """
+        pass
+
 #------------------------------------------------------------------------------
 

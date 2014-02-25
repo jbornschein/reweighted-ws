@@ -44,7 +44,7 @@ class CNADE(Model):
             return T.nnet.sigmoid(x)*0.9999 + 0.000005
         else:
             return T.nnet.sigmoid(x)
-
+    
     def f_loglikelihood(self, X, Y):
         n_vis, n_hid, n_cond = self.get_hyper_params(['n_vis', 'n_hid', 'n_cond'])
         b, c, W, V, Ub, Uc = self.get_model_params(['b', 'c', 'W', 'V', 'Ub', 'Uc'])

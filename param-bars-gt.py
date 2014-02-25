@@ -10,7 +10,7 @@ from learning.train_isb import TrainISB
 from learning.termination import LogLikelihoodIncrease
 
 
-n_datapoints = 1000
+n_datapoints = 5000
 D = 5
 n_vis = D**2
 n_hid = 2*D
@@ -35,7 +35,7 @@ n_hid  = 15
 n_qhid = 20
 model_params = {
     "unroll_scan": 1,
-    "n_samples": 25,
+    "n_samples": 100,
     "n_vis": n_vis,
     "n_hid": n_hid,
     "n_qhid": 20,
@@ -50,13 +50,13 @@ model = ISB(**model_params)
 trainer_params = {
     "learning_rate" : 1e-2,
     "batch_size"    : 1,
-    "recalc_LL"     : [10, 25, 100, 500] #, 'exact']
+    "recalc_LL"     : [10, 25, 100] #, 500] #, 'exact']
 }
 trainer = TrainISB(**trainer_params)
 
 #----------------------------------------------------------------------
 termination_param = {
-    "min_increase": 0.005, 
+    "min_increase": 0.002, 
     "min_epochs":  10,
     "max_epochs": 500
 }

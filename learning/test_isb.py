@@ -70,19 +70,32 @@ def test_p():
     pXHv = do_p(Xv, Hv)
     assert pXHv.shape == (N,)
     
-def test_p_sample():
-    model = ISB(**params)
 
+def test_ph_sample():
     n_samples = 10
+    model = ISB(**params)
+    
+    H, P = model.f_ph_sample(n_samples)
+    do_ph_sample = theano.function([], [H, P], name="f_ph_sample")
 
-    H, X = model.f_p_sample(n_samples)
-
-    do_p_sample = theano.function([], [H, X], name="f_p_sample")
-
-    Hv, Xv = do_p_sample()
+    Hv, Pv = do_ph_sample()
 
     assert Hv.shape == (n_samples, model.n_hid)
+    assert Pv.shape == (n_samples,)
+
+
+def test_p_sample():
+    n_samples = 10
+    model = ISB(**params)
+
+    H, Hv = testing.fmatrix((n_samples, model.n_hid), 'H')
+    X, P = model.f_p_sample(H)
+    do_p_sample = theano.function([H], [X, P], name="f_p_sample")
+
+    Xv, Pv = do_p_sample(Hv)
+
     assert Xv.shape == (n_samples, model.n_vis)
+    assert Pv.shape == (n_samples,)
 
 
 def test_loglikelihood():

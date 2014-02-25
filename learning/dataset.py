@@ -109,30 +109,31 @@ class FromModel(DataSet):
         batch_size = 100
     
         n_samples = T.iscalar('n_samples')
-        H, X = model.f_p_sample(n_samples)
+        X, _ = model.sample_p(n_samples)
 
         do_sample = theano.function(
                         inputs=[n_samples], 
-                        outputs=[H, X],
+                        outputs=X,
                         name='sample_p')
 
-        n_vis = model.n_vis
-        n_hid = model.n_hid
+        model.setup()
+        n_vis = model.n_lower
+        #n_hid = model.n_hid
 
         X = np.empty( (n_datapoints, n_vis), dtype=np.float32)
-        Y = np.empty( (n_datapoints, n_hid), dtype=np.float32)
+        #Y = np.empty( (n_datapoints, n_hid), dtype=np.float32)
 
         for b in xrange(n_datapoints//batch_size):
             first = b*batch_size
             last  = first + batch_size
-            Y[first:last], X[first:last] = do_sample(batch_size)
+            X[first:last] = do_sample(batch_size)
         remain = n_datapoints % batch_size
         if remain > 0:
-            Y[last:], X[last:] = do_sample(remain)
+            X[last:] = do_sample(remain)
         
         self.n_datapoints = n_datapoints
         self.X = X
-        self.Y = Y
+        self.Y = None
         
 
 #-----------------------------------------------------------------------------
