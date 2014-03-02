@@ -112,9 +112,12 @@ class Experiment(object):
         model = self.model
 
         _logger.info("Saving model params to H5")
-        for name, val in model.get_model_params().iteritems():
-            val = val.get_value()
-            dlog.append(name, val)
+        if hasattr(model, "dlog_append"):
+            model.dlog_append()
+        else:
+            for name, val in model.get_model_params().iteritems():
+                val = val.get_value()
+                dlog.append(name, val)
 
     def run_experiment(self):
         self.sanity_check()

@@ -10,7 +10,7 @@ from learning.train_stbp import TrainSTBP
 from learning.termination import LogLikelihoodIncrease
 
 
-n_datapoints = 5000
+n_datapoints = 1000
 D = 5
 n_vis = D**2
 n_hid = 2*D
@@ -54,22 +54,27 @@ layers=[
         n_lower=n_vis,
         n_qhid=n_qhid,
     ),
+    SigmoidBeliefLayer( 
+        unroll_scan=1,
+        n_lower=10,
+        n_qhid=n_qhid,
+    ),
     FactoizedBernoulliTop(
-        n_lower=n_hid
+        n_lower=4,
     )
 ]
 
 layers[0].set_model_param('b', P_b)
 layers[0].set_model_param('W', W_bars)
-layers[1].set_model_param('a', P_a)
+#layers[1].set_model_param('a', P_a)
 
 model = STBPStack(
-    n_samples=10,
     layers=layers
 )
 
 #----------------------------------------------------------------------
 trainer_params = {
+    "n_samples"     : 25,
     "learning_rate" : 1e-2,
     "batch_size"    : 1,
     "recalc_LL"     : [10, 25, 100, 500] #, 'exact']

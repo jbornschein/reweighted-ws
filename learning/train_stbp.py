@@ -20,11 +20,12 @@ from training import Trainer
 _logger = logging.getLogger(__name__)
 
 class TrainSTBP(Trainer):
-    def __init__(self, batch_size=100, learning_rate=1., momentum=True, beta=.95, 
+    def __init__(self, batch_size=100, learning_rate=1., momentum=True, beta=.95, n_samples=100,
                 recalc_LL=() ):
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         self.momentum = False
+        self.n_samples = n_samples
         self.beta = beta
 
         self.recalc_LL = recalc_LL
@@ -59,27 +60,27 @@ class TrainSTBP(Trainer):
 
         momentum = {}
         for pname, shvar in model.get_p_params().iteritems():
-            momentum[shvar] = theano.shared(shvar.get_value()*0., name=("(dcost_p/d%s)_old"%pname))
+            momentum[shvar] = theano.shared(shvar.get_value()*0., name=("(dP/d%s)_old"%pname))
         for pname, shvar in model.get_q_params().iteritems():
-            momentum[shvar] = theano.shared(shvar.get_value()*0., name=("(dcost_q/d%s)_old"%pname))
+            momentum[shvar] = theano.shared(shvar.get_value()*0., name=("(dQ/d%s)_old"%pname))
 
         #---------------------------------------------------------------------
         _logger.info("compiling f_sgd_step")
 
         learning_rate = T.fscalar('learning_rate')
         batch_idx = T.iscalar('batch_idx')
+        n_samples = T.iscalar('n_samples')
     
         first = batch_idx*self.batch_size
         last  = first + self.batch_size
         X_batch = self.train_X[first:last]
         #Y_batch = self.train_Y[first:last]
         
-        log_PX, log_p, log_q, w = model.log_likelihood(X_batch)
+        log_PX, log_p, log_q, w = model.log_likelihood(X_batch, n_samples=n_samples)
 
-        #w = Print('w')(w)
         batch_log_PX = T.sum(log_PX)
         cost_p = T.sum(T.sum(log_p*w, axis=1))
-        cost_q = T.sum(T.sum(log_p*w, axis=1))
+        cost_q = T.sum(T.sum(log_q*w, axis=1))
 
         updates = OrderedDict()
         for pname, shvar in model.get_p_params().iteritems():
@@ -93,7 +94,7 @@ class TrainSTBP(Trainer):
             
         for pname, shvar in model.get_q_params().iteritems():
             dTheta_old = momentum[shvar]
-            curr_grad = 0.5*learning_rate*T.grad(cost_q, shvar, consider_constant=[w])
+            curr_grad = learning_rate*T.grad(cost_q, shvar, consider_constant=[w])
 
             dTheta = beta*dTheta_old + (1-beta)*curr_grad
 
@@ -101,7 +102,7 @@ class TrainSTBP(Trainer):
             updates[shvar] = shvar + dTheta
 
         self.do_sgd_step = theano.function(  
-                            inputs=[batch_idx, learning_rate], 
+                            inputs=[batch_idx, n_samples, learning_rate], 
                             outputs=batch_log_PX, #, Lp, Lq, w],
                             updates=updates,
                             name="sgd_step",
@@ -143,8 +144,7 @@ class TrainSTBP(Trainer):
             _logger.info("compiling do_loglikelihood")
             batch_idx  = T.iscalar('batch_idx')
             batch_size = T.iscalar('batch_size')
-            #n_samples  = T.iscalar('n_samples')
-            n_samples = 25
+            n_samples  = T.iscalar('n_samples')
     
             first = batch_idx*batch_size
             last  = first + batch_size
@@ -154,7 +154,7 @@ class TrainSTBP(Trainer):
             batch_log_PX = T.sum(log_PX)
 
             self.do_likelihood = theano.function(  
-                            inputs=[batch_idx, batch_size], 
+                            inputs=[batch_idx, batch_size, n_samples], 
                             outputs=batch_log_PX, #, Lp, Lq, w],
                             name="do_likelihood",
                             allow_input_downcast=True,
@@ -189,7 +189,6 @@ class TrainSTBP(Trainer):
         #                    allow_input_downcast=True)
 
     def calc_test_LL(self):
-        return 
         t0 = time()
         n_test = min(5000, self.data_train.n_datapoints)
         batch_size = 1000
@@ -210,6 +209,7 @@ class TrainSTBP(Trainer):
 
     def perform_epoch(self):
         model = self.model
+        n_samples = self.n_samples
         learning_rate = self.learning_rate
 
         batch_size = self.batch_size
@@ -217,28 +217,20 @@ class TrainSTBP(Trainer):
 
         t0 = time()
         Lp_epoch = 0
-        Lq_epoch = 0
         for batch_idx in xrange(n_batches):
-            batch_log_PX, _ = self.do_sgd_step(batch_idx, learning_rate)
+            batch_log_PX = self.do_sgd_step(batch_idx, n_samples, learning_rate)
 
-            #assert np.isfinite(w).all()
-            #assert np.isfinite(Lp).all()
-            #assert np.isfinite(Lq).all()
             assert np.isfinite(batch_log_PX)
             Lp_epoch  += batch_log_PX
-            Lp_epoch  += 0.0
 
             #for name, p in model.get_model_params().iteritems():
             #    assert np.isfinite(p.get_value()).all(), "%s contains NaN or infs" % name
 
-            _logger.debug("SGD step (%4d of %4d)\tLp=%f Lq=%f" % 
-                (batch_idx, n_batches, total_Lp/batch_size, total_Lq/batch_size))
+            _logger.debug("SGD step (%4d of %4d)\tLp=%f" % (batch_idx, n_batches, batch_log_PX/batch_size))
         Lp_epoch  /= n_batches*batch_size
-        Lq_epoch  /= n_batches*batch_size
         
-        _logger.info("LogLikelihoods: Lp=%f \t \t Lq=%f" % (Lp_epoch, Lq_epoch))
+        _logger.info("LogLikelihoods: Lp=%f \t" % (Lp_epoch))
                         
-
         t = time()-t0
         _logger.info("Runtime: %5.2f s/epoch; %f ms/(SGD step)" % (t, t/n_batches*1000))
         return Lp_epoch

@@ -16,6 +16,7 @@ from theano.printing import Print
 from model import Model, default_weights
 from cnade import CNADE
 from utils.unrolled_scan import unrolled_scan
+from utils.datalog  import dlog
 
 _logger = logging.getLogger(__name__)
 
@@ -100,7 +101,7 @@ class STBPStack(Model):
         log_p   = [None]*n_layers
 
         samples[0] = f_replicate_batch(X, n_samples)                   # 
-        log_q[0]   = T.zeros([batch_size*n_samples])-T.log(n_samples)  # 1/n_samples for each replicted X
+        log_q[0]   = T.zeros([batch_size*n_samples])+T.log(n_samples)  # 1/n_samples for each replicted X
         
         # Generate samples (feed-forward)
         for l in xrange(n_layers-1):
@@ -126,7 +127,14 @@ class STBPStack(Model):
         log_px = f_logsumexp(log_p_all-log_q_all, axis=1)
         
         # Calculate samplig weights
-        w = T.exp(log_p_all-T.shape_padright(log_px))
+        w = T.exp(log_p_all-log_q_all-T.shape_padright(log_px))
+        #w = T.zeros( (batch_size, n_samples) )
+
+        log_p_all = T.zeros((batch_size, n_samples))
+        log_q_all = T.zeros((batch_size, n_samples))
+        for l in xrange(n_layers):
+            log_p_all += (1./4)**l * log_p[l]   # agregate all layers
+            log_q_all += log_q[l]   # agregate all layers
 
         return log_px, log_p_all, log_q_all, w
 
@@ -145,10 +153,10 @@ class STBPStack(Model):
     def dlog_append(self):
         vals = {}
         for n,l in enumerate(self.layers):
-            for pname, shvar in l.get_p_params():
+            for pname, shvar in l.get_p_params().iteritems():
                 key = "L%d.P.%s" % (n, pname)
                 vals[key] = shvar.get_value()
-            for pname, shvar in l.get_q_params():
+            for pname, shvar in l.get_q_params().iteritems():
                 key = "L%d.Q.%s" % (n, pname)
                 vals[key] = shvar.get_value()
         dlog.append_all(vals)

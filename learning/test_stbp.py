@@ -140,6 +140,11 @@ class TestSTBTStack(unittest.TestCase):
                 n_lower=self.n_vis,
                 n_qhid=self.n_qhid,
             ),
+            SigmoidBeliefLayer( 
+                unroll_scan=1,
+                n_lower=self.n_hid,
+                n_qhid=self.n_qhid,
+            ),
             FactoizedBernoulliTop(
                 n_lower=self.n_hid
             )
@@ -157,7 +162,6 @@ class TestSTBTStack(unittest.TestCase):
 
     def test_sample_p(self):
         stack = self.stack
-        n_samples_ = self.n_samples
     
         n_samples, n_samples_ = testing.iscalar('n_samples')
         X, log_P = stack.sample_p(n_samples=n_samples)
@@ -170,19 +174,19 @@ class TestSTBTStack(unittest.TestCase):
 
     def test_log_likelihood(self):
         batch_size = 20
-        n_samples = self.n_samples
         stack = self.stack
     
         X, X_ = testing.fmatrix((batch_size, self.n_vis), 'X')
-        #n_samples = testing.iscalar('n_samples')
+        n_samples, n_samples_ = testing.iscalar('n_samples')
+        n_samples_ = self.n_samples
 
         log_PX, log_P, log_Q, w = stack.log_likelihood(X, n_samples=n_samples)
         do_log_likelihood = theano.function(
-                                [X],
+                                [X, n_samples],
                                 [log_PX, log_P, log_Q, w]  
                             )
     
-        log_PX_, log_P_, log_Q_, w_ = do_log_likelihood(X_)
+        log_PX_, log_P_, log_Q_, w_ = do_log_likelihood(X_, n_samples_)
 
         print "log_P.shape", log_P_.shape
         print "log_Q.shape", log_Q_.shape
@@ -190,19 +194,19 @@ class TestSTBTStack(unittest.TestCase):
         print "w.shape", w_.shape
 
         assert log_PX_.shape == (batch_size,)
-        assert log_P_.shape == (batch_size, n_samples)
-        assert log_Q_.shape == (batch_size, n_samples)
-        assert w_.shape == (batch_size, n_samples)
+        assert log_P_.shape == (batch_size, n_samples_)
+        assert log_Q_.shape == (batch_size, n_samples_)
+        assert w_.shape == (batch_size, n_samples_)
 
     def test_ll_grad(self):
         
         learning_rate = 1e-3
         batch_size = 20
         stack = self.stack
-        n_samples = self.n_samples
     
         X, X_ = testing.fmatrix((batch_size, self.n_vis), 'X')
-        #n_samples = 10 #testing.iscalar('n_samples')
+        n_samples, n_samples_ = testing.iscalar('n_samples')
+        n_samples_ = self.n_samples
 
         log_PX, log_P, log_Q, w = stack.log_likelihood(X, n_samples=n_samples)
 
@@ -220,13 +224,13 @@ class TestSTBTStack(unittest.TestCase):
 
 
         do_sgd_step = theano.function(
-                                inputs=[X],
+                                inputs=[X, n_samples],
                                 outputs=[log_PX, cost_p, cost_q],
                                 updates=updates,
                                 name="sgd_step",
                             )
     
-        log_PX_, cost_p_, cost_q_, = do_sgd_step(X_)
+        log_PX_, cost_p_, cost_q_, = do_sgd_step(X_, n_samples_)
 
         assert log_PX_.shape == (batch_size,)
 
