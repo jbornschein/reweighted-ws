@@ -181,7 +181,7 @@ class TrainSTBP(Trainer):
     def calc_test_LL(self):
         t0 = time()
         n_test = min(5000, self.data_train.n_datapoints)
-        batch_size = 1000
+        batch_size = max(self.batch_size, 10)
         for spl in self.recalc_LL:
             if spl == 'exact':
                 Lp_recalc = self.do_exact_LL()
