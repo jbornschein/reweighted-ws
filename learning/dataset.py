@@ -109,6 +109,8 @@ class FromModel(DataSet):
         batch_size = 100
     
         n_samples = T.iscalar('n_samples')
+        n_samples.tag.test_value = 10
+
         X, _ = model.sample_p(n_samples)
 
         do_sample = theano.function(
