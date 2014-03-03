@@ -10,20 +10,23 @@ def skip_check(reason):
 
 def check_dtype(d):
     assert d.X.dtype == np.float32, "Failed for %s" % d
-    assert d.Y.dtype == np.float32, "Failed for %s" % d
     assert d.X.ndim == 2
-    assert d.Y.ndim == 2
+    if d.Y is not None:
+        assert d.Y.dtype == np.float32, "Failed for %s" % d
+        assert d.Y.ndim == 2
 
 def check_same_N(d):
     N = d.n_datapoints
     assert d.X.shape[0] == N, "Failed for %s" % d
-    assert d.Y.shape[0] == N, "Failed for %s" % d
+    if d.Y is not None:
+        assert d.Y.shape[0] == N, "Failed for %s" % d
 
 def check_range(d):
     assert d.X.min() >= 0., "Failed for %s" % d
     assert d.X.max() <= 1., "Failed for %s" % d
-    assert d.Y.min() >= 0., "Failed for %s" % d
-    assert d.Y.max() <= 1., "Failed for %s" % d
+    if d.Y is not None:
+        assert d.Y.min() >= 0., "Failed for %s" % d
+        assert d.Y.max() <= 1., "Failed for %s" % d
 
 #-----------------------------------------------------------------------------
 
@@ -55,7 +58,7 @@ def test_datasets():
 #-----------------------------------------------------------------------------
 
 def test_FromModel():
-    from isb import ISB
+    from stbp_layers import STBPStack, SigmoidBeliefLayer, FactoizedBernoulliTop
     D = 5
     n_vis = D**2
     n_hid = 2*D
@@ -70,14 +73,19 @@ def test_FromModel():
     P_b = -2*np.ones(n_vis)
     
     # Instantiate model...
-    model_params = {
-        "n_vis":  n_vis,
-        "n_hid":  n_hid,
-    }
-    model = ISB(**model_params)
-    model.set_model_param('P_W', W_bars)
-    model.set_model_param('P_a', P_a)
-    model.set_model_param('P_b', P_b)
+    layers = [
+        SigmoidBeliefLayer(
+            n_lower=n_vis, 
+        ),
+        FactoizedBernoulliTop(
+            n_lower=n_hid
+        )
+    ]
+    layers[0].set_model_param('W', W_bars)
+    layers[0].set_model_param('b', P_b)
+    layers[1].set_model_param('a', P_a)
+
+    model = STBPStack(layers=layers)
     
     # ...and generate data
     n_datapoints = 1000
