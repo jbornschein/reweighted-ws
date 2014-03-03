@@ -138,6 +138,27 @@ class STBPStack(Model):
 
         return log_px, log_p_all, log_q_all, w
 
+    def get_gradients(self, X, Y=None, learning_rate=1., layer_discount=1., n_samples=None):
+        """ return log_PX and an OrderedDict with parameter gradients """
+        log_PX, log_p, log_q, w = self.log_likelihood(X, Y, n_samples=n_samples)
+        
+        batch_log_PX = T.sum(log_PX)
+        cost_p = T.sum(T.sum(log_p*w, axis=1))
+        cost_q = T.sum(T.sum(log_q*w, axis=1))
+
+        gradients = OrderedDict()
+        for nl, layer in enumerate(self.layers):
+            effective_lr = learning_rate * (layer_discount**nl)
+
+            for name, shvar in layer.get_p_params().iteritems():
+                gradients[shvar] = effective_lr * T.grad(cost_p, shvar, consider_constant=[w])
+
+            for name, shvar in layer.get_q_params().iteritems():
+                gradients[shvar] = effective_lr * T.grad(cost_q, shvar, consider_constant=[w])
+
+        return batch_log_PX, gradients
+
+    #------------------------------------------------------------------------
     def get_p_params(self):
         params = OrderedDict()
         for l in self.layers:

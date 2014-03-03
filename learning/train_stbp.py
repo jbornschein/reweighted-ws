@@ -20,11 +20,11 @@ from training import Trainer
 _logger = logging.getLogger(__name__)
 
 class TrainSTBP(Trainer):
-    def __init__(self, batch_size=100, learning_rate=1., momentum=True, beta=.95, n_samples=100,
-                recalc_LL=() ):
+    def __init__(self, batch_size=100, learning_rate=1., layer_discount=1., 
+                    beta=.95, n_samples=100, recalc_LL=() ):
         self.batch_size = batch_size
         self.learning_rate = learning_rate
-        self.momentum = False
+        self.layer_discount = layer_discount
         self.n_samples = n_samples
         self.beta = beta
 
@@ -58,16 +58,11 @@ class TrainSTBP(Trainer):
 
         model.setup()
 
-        momentum = {}
-        for pname, shvar in model.get_p_params().iteritems():
-            momentum[shvar] = theano.shared(shvar.get_value()*0., name=("(dP/d%s)_old"%pname))
-        for pname, shvar in model.get_q_params().iteritems():
-            momentum[shvar] = theano.shared(shvar.get_value()*0., name=("(dQ/d%s)_old"%pname))
-
         #---------------------------------------------------------------------
         _logger.info("compiling f_sgd_step")
 
         learning_rate = T.fscalar('learning_rate')
+        layer_discount = T.fscalar('layer_discount')
         batch_idx = T.iscalar('batch_idx')
         n_samples = T.iscalar('n_samples')
     
@@ -76,33 +71,28 @@ class TrainSTBP(Trainer):
         X_batch = self.train_X[first:last]
         #Y_batch = self.train_Y[first:last]
         
-        log_PX, log_p, log_q, w = model.log_likelihood(X_batch, n_samples=n_samples)
+        batch_log_PX, gradients = model.get_gradients(X_batch, 
+                    learning_rate=learning_rate,
+                    layer_discount=layer_discount,
+                    n_samples=n_samples)
 
-        batch_log_PX = T.sum(log_PX)
-        cost_p = T.sum(T.sum(log_p*w, axis=1))
-        cost_q = T.sum(T.sum(log_q*w, axis=1))
+        # Initialize momentum variables
+        gradients_old = {}
+        for shvar, value in gradients.iteritems():
+            name = value.name
+            gradients_old[shvar] = theano.shared(shvar.get_value()*0., name=("%s_old"%name))
 
         updates = OrderedDict()
-        for pname, shvar in model.get_p_params().iteritems():
-            dTheta_old = momentum[shvar]
-            curr_grad = learning_rate*T.grad(cost_p, shvar, consider_constant=[w])
+        for shvar, value in gradients.iteritems():
+            gradient_old = gradients_old[shvar]
 
-            dTheta = beta*dTheta_old + (1-beta)*curr_grad
+            dTheta = beta*gradient_old + (1.-beta)*value
 
-            updates[dTheta_old] = dTheta
-            updates[shvar] = shvar + dTheta
-            
-        for pname, shvar in model.get_q_params().iteritems():
-            dTheta_old = momentum[shvar]
-            curr_grad = learning_rate*T.grad(cost_q, shvar, consider_constant=[w])
-
-            dTheta = beta*dTheta_old + (1-beta)*curr_grad
-
-            updates[dTheta_old] = dTheta
+            updates[gradient_old] = dTheta
             updates[shvar] = shvar + dTheta
 
         self.do_sgd_step = theano.function(  
-                            inputs=[batch_idx, n_samples, learning_rate], 
+                            inputs=[batch_idx, n_samples, learning_rate, layer_discount], 
                             outputs=batch_log_PX, #, Lp, Lq, w],
                             updates=updates,
                             name="sgd_step",
@@ -211,6 +201,7 @@ class TrainSTBP(Trainer):
         model = self.model
         n_samples = self.n_samples
         learning_rate = self.learning_rate
+        layer_discount = self.layer_discount
 
         batch_size = self.batch_size
         n_batches  = self.data_train.n_datapoints // batch_size
@@ -218,7 +209,7 @@ class TrainSTBP(Trainer):
         t0 = time()
         Lp_epoch = 0
         for batch_idx in xrange(n_batches):
-            batch_log_PX = self.do_sgd_step(batch_idx, n_samples, learning_rate)
+            batch_log_PX = self.do_sgd_step(batch_idx, n_samples, learning_rate=learning_rate, layer_discount=layer_discount)
 
             assert np.isfinite(batch_log_PX)
             Lp_epoch  += batch_log_PX

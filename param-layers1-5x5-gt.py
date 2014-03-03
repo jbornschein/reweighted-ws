@@ -45,7 +45,6 @@ gt_model = STBPStack(
 dataset = FromModel(gt_model, n_datapoints=n_datapoints)
 
 #----------------------------------------------------------------------
-n_hid  = 10
 n_qhid = 20
 
 layers=[
@@ -54,18 +53,13 @@ layers=[
         n_lower=n_vis,
         n_qhid=n_qhid,
     ),
-    SigmoidBeliefLayer( 
-        unroll_scan=1,
-        n_lower=20,
-        n_qhid=n_qhid,
-    ),
     FactoizedBernoulliTop(
-        n_lower=4,
+        n_lower=n_hid,
     )
 ]
 
-#layers[0].set_model_param('b', P_b)
-#layers[0].set_model_param('W', W_bars)
+layers[0].set_model_param('b', P_b)
+layers[0].set_model_param('W', W_bars)
 #layers[1].set_model_param('a', P_a)
 
 model = STBPStack(
@@ -76,9 +70,9 @@ model = STBPStack(
 trainer_params = {
     "n_samples"     : 25,
     "learning_rate" : 1e-2,
-    "layer_discount": 0.25,
+    "layer_discount": 1.,
     "batch_size"    : 1,
-    "recalc_LL"     : [1, 10, 25, 100, 500] #, 'exact']
+    "recalc_LL"     : [1, 5, 10, 25, 100, 500] #, 'exact']
 }
 trainer = TrainSTBP(**trainer_params)
 
