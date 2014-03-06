@@ -106,7 +106,7 @@ class CNADE(Model):
                     outputs_info=[a_init, vis_init, post_init],
                     unroll=self.unroll_scan
                 )
-        assert len(updates) == 0
+        #assert len(updates) == 0
 
         return vis.T, post[-1,:]
 
