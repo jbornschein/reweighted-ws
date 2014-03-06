@@ -13,6 +13,8 @@ from theano.tensor.shared_randomstreams import RandomStreams
 from model import Model, default_weights
 from utils.unrolled_scan import unrolled_scan
 
+floatX = theano.config.floatX
+
 _logger = logging.getLogger(__name__)
 
 #theano.config.compute_test_value = 'warn'
@@ -49,13 +51,13 @@ class NADE(Model):
         vis = X
 
         #------------------------------------------------------------------
-        a_init    = T.zeros([batch_size, n_hid], dtype=np.float32) + c
-        post_init = T.zeros([batch_size], dtype=np.float32)
+        a_init    = T.zeros([batch_size, n_hid], dtype=floatX) + c
+        post_init = T.zeros([batch_size], dtype=floatX)
 
         def one_iter(vis_i, Wi, Vi, bi, a, post):
             hid  = self.f_sigmoid(a)
             pi   = self.f_sigmoid(T.dot(hid, Vi) + bi)
-            post = post + T.cast(T.log(pi*vis_i + (1-pi)*(1-vis_i)), dtype='float32')
+            post = post + T.cast(T.log(pi*vis_i + (1-pi)*(1-vis_i)), dtype=floatX)
             a    = a + T.outer(vis_i, Wi)
             return a, post
 
@@ -73,15 +75,15 @@ class NADE(Model):
         n_vis, n_hid = self.get_hyper_params(['n_vis', 'n_hid'])
         b, c, W, V = self.get_model_params(['b', 'c', 'W', 'V'])
 
-        a_init    = T.zeros((n_samples, n_hid), dtype=np.float32) + c
-        post_init = T.zeros(n_samples, dtype=np.float32)
-        vis_init  = T.zeros(n_samples, dtype=np.float32)
+        a_init    = T.zeros((n_samples, n_hid), dtype=floatX) + c
+        post_init = T.zeros(n_samples, dtype=floatX)
+        vis_init  = T.zeros(n_samples, dtype=floatX)
 
         def one_iter(Wi, Vi, bi, a, vis_i, post):
             hid  = self.f_sigmoid(a)
             pi   = self.f_sigmoid(T.dot(hid, Vi) + bi)
             vis_i = 1.*(theano_rng.uniform([n_samples]) <= pi)
-            post  = post + T.cast(T.log(pi*vis_i + (1-pi)*(1-vis_i)), dtype='float32')
+            post  = post + T.cast(T.log(pi*vis_i + (1-pi)*(1-vis_i)), dtype=floatX)
             a     = a + T.outer(vis_i, Wi)
             return a, vis_i, post
 
@@ -91,7 +93,7 @@ class NADE(Model):
                     outputs_info=[a_init, vis_init, post_init],
                     unroll=self.unroll_scan
                 )
-        assert len(updates) == 0
+        #assert len(updates) == 0
 
         return vis.T, post[-1,:]
 

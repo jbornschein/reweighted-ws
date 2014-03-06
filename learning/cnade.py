@@ -13,6 +13,8 @@ from theano.tensor.shared_randomstreams import RandomStreams
 from model import Model, default_weights
 from utils.unrolled_scan import unrolled_scan
 
+floatX = theano.config.floatX
+
 _logger = logging.getLogger(__name__)
 
 
@@ -58,12 +60,12 @@ class CNADE(Model):
         c_cond = c + T.dot(cond, Uc)    # shape (batch, n_hid)
     
         a_init    = c_cond
-        post_init = T.zeros([batch_size], dtype=np.float32)
+        post_init = T.zeros([batch_size], dtype=floatX)
 
         def one_iter(vis_i, Wi, Vi, bi, a, post):
             hid  = self.f_sigmoid(a)
             pi   = self.f_sigmoid(T.dot(hid, Vi) + bi)
-            post = post + T.cast(T.log(pi*vis_i + (1-pi)*(1-vis_i)), dtype='float32')
+            post = post + T.cast(T.log(pi*vis_i + (1-pi)*(1-vis_i)), dtype=floatX)
             a    = a + T.outer(vis_i, Wi)
             return a, post
 
@@ -89,14 +91,14 @@ class CNADE(Model):
         c_cond = c + T.dot(cond, Uc)    # shape (batch, n_hid)
     
         a_init    = c_cond
-        post_init = T.zeros([batch_size], dtype=np.float32)
-        vis_init  = T.zeros([batch_size], dtype=np.float32)
+        post_init = T.zeros([batch_size], dtype=floatX)
+        vis_init  = T.zeros([batch_size], dtype=floatX)
 
         def one_iter(Wi, Vi, bi, a, vis_i, post):
             hid  = self.f_sigmoid(a)
             pi   = self.f_sigmoid(T.dot(hid, Vi) + bi)
             vis_i = 1.*(theano_rng.uniform([batch_size]) <= pi)
-            post  = post + T.cast(T.log(pi*vis_i + (1-pi)*(1-vis_i)), dtype='float32')
+            post  = post + T.cast(T.log(pi*vis_i + (1-pi)*(1-vis_i)), dtype=floatX)
             a     = a + T.outer(vis_i, Wi)
             return a, vis_i, post
 
