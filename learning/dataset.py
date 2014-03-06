@@ -15,9 +15,10 @@ import theano.tensor as T
 
 _logger = logging.getLogger(__name__)
 
+floatX = theano.config.floatX
+
 class DataSet(object):
     pass
-
 
 #-----------------------------------------------------------------------------
 class ToyData(DataSet):
@@ -28,8 +29,8 @@ class ToyData(DataSet):
 
         X = np.array(
             [[1., 1., 1., 1., 0., 0., 0., 0.],
-             [0., 0., 0., 0., 1., 1., 1., 1.]], dtype='float32')
-        Y = np.array([[1., 0.], [0., 1.]], dtype='float32')
+             [0., 0., 0., 0., 1., 1., 1., 1.]], dtype=floatX)
+        Y = np.array([[1., 0.], [0., 1.]], dtype=floatX)
 
         if which_set == 'train':
             self.X = np.concatenate([X]*10)
@@ -54,7 +55,7 @@ class BarsData(DataSet):
         n_hid = 2*D
         bar_prob = 1./n_hid
         
-        X = np.zeros((n_datapoints, D, D), dtype=np.float32)
+        X = np.zeros((n_datapoints, D, D), dtype=floatX)
         Y = 1. * (np.random.uniform(size=(n_datapoints, n_hid)) < bar_prob)
 
         for n in xrange(n_datapoints):
@@ -64,8 +65,8 @@ class BarsData(DataSet):
                 if Y[n,D+d] > 0.5:
                     X[n,:,d] = 1.0
 
-        self.X = X.reshape((n_datapoints, n_vis)).astype(np.float32)
-        self.Y = Y.astype(np.float32)
+        self.X = X.reshape((n_datapoints, n_vis)).astype(floatX)
+        self.Y = Y.astype(floatX)
         self.n_datapoints = n_datapoints
 
 #-----------------------------------------------------------------------------
@@ -97,11 +98,11 @@ class MNIST(DataSet):
 
         x = 1.*(x > 0.5)       # binarize x
 
-        one_hot = np.zeros( (N, 10), dtype="float32")
+        one_hot = np.zeros( (N, 10), dtype=floatX)
         for n in xrange(N):
             one_hot[n, y[n]] = 1.
 
-        return x.astype('float32'), one_hot.astype('float32')
+        return x.astype(floatX), one_hot.astype(floatX)
 
 #-----------------------------------------------------------------------------
 class FromModel(DataSet):
@@ -122,8 +123,8 @@ class FromModel(DataSet):
         n_vis = model.n_lower
         #n_hid = model.n_hid
 
-        X = np.empty( (n_datapoints, n_vis), dtype=np.float32)
-        #Y = np.empty( (n_datapoints, n_hid), dtype=np.float32)
+        X = np.empty( (n_datapoints, n_vis), dtype=floatX)
+        #Y = np.empty( (n_datapoints, n_hid), dtype=np.floatX)
 
         for b in xrange(n_datapoints//batch_size):
             first = b*batch_size
