@@ -20,20 +20,15 @@ from training import Trainer
 _logger = logging.getLogger(__name__)
 
 class TrainSTBP(Trainer):
-    def __init__(self, batch_size=100, learning_rate=1., layer_discount=1., 
-                    beta=.95, n_samples=100, recalc_LL=() ):
-        self.batch_size = batch_size
-        self.learning_rate = learning_rate
-        self.layer_discount = layer_discount
-        self.n_samples = n_samples
-        self.beta = beta
+    def __init__(self, **hyper_params):
+        super(TrainSTBP, self).__init__()
 
-        self.recalc_LL = recalc_LL
-    
-        self.model = None
-        self.data_train = None
-        self.data_valid = None
-        self.data_test = None
+        self.register_hyper_param("beta", default=0.95, help="Momentum factor")
+        self.register_hyper_param("layer_discount", default=1.0, help="Reduce LR for each successive layer by this factor")
+        self.register_hyper_param("n_samples", default=10, help="No. samples used during training")
+        self.register_hyper_param("recalc_LL", default=())
+
+        self.set_hyper_params(hyper_params)
     
     def set_model(self, model):
         self.model = model

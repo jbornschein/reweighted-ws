@@ -13,22 +13,27 @@ import numpy as np
 import theano 
 import theano.tensor as T
 
+from hyperbase import HyperBase
 from utils.datalog import dlog, StoreToH5, TextPrinter
 
 _logger = logging.getLogger(__name__)
 
-class Trainer(object):
+class Trainer(HyperBase):
     pass
 
 class BatchedSGD(Trainer):
-    def __init__(self, batch_size=100, learning_rate=1.):  
-        self.batch_size = batch_size
-        self.learning_rate = learning_rate
-    
+    def __init__(self, **hyper_params):
+        super(BatchedSGD, self).__init__()
+
+        self.register_hyper_param("batch_size", default=100)
+        self.register_hyper_param("learning_rate", default=1.)
+        
         self.model = None
         self.data_train = None
         self.data_valid = None
         self.data_test = None
+
+        self.set_hyper_params(hyper_params)
     
     def set_model(self, model):
         self.model = model
