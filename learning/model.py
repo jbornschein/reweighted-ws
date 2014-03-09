@@ -145,9 +145,36 @@ class Model(object):
 
     #------------------------------------------------------------------------
     
-    def load_model_params_from_h5(self, h5, row=-1):
+    def model_params_from_dlog(self, dlog, row=-1):
         """ Load the model params form an open H5 file """
-        pass
+        for key, param in self._model_params.iteritems():
+            assert isinstance(param, ModelParam)
+            value = dlog.load(key, row)
+            shvar = para.value
+            shvar.set_value(value)
+
+    def model_params_to_dlog(self, dlog):
+        """ Append all model params to dlog """
+        for key, param in self._hyper_params.iteritems():
+            assert isinstance(param, HyperParam)
+            shvar = param.value
+            value = shvar.get_value()
+            dlog.append(key, value)
+
+    def hyper_params_from_dlog(self, dlog, row=-1):
+        """ Load the hyper params form an open H5 file """
+        for key, param in self._hyper_params.iteritems():
+            assert isinstance(param, HyperParam)
+            value = dlog.load(key, row)
+            self.set_hyper_param(key, value)
+
+    def hyper_params_to_dlog(self, dlog):
+        """ Append all hyper params to dlog """
+        for key, param in self._model_params.iteritems():
+            assert isinstance(param, ModelParam)
+            shvar = param.value
+            value = shvar.get_value()
+            dlog.append(key, value)
 
 #------------------------------------------------------------------------------
 

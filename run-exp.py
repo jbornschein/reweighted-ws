@@ -39,7 +39,6 @@ if __name__ == "__main__":
     experiment = Experiment.from_param_file(args.param_file)
     experiment.setup_output_dir(args.param_file, with_suffix=(not args.overwrite))
     experiment.setup_logging()
-    experiment.setup_experiment()
 
     print "=="
     
