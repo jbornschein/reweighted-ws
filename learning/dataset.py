@@ -158,4 +158,7 @@ def permute_cols(x, idx=None):
         idx = np.random.permutation(n_vis)
     return x[:,idx]
 
-       
+#-----------------------------------------------------------------------------
+def get_toy_data():
+    return BarsData(which_set="train", n_datapoints=500)
+    
