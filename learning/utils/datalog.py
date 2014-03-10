@@ -210,7 +210,7 @@ class ChildLogger(DataLog):
         self.root.append(self.prefix+tblname, value)
 
     def append_all(self, valdict):
-        valdict = {(self.prefix+key): val for key, val in valdict}
+        valdict = {(self.prefix+key): val for key, val in valdict.iteritems()}
         self.root.append_all(valdict)
 
     def set_handler(self, tblname, handler_class, *args, **kwargs):

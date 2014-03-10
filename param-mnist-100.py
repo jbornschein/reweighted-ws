@@ -12,17 +12,12 @@ n_hid = 100
 n_qhid = 2*n_hid
 
 dataset = MNIST(which_set='train')
-valiset = MNIST(which_set='valid', n_datapoints=100)
+valiset = MNIST(which_set='valid', n_datapoints=1000)
 
 layers=[
     SigmoidBeliefLayer( 
         unroll_scan=1,
         n_lower=n_vis,
-        n_qhid=n_qhid,
-    ),
-    SigmoidBeliefLayer( 
-        unroll_scan=1,
-        n_lower=n_hid,
         n_qhid=n_qhid,
     ),
     FactoizedBernoulliTop(
@@ -42,7 +37,7 @@ termination = LogLikelihoodIncrease(
 )
 
 trainer = Trainer(
-    n_samples=25,
+    n_samples=10,
     learning_rate_p=1e-3,
     learning_rate_q=1e-3,
     layer_discount=0.25,
@@ -50,7 +45,7 @@ trainer = Trainer(
     data=dataset, 
     model=model,
     termination=termination,
-    epoch_monitors=[MonitorLL(data=valiset, n_samples=[1, 5, 10, 50])],
+    epoch_monitors=[MonitorLL(data=valiset, n_samples=[1, 5, 25, 100])],
     step_monitors=[],
 )
 
