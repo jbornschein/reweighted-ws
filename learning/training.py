@@ -39,6 +39,7 @@ class TrainerBase(HyperBase):
         self.register_hyper_param("termination", default=None, help="")
         self.register_hyper_param("epoch_monitors", default=[], help="")
         self.register_hyper_param("step_monitors", default=[], help="")
+        self.register_hyper_param("first_epoch_step_monitors", default=[], help="")
 
         self.shvar = {}
         self.shvar_update_fnc = {}
@@ -309,15 +310,19 @@ class Trainer(TrainerBase):
         assert isinstance(termination, Termination)
         assert isinstance(model, Model)
         
+        epoch = 0
+        # Perform first epoch
+        saved_step_monitors = self.step_monitors
+        self.step_monitors = self.first_epoch_step_monitors + self.step_monitors
+
         for m in self.step_monitors + self.epoch_monitors:
             m.on_init(model)
 
-        continue_learnning = True
-        epoch = 0
-        while continue_learnning:
+        L = self.perform_epoch()
+        self.step_monitors = saved_step_monitors
+
+        # remaining epochs...
+        while self.termination.continue_learning(L):
             epoch = epoch + 1
             L = self.perform_epoch()
-
-            # Converged?
-            continue_learning = self.termination.continue_learning(L)
 

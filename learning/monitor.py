@@ -130,7 +130,7 @@ class MonitorLL(Monitor):
                 L += log_PX
             L /= n_datapoints
 
-            self.logger.info("Test LL for %d datapoints with %s samples: %d" % (n_datapoints, K, L))
+            self.logger.info("Test LL for %d datapoints with %s samples: %5.2f" % (n_datapoints, K, L))
             self.dlog.append("LL_%d"%K, L)
         
         
