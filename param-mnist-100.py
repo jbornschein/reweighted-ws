@@ -46,6 +46,6 @@ trainer = Trainer(
     model=model,
     termination=termination,
     epoch_monitors=[MonitorLL(data=valiset, n_samples=[1, 5, 25, 100])],
-    step_monitors=[],
+    first_epoch_step_monitors=[MonitorLL(data=valiset, n_samples=[1, 5, 25, 100])],
 )
 
