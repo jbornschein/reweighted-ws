@@ -180,7 +180,7 @@ class TestSTBTStack(unittest.TestCase):
         n_samples, n_samples_ = testing.iscalar('n_samples')
         n_samples_ = self.n_samples
 
-        log_PX, log_P, log_Q, w = stack.log_likelihood(X, n_samples=n_samples)
+        log_PX, w, log_P, log_Q, KL, Hp, Hq = stack.log_likelihood(X, n_samples=n_samples)
         do_log_likelihood = theano.function(
                                 [X, n_samples],
                                 [log_PX, log_P, log_Q, w]  
@@ -198,6 +198,12 @@ class TestSTBTStack(unittest.TestCase):
         assert log_Q_.shape == (batch_size, n_samples_)
         assert w_.shape == (batch_size, n_samples_)
 
+        n_layers = len(stack.layers)
+
+        assert len(KL) == n_layers
+        assert len(Hp) == n_layers
+        assert len(Hq) == n_layers
+
     def test_ll_grad(self):
         
         learning_rate = 1e-3
@@ -208,7 +214,7 @@ class TestSTBTStack(unittest.TestCase):
         n_samples, n_samples_ = testing.iscalar('n_samples')
         n_samples_ = self.n_samples
 
-        log_PX, log_P, log_Q, w = stack.log_likelihood(X, n_samples=n_samples)
+        log_PX, w, log_P, log_Q, KL, Hp, Hq = stack.log_likelihood(X, n_samples=n_samples)
 
         cost_p = T.sum(T.sum(log_P*w, axis=1))
         cost_q = T.sum(T.sum(log_Q*w, axis=1))

@@ -101,7 +101,7 @@ class STBPStack(Model):
         log_p   = [None]*n_layers
 
         samples[0] = f_replicate_batch(X, n_samples)                   # 
-        log_q[0]   = T.zeros([batch_size*n_samples])+T.log(n_samples)  # 1/n_samples for each replicted X
+        log_q[0]   = T.zeros([batch_size*n_samples])+T.log(n_samples)  # 1/n_samples for each replicted X   XXX REALLY XXX
         
         # Generate samples (feed-forward)
         for l in xrange(n_layers-1):
@@ -128,19 +128,21 @@ class STBPStack(Model):
         
         # Calculate samplig weights
         w = T.exp(log_p_all-log_q_all-T.shape_padright(log_px))
-        #w = T.zeros( (batch_size, n_samples) )
 
-        log_p_all = T.zeros((batch_size, n_samples))
-        log_q_all = T.zeros((batch_size, n_samples))
+        # Calculate KL(P|Q), Hp, Hq
+        KL = [None]*n_layers
+        Hp = [None]*n_layers
+        Hq = [None]*n_layers
         for l in xrange(n_layers):
-            log_p_all += log_p[l]   # agregate all layers
-            log_q_all += log_q[l]   # agregate all layers
+            KL[l] = T.sum(w*(log_p[l]-log_q[l]), axis=1)
+            Hp[l] = T.sum(w*log_p[l], axis=1)
+            Hq[l] = T.sum(w*log_q[l], axis=1)
 
-        return log_px, log_p_all, log_q_all, w
+        return log_px, w, log_p_all, log_q_all, KL, Hp, Hq
 
     def get_gradients(self, X, Y=None, lr_p=1., lr_q=1., n_samples=None):
         """ return log_PX and an OrderedDict with parameter gradients """
-        log_PX, log_p, log_q, w = self.log_likelihood(X, Y, n_samples=n_samples)
+        log_PX, w, log_p, log_q, KL, Hp, Hq = self.log_likelihood(X, Y, n_samples=n_samples)
         
         batch_log_PX = T.sum(log_PX)
         cost_p = T.sum(T.sum(log_p*w, axis=1))
