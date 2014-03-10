@@ -46,12 +46,12 @@ class TestDataLog(unittest.TestCase):
         h5.close()
 
     def test_default_dlog(self):
-        dlog = datalog.dlog
+        dlog = datalog.getLogger()
         dlog.ignored("test")
 
     @unittest.skip("Failing since h5py conversion")
     def test_default_handler(self):
-        dlog = datalog.DataLog()
+        dlog = datalog.getLogger()
         dlog.set_handler("*", datalog.StoreToH5, self.fname)
         self.append_content(dlog)
         dlog.close()
@@ -60,7 +60,7 @@ class TestDataLog(unittest.TestCase):
 
     @unittest.skip("Failing since h5py conversion")
     def test_storage_handler(self):
-        dlog = datalog.DataLog()
+        dlog = datalog.getLogger()
         dlog.set_handler('T', datalog.StoreToH5, self.fname)
         self.append_content(dlog)
         dlog.close()
@@ -68,7 +68,7 @@ class TestDataLog(unittest.TestCase):
         self.check_content(self.fname)
     
     def test_append_all(self):
-        dlog = datalog.DataLog()
+        dlog = datalog.getLogger()
         dlog.set_handler('T', datalog.StoreToH5, self.fname)
         self.append_all_content(dlog)
         dlog.close()
@@ -76,7 +76,7 @@ class TestDataLog(unittest.TestCase):
         self.check_content(self.fname)
 
     def test_progress(self):
-        dlog = datalog.DataLog()
+        dlog = datalog.getLogger()
         dlog.set_handler('T', datalog.StoreToH5, self.fname)
         dlog.progress("Hello, Test")
         dlog.close()

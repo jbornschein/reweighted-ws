@@ -168,8 +168,32 @@ class DataLog:
         pass
 
     @abstractmethod
+    def ignored(self, tblname):
+        """
+        Returns True, then the given *name* is neither stored onto disk, 
+        nor visualized or triggered upon. When *ignored('something')* returns
+        True, it will make no difference if you *append* a value to table *tblname* or not.
+
+        This can be especially useful when running a (MPI-)parallel programs and collecting 
+        the value to be logged is an expensive operation.
+
+        Example::
+
+            if not dlog.ignored('summed_data'):
+                summed_data =  np.empty_like(data)
+                mpicomm.Reduce((data, MPI.DOUBLE), (summed_data, MPI_DOUBLE), MPI.SUM)
+                dlog.append('summed_data', summed_data)
+    
+            [..]
+        """
+        pass
+
+    @abstractmethod
     def getChild(self, name):
         l = ChildLogger(self.root, self.prefix+name)
+
+    def close(self):
+        pass
 
 #-----------------------------------------------------------------------------
 class ChildLogger(DataLog):
@@ -188,6 +212,17 @@ class ChildLogger(DataLog):
     def append_all(self, valdict):
         valdict = {(self.prefix+key): val for key, val in valdict}
         self.root.append_all(valdict)
+
+    def set_handler(self, tblname, handler_class, *args, **kwargs):
+        """ Set the specifies handler for all data stored under the name *tblname* """
+        self.root.set_handler(tblname, handler_class, *args, **kwargs)
+
+    def ignored(self, tblname):
+        return self.root.ignored(tblname)
+
+    def progress(self, message, completed=None):
+        """ Append some progress message """
+        self.root.progress(message, completed)
 
     def getChild(self, name):
         l = ChildLogger(self.root, self.prefix+name)
@@ -259,7 +294,6 @@ class RootLogger(DataLog):
                     argdict[tblname] = val
 
             handler.append_all(argdict)
-            
 
     def ignored(self, tblname):
         """
@@ -327,9 +361,9 @@ class RootLogger(DataLog):
     def getChild(self, name):
         return ChildLogger(self, name)
 
-def getLogger(name):
+def getLogger(name=''):
     global dlog
-    return dlog.getChild(".")
+    return dlog.getChild(name)
 
 #=============================================================================
 # Create global default data logger

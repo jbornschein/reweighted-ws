@@ -267,7 +267,7 @@ class Trainer(TrainerBase):
         LL = self.do_step(batch_idx)
 
         for m in self.step_monitors:
-            m.on_iter(model)
+            m.on_iter(self.model)
 
         self.dlog.append("pstep_L", LL)
         return LL
@@ -291,10 +291,10 @@ class Trainer(TrainerBase):
         LL_epoch /= n_batches
         
         for m in self.epoch_monitors:
-            m.on_iter(model)
+            m.on_iter(self.model)
 
         self.logger.info("Time per epoch %f s; %f ms per SGD step" % (t, t/n_batches*1000))
-        self.dlog.appned_all({
+        self.dlog.append_all({
             'timing.epoch':  t,
             'timing.step': t/n_batches
         })

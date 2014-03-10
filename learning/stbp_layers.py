@@ -480,11 +480,11 @@ def get_toy_model():
     layers = [
         SigmoidBeliefLayer( 
             unroll_scan=1,
-            n_lower=16,
-            n_qhid=32,
+            n_lower=25,
+            n_qhid=25,
         ),
         FactoizedBernoulliTop(
-            n_lower=8,
+            n_lower=10,
         )
     ]
     model = STBPStack(
