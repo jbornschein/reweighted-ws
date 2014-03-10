@@ -10,6 +10,7 @@ from collections import OrderedDict
 from time import time
 
 import numpy as np
+import progressbar as pbar
 
 import theano 
 import theano.tensor as T
@@ -207,59 +208,8 @@ class Trainer(TrainerBase):
                             allow_input_downcast=True,
                             on_unused_input='warn')
 
-    def calc_test_LL(self):
-        t0 = time()
-        n_test = min(5000, self.data_train.n_datapoints)
-        batch_size = max(self.batch_size, 10)
-        for spl in self.recalc_LL:
-            if spl == 'exact':
-                Lp_recalc = self.do_exact_LL()
-            else:
-                Lp_recalc = 0.
-                for batch_idx in xrange(n_test // batch_size):
-                    Lp = self.do_likelihood(batch_idx, batch_size, spl) 
-                    Lp_recalc += Lp
-                Lp_recalc  /= n_test
-                
-            self.logger.info("Test LL with %s samples: Lp_%s=%f " % (spl, spl, Lp_recalc))
-            dlog.append("Lp_%s"%spl, Lp_recalc)
-        t = time()-t0
-        self.logger.info("Calculating test LL took %f s"%t)
+        """
 
-    def perform_epoch(self):
-        model = self.model
-        n_samples = self.n_samples
-        learning_rate = self.learning_rate
-        layer_discount = self.layer_discount
-
-        batch_size = self.batch_size
-        n_batches  = self.data.n_datapoints // batch_size
-
-        t0 = time()
-        Lp_epoch = 0
-        for batch_idx in xrange(n_batches):
-            batch_log_PX = self.do_sgd_step(batch_idx, n_samples, learning_rate=learning_rate, layer_discount=layer_discount)
-
-            assert np.isfinite(batch_log_PX)
-            Lp_epoch  += batch_log_PX
-
-            #for name, p in model.get_model_params().iteritems():
-            #    assert np.isfinite(p.get_value()).all(), "%s contains NaN or infs" % name
-
-            self.logger.debug("SGD step (%4d of %4d)\tLp=%f" % (batch_idx, n_batches, batch_log_PX/batch_size))
-        Lp_epoch  /= n_batches*batch_size
-        
-        self.logger.info("LogLikelihoods: Lp=%f \t" % (Lp_epoch))
-                        
-        t = time()-t0
-        self.logger.info("Runtime: %5.2f s/epoch; %f ms/(SGD step)" % (t, t/n_batches*1000))
-        return Lp_epoch
-    """
-
-
-#    def evaluate_loglikelihood(self, data):
-#        total_LL, LL = self.f_loglikelihood(data)
-#        return total_LL, LL
 
     def perform_step(self, batch_idx, update=True):
         if update:
@@ -268,6 +218,7 @@ class Trainer(TrainerBase):
         LL = self.do_step(batch_idx)
 
         if batch_idx % self.monitor_nth_step == 0:
+            self.logger.info("SGD step %d         " % batch_idx)
             for m in self.step_monitors:
                 m.on_iter(self.model)
 
@@ -280,22 +231,30 @@ class Trainer(TrainerBase):
     def perform_epoch(self):
         self.update_shvars()
 
-        n_batches = self.data.n_datapoints // self.batch_size
-        t0 = time()
+        widgets = ["SGD step ", pbar.Counter(), ' (', pbar.Percentage(), ') ', pbar.Bar(), ' ', pbar.Timer(), ' ', pbar.ETA()]
+
+        n_datapoints = self.data.n_datapoints
+        n_batches = n_datapoints // self.batch_size
         LL_epoch = 0
+
+        bar = pbar.ProgressBar(widgets=widgets, maxval=n_batches)
+        bar.start()
+        t0 = time()
         for batch_idx in xrange(n_batches):
             LL = self.perform_step(batch_idx, update=False)
             LL_epoch += LL
 
-            self.logger.info("SGD step (%4d of %4d)\tLL=%f" % (batch_idx, n_batches, LL))
-
+            bar.update(batch_idx)
+            #self.logger.info("SGD step (%4d of %4d)\tLL=%f" % (batch_idx, n_batches, LL))
         t = time()-t0
+        bar.finish()
+
+        self.logger.info("Completed epoch (%d datapoints) in %f s; (%f ms per SGD step)" % (n_datapoints, t, t/n_batches*1000))
         LL_epoch /= n_batches
         
         for m in self.epoch_monitors:
             m.on_iter(self.model)
 
-        self.logger.info("Time per epoch %f s; %f ms per SGD step" % (t, t/n_batches*1000))
         self.dlog.append_all({
             'timing.epoch':  t,
             'timing.step': t/n_batches
@@ -319,11 +278,13 @@ class Trainer(TrainerBase):
         for m in self.step_monitors + self.epoch_monitors:
             m.on_init(model)
 
+        self.logger.info("Starting epoch 0...")
         L = self.perform_epoch()
         self.step_monitors = saved_step_monitors
 
         # remaining epochs...
         while self.termination.continue_learning(L):
             epoch = epoch + 1
+            self.logger.info("Starting epoch %d..." % epoch)
             L = self.perform_epoch()
 

@@ -46,6 +46,6 @@ trainer = Trainer(
     model=model,
     termination=termination,
     step_monitors=[MonitorLL(data=valiset, n_samples=[1, 5, 25, 100])],
-    monitor_nth_step=10
+    monitor_nth_step=100
 )
 

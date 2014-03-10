@@ -23,6 +23,8 @@ _logger = logging.getLogger()
 if __name__ == "__main__":
     import argparse 
 
+    logger = logging.getLogger(__name__)
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--verbose', '-v', action='count')
     parser.add_argument('--overwrite', action='store_true')
@@ -30,90 +32,16 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 
-    FORMAT = '%(module)-15s %(message)s'
-    logging.basicConfig(format=FORMAT, level=logging.INFO)
+    FORMAT = '[%(asctime)s] %(module)-15s %(message)s'
+    DATEFMT = "%H:%M:%S"
+    logging.basicConfig(format=FORMAT, datefmt=DATEFMT, level=logging.INFO)
 
-    print "="*77
-    print "== Starting experiment: %s" % args.param_file
-
+    logger.info("Starting experiment: %s" % args.param_file)
+    
     experiment = Experiment.from_param_file(args.param_file)
     experiment.setup_output_dir(args.param_file, with_suffix=(not args.overwrite))
     experiment.setup_logging()
-
-    print "=="
-    
     experiment.run_experiment()
 
-
-    exit(0)
-
-    _logger.info("loading data...")
-    data_train = ToyData(which_set='train')
-    data_valid = ToyData(which_set='valid')
-
-    batch_size = 10
-    learning_rate = 0.5
-
-    N, n_vis = data_train.X.shape
-    n_hid = 20
-
-    print data_train.X.shape
-
-    _logger.info("instatiating model")
-    nade = NADE(n_vis=n_vis, n_hid=n_hid, batch_size=batch_size)
-
-    _logger.info("instatiating trainer")
-    trainer = BatchedSGD(batch_size=batch_size)
-    trainer.set_data(data_train, data_valid)
-    trainer.set_model(nade)
-    trainer.compile()
-
-    print "=" * 77
-    epochs = 0
-    end_learning = False
-
-    LL = [-np.inf]
-    t0 = time()
-    while not end_learning:
-        LL_epoch = 0.
-
-        trainer.perform_epoch(learning_rate)
-
-        # for b in xrange(N//batch_size):
-        #    first = batch_size*b
-        #    last  = first + batch_size
-        #    batch_x = train_x[first:last]
-        #
-#            _, L, gb, gc, gW, gV = f_post(batch_x, learning_rate)
-
-#            dlog.progress("Prcessing minibatch %d" % b, b/(N//batch_size))
-#            dlog.append("L", L)
-# print "gb:", gb
-# print "b:", nade.b.get_value()
-#
-#            LL_epoch += L
-#        LL_epoch = LL_epoch / (N//batch_size)
-#        LL.append(LL_epoch)
-#
-#        dlog.append_all( {
-#            "LL_epoch": LL_epoch,
-#            "b": nade.b.get_value(),
-#            "c": nade.c.get_value(),
-#            "W": nade.W.get_value(),
-#            "V": nade.V.get_value()
-#        })
-#
-#        if epochs % 1 == 0:
-#            print "--- %d ----" % epochs
-#            print "LL:", LL_epoch
-# print "post: ", post
-# print "gb:", gb
-# print "b:", nade.b.get_value()
-# print "c:", nade.c.get_value()
-#        epochs += 1
-#
-# Converged?
-#        end_learning = LL_epoch <= np.max(LL[-6:-1])
-#        end_learning |= epochs > 10000
-#    t = time() - t0
-#    print "Time per epoch: %f" % (t / epochs)
+    
+    logger.info("Finished. Exiting")
