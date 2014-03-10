@@ -40,6 +40,7 @@ class TrainerBase(HyperBase):
         self.register_hyper_param("epoch_monitors", default=[], help="")
         self.register_hyper_param("step_monitors", default=[], help="")
         self.register_hyper_param("first_epoch_step_monitors", default=[], help="")
+        self.register_hyper_param("monitor_nth_step", default=1, help="")
 
         self.shvar = {}
         self.shvar_update_fnc = {}
@@ -92,7 +93,6 @@ class Trainer(TrainerBase):
         self.register_hyper_param("batch_size", default=100, help="")
         self.register_hyper_param("layer_discount", default=1.0, help="Reduce LR for each successive layer by this factor")
         self.register_hyper_param("n_samples", default=10, help="No. samples used during training")
-        self.register_hyper_param("recalc_LL", default=())
 
         def calc_learning_rates(base_rate):
             n_layers = len(self.model.layers)
@@ -267,8 +267,9 @@ class Trainer(TrainerBase):
 
         LL = self.do_step(batch_idx)
 
-        for m in self.step_monitors:
-            m.on_iter(self.model)
+        if batch_idx % self.monitor_nth_step == 0:
+            for m in self.step_monitors:
+                m.on_iter(self.model)
 
         self.dlog.append("pstep_L", LL)
         return LL

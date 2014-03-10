@@ -13,6 +13,7 @@ n_qhid = 2*n_hid
 
 dataset = MNIST(which_set='train')
 valiset = MNIST(which_set='valid', n_datapoints=1000)
+smallset = MNIST(which_set='valid', n_datapoints=100)
 
 layers=[
     SigmoidBeliefLayer( 
@@ -45,7 +46,7 @@ trainer = Trainer(
     data=dataset, 
     model=model,
     termination=termination,
-    epoch_monitors=[MonitorLL(data=valiset, n_samples=[1, 5, 25, 100])],
-    first_epoch_step_monitors=[MonitorLL(data=valiset, n_samples=[1, 5, 25, 100])],
+    step_monitors=[MonitorLL(data=smallset, n_samples=[1, 5, 25, 100])],
+    monitor_nth_step=100,
 )
 
