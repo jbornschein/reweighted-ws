@@ -13,7 +13,7 @@ from monitor import *
 def test_MonitorLL():
     dataset = ToyData('valid')
     n_samples = (1, 5, 25, 100, 500)
-    monitor = MonitorLL("validLL", dataset, n_samples)
+    monitor = MonitorLL(dataset, n_samples)
 
 
 
