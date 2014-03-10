@@ -22,7 +22,7 @@ from utils.datalog import dlog, StoreToH5, TextPrinter
 from dataset import DataSet
 from model import Model
 from training import Trainer
-from termination import TerminationCriterium
+from termination import Termination
 
 _logger = logging.getLogger()
 
@@ -99,88 +99,26 @@ class Experiment(object):
         results_fname = os.path.join(self.out_dir, "results.h5")
         dlog.set_handler("*", StoreToH5, results_fname)
         #dlog.set_handler(["L", "L_sgd"], TextPrinter)
-        
-    def setup_experiment(self):
-        params = self.params
     
-        self.set_dataset(params['dataset'])
-        self.set_model(params['model'])
-        self.set_trainer(params['trainer'])
-        self.set_termination(params['termination'])
-
-    def dlog_model_params(self):
-        model = self.model
-
-        _logger.info("Saving model params to H5")
-        if hasattr(model, "dlog_append"):
-            model.dlog_append()
-        else:
-            for name, val in model.get_model_params().iteritems():
-                val = val.get_value()
-                dlog.append(name, val)
-
     def run_experiment(self):
+        self.set_trainer(self.params['trainer'])
+
         self.sanity_check()
 
-        dataset = self.dataset
-        model = self.model
-        trainer = self.trainer
-        termination = self.termination
-        
-        trainer.set_data(dataset)
-        trainer.set_model(model)
-        trainer.compile()
+        self.trainer.load_data()
+        self.trainer.compile()
 
-        self.dlog_model_params()
-        termination.reset()
-        continue_learning = True
-        epoch = 0
-        LL = []
-        trainer.calc_test_LL()
-        while continue_learning:
-            epoch = epoch + 1
-            _logger.info("Performing epoch %d..." % epoch)
-            L = trainer.perform_epoch()
-                
-            dlog.append("L", L)
-            self.dlog_model_params()
-
-            #
-            trainer.calc_test_LL()
-
-            # Converged?
-            continue_learning = termination.continue_learning(L)
+        self.trainer.perform_learning()
 
     #---------------------------------------------------------------
     
     def sanity_check(self):
-        if not isinstance(self.dataset, DataSet):
-            raise ValueError("DataSet not set properly")
-
-        if not isinstance(self.model, Model):
-            raise ValueError("Model not set properly")
-
         if not isinstance(self.trainer, Trainer):
             raise ValueError("Trainer not set properly")
-
-        if not isinstance(self.termination, TerminationCriterium):
-            raise ValueError("Termination not set properly")
-
-    def set_dataset(self, dataset):
-        assert isinstance(dataset, DataSet)
-        self.dataset = dataset
-
-    def set_model(self, model):
-        assert isinstance(model, Model)
-        self.model = model
 
     def set_trainer(self, trainer):
         assert isinstance(trainer, Trainer)
         self.trainer = trainer
-
-    def set_termination(self, termination):
-        assert isinstance(termination, TerminationCriterium)
-        self.termination = termination
 
 #-----------------------------------------------------------------------------
 

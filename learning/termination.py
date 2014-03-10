@@ -13,10 +13,10 @@ import theano.tensor as T
 
 _logger = logging.getLogger(__name__)
 
-class TerminationCriterium(object):
+class Termination(object):
     pass
 
-class LogLikelihoodIncrease(TerminationCriterium):
+class LogLikelihoodIncrease(Termination):
     def __init__(self, min_increase=0.001, interval=5, max_epochs=1000, min_epochs=10):
         super(LogLikelihoodIncrease, self).__init__()
         

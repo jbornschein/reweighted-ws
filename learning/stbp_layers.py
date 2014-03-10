@@ -133,12 +133,12 @@ class STBPStack(Model):
         log_p_all = T.zeros((batch_size, n_samples))
         log_q_all = T.zeros((batch_size, n_samples))
         for l in xrange(n_layers):
-            log_p_all += (1./4)**l * log_p[l]   # agregate all layers
+            log_p_all += log_p[l]   # agregate all layers
             log_q_all += log_q[l]   # agregate all layers
 
         return log_px, log_p_all, log_q_all, w
 
-    def get_gradients(self, X, Y=None, learning_rate=1., layer_discount=1., n_samples=None):
+    def get_gradients(self, X, Y=None, lr_p=1., lr_q=1., n_samples=None):
         """ return log_PX and an OrderedDict with parameter gradients """
         log_PX, log_p, log_q, w = self.log_likelihood(X, Y, n_samples=n_samples)
         
@@ -148,13 +148,11 @@ class STBPStack(Model):
 
         gradients = OrderedDict()
         for nl, layer in enumerate(self.layers):
-            effective_lr = learning_rate * (layer_discount**nl)
-
             for name, shvar in layer.get_p_params().iteritems():
-                gradients[shvar] = effective_lr * T.grad(cost_p, shvar, consider_constant=[w])
+                gradients[shvar] = lr_p[nl] * T.grad(cost_p, shvar, consider_constant=[w])
 
             for name, shvar in layer.get_q_params().iteritems():
-                gradients[shvar] = effective_lr * T.grad(cost_q, shvar, consider_constant=[w])
+                gradients[shvar] = lr_q[nl] * T.grad(cost_q, shvar, consider_constant=[w])
 
         return batch_log_PX, gradients
 
@@ -171,7 +169,7 @@ class STBPStack(Model):
             params.update( l.get_q_params() )
         return params
 
-    def dlog_append(self):
+    def model_params_to_dlog(self, dlog):
         vals = {}
         for n,l in enumerate(self.layers):
             for pname, shvar in l.get_p_params().iteritems():
@@ -182,8 +180,17 @@ class STBPStack(Model):
                 vals[key] = shvar.get_value()
         dlog.append_all(vals)
 
-    def load_from_h5(self, row=-1):
-        pass
+    def model_params_from_dlog(self, dlog, row=-1):
+        for n,l in enumerate(self.layers):
+            for pname, shvar in l.get_p_params().iteritems():
+                key = "L%d.P.%s" % (n, pname)
+                value = dlog.load(key)
+                shvar.set_value(value)
+            for pname, shvar in l.get_q_params().iteritems():
+                key = "L%d.Q.%s" % (n, pname)
+                value = dlog.load(key)
+                shvar.set_value(value)
+ 
 
 #-----------------------------------------------------------------------------
 class STBPLayer(Model):
@@ -331,6 +338,69 @@ class FactoizedBernoulliTop(STBPTop):
 
         return X, self.log_p(X)
 
+
+class FVSBTop(STBPTop):
+    def __init__(self, **hyper_params):
+        super(FVSBTop, self).__init__()
+
+        # Hyper parameters
+        self.register_hyper_param('n_units', help='no. binary variables')
+
+        # Model parameters
+        self.register_model_param('b', help='sigmoid(b)-bias ', default=lambda: np.zeros(self.n_units))
+        self.register_model_param('W', help='weights (triangular)', default=lambda: default_weights(self.n_units, self.n_units) )
+
+        self.set_hyper_params(hyper_params)
+
+    def log_p(self, H):
+        """ Calculate P(H) 
+            return log(P(X|H))
+        """
+        n_units, = self.get_hyper_params(['n_units'])
+        W, b = self.get_model_params(['W', 'b'])
+
+        # Calculate log-bernoulli
+        W   = tensor.tril(W, k=-1)
+        p_i = self.sigmoid(T.dot(H, W)+b)
+
+        post = H*T.log(p_i) + (1-H)*T.log(1-p_i)
+        post = post.sum(axis=1)
+
+        return post
+
+    def sample_p(self, n_samples):
+        """ Sample H ~ P(H) 
+            return H, log(P(H))
+        """
+        n_units, = self.get_hyper_params(['n_units'])
+        W, b = self.get_model_params(['W', 'b'])
+
+        # Calculate log-bernoulli
+        W   = tensor.tril(W, k=-1)
+        p_i = self.sigmoid(T.dot(H, W)+b)
+
+        post_init = T.zeros(n_samples, dtype=floatX)
+        X_init    = T.zeros((n_samples, n_units), dtype=floatX)
+
+        def one_iter():
+            pass
+    
+        [X, post], updates = unroll_scan(
+                    fn=one_iter, 
+                    sequences=[W, b], 
+                    outputs_info=[X_init, post_init]
+                )
+        assert len(updates) == 0
+
+
+        # sample hiddens
+        p_X = self.sigmoid(a)
+        X = T.cast(theano_rng.uniform((n_samples, n_lower)) <= p_X, dtype=floatX)
+
+        return X, self.log_p(X)
+
+
+
 #=============================================================================
 class SigmoidBeliefLayer(STBPLayer):
     def __init__(self, **hyper_params):
@@ -403,4 +473,24 @@ class SigmoidBeliefLayer(STBPLayer):
         """
         q_nade =  self.q_nade
         return q_nade.f_sample(X)
+
+
+#-----------------------------------------------------------------------------
+def get_toy_model():
+    layers = [
+        SigmoidBeliefLayer( 
+            unroll_scan=1,
+            n_lower=25,
+            n_qhid=25,
+        ),
+        FactoizedBernoulliTop(
+            n_lower=10,
+        )
+    ]
+    model = STBPStack(
+        layers=layers
+    )
+    return model
+
+
 

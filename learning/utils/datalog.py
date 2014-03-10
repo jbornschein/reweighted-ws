@@ -4,14 +4,9 @@
 #
 
 """
-
 """
 
-try:
-    from abc import ABCMeta, abstractmethod
-except ImportError, e:
-    from pulp.utils.py25_compatibility import _py25_ABCMeta as ABCMeta
-    from pulp.utils.py25_compatibility import _py25_abstractmethod as abstractmethod
+from abc import ABCMeta, abstractmethod
 
 from os.path import isfile
 from multiprocessing import Process, Queue
@@ -39,6 +34,9 @@ class DataHandler(object):
         """ Called by Datalog whenever this object is set as an handler for some table """
         pass
 
+    def progress(self, message, completed=None, total=1.0):
+        pass
+
     @abstractmethod
     def append(self, tblname, value):
         pass
@@ -52,51 +50,6 @@ class DataHandler(object):
 
     def close(self):
         pass
-
-
-
-#=============================================================================
-# GUIDataHandler (AbstractBaseClass)
-
-class GUIDataHandler(DataHandler):
-    __metaclass__ = ABCMeta
-
-class GUIProxyHandler(DataHandler):
-    def __init__(self, gui_queue, vizid):
-        self.gui_queue = gui_queue
-        self.vizid = vizid
-
-    def append(self, tblname, value):
-        packet = {
-            'cmd': 'append',
-            'vizid': self.vizid,
-            'tblname': tblname,
-            'value': value
-        }
-        self.gui_queue.put(packet)
-
-    def append_all(self, valdict):
-        packet = {
-            'cmd': 'append_all',
-            'vizid': self.vizid,
-            'valdict': valdict,
-        }
-        self.gui_queue.put(packet)
-
-    def close(self):
-        packet = {
-            'cmd': 'close',
-            'vizid': self.vizid,
-        }
-        self.gui_queue.put(packet)
-    
-    def register(self, tblname):
-        packet = {
-            'cmd': 'register',
-            'vizid': self.vizid,
-            'tblname': tblname,
-        }
-        self.gui_queue.put(packet)
 
 #=============================================================================
 # StoreToH5 Handler
@@ -136,6 +89,9 @@ class StoreToH5(DataHandler):
     def append_all(self, valdict):
         self.autotbl.append_all(valdict)
 
+    def read(self, tblname, row):
+        pass
+
     def close(self):
         #if comm.rank != 0:
             #return
@@ -146,7 +102,6 @@ class StoreToH5(DataHandler):
 # StoreToTxt Handler
 
 class StoreToTxt(DataHandler):
-
     def __init__(self, destination=None):
         """ 
         Store data to the specified .txt destination.
@@ -192,13 +147,90 @@ class TextPrinter(DataHandler):
 
 #=============================================================================
 # DataLog
-
 class DataLog:
+    __metaclass__ = ABCMeta
+
+    def __init__(self):
+        self.root = None
+
+    @abstractmethod
+    def append(self, tblname, value):
+        """ Append the given value and call all the configured DataHandlers."""
+        pass
+
+    @abstractmethod
+    def append_all(self, valdict):
+        """
+        Append the given values and call all the consigured DataHandlers
+
+        *valdict* is expected to be a dictionary of key-value pairs.
+        """
+        pass
+
+    @abstractmethod
+    def ignored(self, tblname):
+        """
+        Returns True, then the given *name* is neither stored onto disk, 
+        nor visualized or triggered upon. When *ignored('something')* returns
+        True, it will make no difference if you *append* a value to table *tblname* or not.
+
+        This can be especially useful when running a (MPI-)parallel programs and collecting 
+        the value to be logged is an expensive operation.
+
+        Example::
+
+            if not dlog.ignored('summed_data'):
+                summed_data =  np.empty_like(data)
+                mpicomm.Reduce((data, MPI.DOUBLE), (summed_data, MPI_DOUBLE), MPI.SUM)
+                dlog.append('summed_data', summed_data)
+    
+            [..]
+        """
+        pass
+
+    @abstractmethod
+    def getChild(self, name):
+        l = ChildLogger(self.root, self.prefix+name)
+
+    def close(self):
+        pass
+
+#-----------------------------------------------------------------------------
+class ChildLogger(DataLog):
+    def __init__(self, root, name):
+        super(ChildLogger, self).__init__()
+
+        if name != "" and name[-1] != ".":
+            name += "."
+        self.prefix = name
+        self.root = root
+
+    def append(self, tblname, value):
+        """ Append the given value and call all the configured DataHandlers."""
+        self.root.append(self.prefix+tblname, value)
+
+    def append_all(self, valdict):
+        valdict = {(self.prefix+key): val for key, val in valdict.iteritems()}
+        self.root.append_all(valdict)
+
+    def set_handler(self, tblname, handler_class, *args, **kwargs):
+        """ Set the specifies handler for all data stored under the name *tblname* """
+        self.root.set_handler(tblname, handler_class, *args, **kwargs)
+
+    def ignored(self, tblname):
+        return self.root.ignored(tblname)
+
+    def progress(self, message, completed=None):
+        """ Append some progress message """
+        self.root.progress(message, completed)
+
+    def getChild(self, name):
+        l = ChildLogger(self.root, self.prefix+name)
+
+#-----------------------------------------------------------------------------
+class RootLogger(DataLog):
     def __init__(self, comm=MPI.COMM_WORLD):
         self.comm = comm
-        self.gui_queue = None        # Used to communicate with GUI process
-        self.gui_proc = None         # GUI process handle
-        self.next_vizid = 0
         self.policy = []             # Ordered list of (tbname, handler)-tuples
         self._lookup_cache = {}      # Cache for tblname -> hanlders lookups
 
@@ -262,7 +294,6 @@ class DataLog:
                     argdict[tblname] = val
 
             handler.append_all(argdict)
-            
 
     def ignored(self, tblname):
         """
@@ -292,23 +323,6 @@ class DataLog:
         if not issubclass(handler_class, DataHandler):
             raise TypeError("handler_class must be a subclass of DataHandler ")
 
-        # If it's a GUI handler, instantiate a proxy and send 'create' command to GUI
-        if issubclass(handler_class, GUIDataHandler) and self.gui_proc is not None:
-            vizid = self.next_vizid     # Get an unique identifier
-            self.next_vizid = self.next_vizid + 1
-
-            packet = {
-                'cmd': 'create',
-                'vizid': vizid,
-                'handler_class': handler_class,
-                'handler_args': args,
-                'handler_kargs': kargs
-            }
-            self.gui_queue.put(packet)
-            
-            self.set_handler(tblname, GUIProxyHandler, self.gui_queue, vizid)  # set proxy handler
-            return 
-
         # if not, instantiate it now
         handler = handler_class(*args, **kargs)             # instantiate handler 
         handler.register(tblname)
@@ -336,41 +350,22 @@ class DataLog:
         else:
             raise ValueError("Please provide valid DataHandler object.")
         
-    def start_gui(self, gui_class):
-        if self.comm.rank != 0:
-            return 
-
-        if self.gui_proc is not None:
-            raise RuntimeError("GUI already started")
-
-        def gui_startup(gui_class, gui_queue):
-            gui = gui_class(gui_queue)
-            gui.run()
-
-        self.gui_queue = Queue(2)    # Used to communicate with GUI process
-        self.gui_proc = Process(target=gui_startup, args=(gui_class, self.gui_queue))
-        self.gui_proc.start()
-
-    def close(self, quit_gui=False):
+    def close(self):
         """ Reset the datalog and close all registered DataHandlers """
         if self.comm.rank != 0:
             return
 
-        #for (tblname, handler) in self.policy:
-        #    handler.close()
+        for (tblname, handler) in self.policy:
+            handler.close()
         
-        if self.gui_proc is not None:
-            if quit_gui :
-                packet = {
-                    'cmd': 'quit',
-                    'vizid': 0
-                }
-                print "Sending quit!"
-                self.gui_queue.put(packet)
-            self.gui_proc.join()
-            
+    def getChild(self, name):
+        return ChildLogger(self, name)
+
+def getLogger(name=''):
+    global dlog
+    return dlog.getChild(name)
 
 #=============================================================================
 # Create global default data logger
 
-dlog = DataLog()
+dlog = RootLogger()

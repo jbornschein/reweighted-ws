@@ -71,27 +71,33 @@ class BarsData(DataSet):
 
 #-----------------------------------------------------------------------------
 class MNIST(DataSet):
-    def __init__(self, which_set='train', fname="mnist.pkl.gz"):
+    def __init__(self, which_set='train', n_datapoints=None, fname="mnist.pkl.gz"):
         _logger.info("loading MNIST data")
 
         with gzip.open(fname) as f:
             (train_x, train_y), (valid_x, valid_y), (test_x, test_y) = pickle.load(f)
 
         if which_set == 'train':
-            self.X, self.Y = self.preprocess(train_x, train_y)
+            self.X, self.Y = self.preprocess(train_x, train_y, n_datapoints)
         elif which_set == 'valid':
-            self.X, self.Y = self.preprocess(valid_x, valid_y)
+            self.X, self.Y = self.preprocess(valid_x, valid_y, n_datapoints)
         elif which_set == 'test':
-            self.X , self.Y  = self.preprocess(test_x, test_y)
+            self.X , self.Y  = self.preprocess(test_x, test_y, n_datapoints)
         else:
             raise ValueError("Unknown dataset %s" % which_set)
  
         self.n_datapoints = self.X.shape[0]
 
-    def preprocess(self, x, y):
+    def preprocess(self, x, y, n_datapoints):
         N = x.shape[0]
         assert N == y.shape[0]
+
+        if n_datapoints is not None:
+            N = n_datapoints
     
+        x = x[:N]
+        y = y[:N]
+
         perm = np.random.permutation(N)
         x = x[perm,:]
         y = y[perm]
@@ -152,4 +158,7 @@ def permute_cols(x, idx=None):
         idx = np.random.permutation(n_vis)
     return x[:,idx]
 
-       
+#-----------------------------------------------------------------------------
+def get_toy_data():
+    return BarsData(which_set="train", n_datapoints=500)
+    
