@@ -84,7 +84,7 @@ class STBPStack(Model):
             samples[l-1], log_p_l = layers[l-1].sample_p(samples[l])
             log_p += log_p_l
         
-        return samples[0], log_p
+        return samples, log_p
 
     def log_likelihood(self, X, Y=None, n_samples=None):
         layers = self.layers
@@ -140,7 +140,7 @@ class STBPStack(Model):
 
         return log_px, w, log_p_all, log_q_all, KL, Hp, Hq
 
-    def get_gradients(self, X, Y=None, lr_p=1., lr_q=1., n_samples=None):
+    def get_gradients(self, X, Y, lr_p, lr_q, n_samples):
         """ return log_PX and an OrderedDict with parameter gradients """
         log_PX, w, log_p, log_q, KL, Hp, Hq = self.log_likelihood(X, Y, n_samples=n_samples)
         
@@ -158,6 +158,12 @@ class STBPStack(Model):
 
         return batch_log_PX, gradients
 
+    def get_sleep_gradients(self, lr_q=1., n_dreams=100):
+        lr_p = T.zeros(len(self.layers))
+
+        p, log_p = self.sample_p(n_dreams)
+        return self.get_gradients(p[0], None, lr_p, lr_q, 1)
+        
     #------------------------------------------------------------------------
     def get_p_params(self):
         params = OrderedDict()

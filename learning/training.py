@@ -146,7 +146,7 @@ class Trainer(TrainerBase):
         X_batch = self.train_X[self.train_perm[first:last]]
         #Y_batch = self.train_Y[self.train_perm[first:last]]
         
-        batch_log_PX, gradients = model.get_gradients(X_batch, 
+        batch_log_PX, gradients = model.get_gradients(X_batch, None,
                     lr_p=lr_p, lr_q=lr_q,
                     n_samples=n_samples)
         batch_log_PX = batch_log_PX / batch_size
@@ -191,42 +191,38 @@ class Trainer(TrainerBase):
 
 
         #---------------------------------------------------------------------
-        """
         self.logger.info("compiling do_sleep_step")
-        learning_rate = T.fscalar('learning_rate')
-        n_samples = T.iscalar('n_samples')
+        n_dreams = T.iscalar('n_dreams')
         
-        X, H, lQ = model.f_sleep(n_samples)
-        total_Lq = T.sum(lQ)
+        log_PX, gradients = model.get_sleep_gradients(lr_q, n_dreams)
+        log_PX = T.sum(log_PX)
 
         updates = OrderedDict()
-        for pname in model.Q_params:
-            p = model.get_model_param(pname)
+        for shvar, value in gradients.iteritems():
+            gradient_old = gradients_old[shvar]
 
-            dTheta_old = momentum[p]
-            curr_grad = 0.5*learning_rate*T.grad(total_Lq, p)
+            dTheta = beta*gradient_old + (1.-beta)*value
 
-            dTheta = beta*dTheta_old + (1-beta)*curr_grad
+            updates[gradient_old] = dTheta
+            updates[shvar] = shvar + dTheta
 
-            updates[dTheta_old] = dTheta
-            updates[p] = p + dTheta
-        
         self.do_sleep_step = theano.function(  
-                            inputs=[n_samples, learning_rate], 
-                            outputs=total_Lq, 
+                            inputs=[n_dreams],
+                            outputs=log_PX,
                             updates=updates,
-                            name="sleep_step",
+                            name="do_sleep_step",
                             allow_input_downcast=True,
                             on_unused_input='warn')
-
-        """
-
 
     def perform_step(self, batch_idx, update=True):
         if update:
             self.update_shvars()
 
         LL = self.do_step(batch_idx)
+
+        if batch_idx % self.n_samples == 0:
+            self.logger.info("Performing sleep cycle %d         " % batch_idx)
+            self.perform_sleep()
 
         if batch_idx % self.monitor_nth_step == 0:
             self.logger.info("SGD step %d         " % batch_idx)
@@ -237,20 +233,23 @@ class Trainer(TrainerBase):
         return LL
 
     def perform_sleep(self):
-        pass
-
+        n_dreams = self.n_samples * self.batch_size
+        LL = self.do_sleep_step(n_dreams)
+        self.dlog.append("psleep_L", LL)
+        
     def perform_epoch(self):
         self.update_shvars()
         self.shuffle_train_data()
 
-        widgets = ["SGD step ", pbar.Counter(), ' (', pbar.Percentage(), ') ', pbar.Bar(), ' ', pbar.Timer(), ' ', pbar.ETA()]
 
         n_datapoints = self.data.n_datapoints
         n_batches = n_datapoints // self.batch_size
         LL_epoch = 0
 
+        widgets = ["SGD step ", pbar.Counter(), ' (', pbar.Percentage(), ') ', pbar.Bar(), ' ', pbar.Timer(), ' ', pbar.ETA()]
         bar = pbar.ProgressBar(widgets=widgets, maxval=n_batches)
         bar.start()
+
         t0 = time()
         for batch_idx in xrange(n_batches):
             LL = self.perform_step(batch_idx, update=False)
