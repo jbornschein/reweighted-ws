@@ -14,6 +14,7 @@ import progressbar as pbar
 
 import theano 
 import theano.tensor as T
+from theano.tensor.shared_randomstreams import RandomStreams
 
 import utils.datalog as dlog
 
@@ -24,6 +25,7 @@ from model import Model
 
 _logger = logging.getLogger(__name__)
 
+theano_rng = RandomStreams(seed=2341)
 floatX = theano.config.floatX
 
 class TrainerBase(HyperBase):
@@ -75,8 +77,18 @@ class TrainerBase(HyperBase):
     def load_data(self):
         data = self.data
         assert isinstance(data, DataSet)
+
+        n_datapoints = data.n_datapoints
+        assert n_datapoints == data.X.shape[0]
+        #assert n_datapoints == data.Y.shape[0]
+
         self.train_X = theano.shared(data.X, "train_X")
         self.train_Y = theano.shared(data.Y, "train_Y")
+        self.train_perm = theano.shared(np.random.permutation(n_datapoints))
+
+    def shuffle_train_data(self):
+        n_datapoints = self.data.n_datapoints
+        self.train_perm.set_value(np.random.permutation(n_datapoints))
 
     @abc.abstractmethod
     def compile(self):
@@ -102,6 +114,7 @@ class Trainer(TrainerBase):
 
         self.mk_shvar('n_samples', 100)
         self.mk_shvar('batch_size', 100)
+        self.mk_shvar('permutation', np.zeros(10), lambda self: np.zeros(10))
         self.mk_shvar('beta', 1.0)
         self.mk_shvar('lr_p', np.zeros(2), lambda self: calc_learning_rates(self.learning_rate_p))
         self.mk_shvar('lr_p', np.zeros(2), lambda self: calc_learning_rates(self.learning_rate_q))
@@ -130,8 +143,8 @@ class Trainer(TrainerBase):
 
         first = batch_idx*batch_size
         last  = first + batch_size
-        X_batch = self.train_X[first:last]
-        #Y_batch = self.train_Y[first:last]
+        X_batch = self.train_X[self.train_perm[first:last]]
+        #Y_batch = self.train_Y[self.train_perm[first:last]]
         
         batch_log_PX, gradients = model.get_gradients(X_batch, 
                     lr_p=lr_p, lr_q=lr_q,
@@ -228,6 +241,7 @@ class Trainer(TrainerBase):
 
     def perform_epoch(self):
         self.update_shvars()
+        self.shuffle_train_data()
 
         widgets = ["SGD step ", pbar.Counter(), ' (', pbar.Percentage(), ') ', pbar.Bar(), ' ', pbar.Timer(), ' ', pbar.ETA()]
 
