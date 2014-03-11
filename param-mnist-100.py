@@ -5,7 +5,7 @@ from learning.dataset import BarsData, FromModel, MNIST
 from learning.stbp_layers import  STBPStack, SigmoidBeliefLayer, FactoizedBernoulliTop
 from learning.training import Trainer
 from learning.termination import LogLikelihoodIncrease
-from learning.monitor import MonitorLL
+from learning.monitor import MonitorLL, DLogModelParams
 
 n_vis = 28*28
 n_hid = 100
@@ -46,6 +46,7 @@ trainer = Trainer(
     data=dataset, 
     model=model,
     termination=termination,
+    epoch_monitors=[DLogModelParams()],
     step_monitors=[MonitorLL(data=smallset, n_samples=[1, 5, 25, 100])],
     monitor_nth_step=100,
 )

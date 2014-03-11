@@ -58,6 +58,7 @@ class DLogModelParams(Monitor):
         super(DLogModelParams, self).__init__()
 
     def on_iter(self, model):
+        self.logger.info("Saving model parameters")
         model.model_params_to_dlog(self.dlog)
 
 
