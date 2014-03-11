@@ -40,6 +40,9 @@ if __name__ == "__main__":
     
     experiment = Experiment.from_param_file(args.param_file)
     experiment.setup_output_dir(args.param_file, with_suffix=(not args.overwrite))
+
+    logger.info("Output directory: %s" % experiment.out_dir)
+
     experiment.setup_logging()
     experiment.run_experiment()
 

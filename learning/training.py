@@ -102,6 +102,7 @@ class Trainer(TrainerBase):
 
         self.register_hyper_param("learning_rate_p", default=1e-2, help="Learning rate")
         self.register_hyper_param("learning_rate_q", default=1e-2, help="Learning rate")
+        self.register_hyper_param("learning_rate_s", default=1e-2, help="Learning rate")
         self.register_hyper_param("beta", default=0.95, help="Momentum factor")
         self.register_hyper_param("batch_size", default=100, help="")
         self.register_hyper_param("layer_discount", default=1.0, help="Reduce LR for each successive layer by this factor")
@@ -117,7 +118,8 @@ class Trainer(TrainerBase):
         self.mk_shvar('permutation', np.zeros(10), lambda self: np.zeros(10))
         self.mk_shvar('beta', 1.0)
         self.mk_shvar('lr_p', np.zeros(2), lambda self: calc_learning_rates(self.learning_rate_p))
-        self.mk_shvar('lr_p', np.zeros(2), lambda self: calc_learning_rates(self.learning_rate_q))
+        self.mk_shvar('lr_q', np.zeros(2), lambda self: calc_learning_rates(self.learning_rate_q))
+        self.mk_shvar('lr_s', np.zeros(2), lambda self: calc_learning_rates(self.learning_rate_s))
 
         self.set_hyper_params(hyper_params)
     
@@ -134,7 +136,7 @@ class Trainer(TrainerBase):
         self.logger.info("compiling do_step")
 
         lr_p = self.shvar['lr_p']
-        lr_q = self.shvar['lr_p']
+        lr_q = self.shvar['lr_q']
         beta = self.shvar['beta']
         batch_size = self.shvar['batch_size']
         n_samples = self.shvar['n_samples']
@@ -193,8 +195,11 @@ class Trainer(TrainerBase):
         #---------------------------------------------------------------------
         self.logger.info("compiling do_sleep_step")
         n_dreams = T.iscalar('n_dreams')
+
+        beta = self.shvar['beta']
+        lr_s = self.shvar['lr_s']
         
-        log_PX, gradients = model.get_sleep_gradients(lr_q, n_dreams)
+        log_PX, gradients = model.get_sleep_gradients(lr_s, n_dreams)
         log_PX = T.sum(log_PX)
 
         updates = OrderedDict()
@@ -221,11 +226,11 @@ class Trainer(TrainerBase):
         LL = self.do_step(batch_idx)
 
         if batch_idx % self.n_samples == 0:
-            self.logger.info("Performing sleep cycle %d         " % batch_idx)
+            self.logger.debug("Performing sleep cycle %d         " % batch_idx)
             self.perform_sleep()
 
         if batch_idx % self.monitor_nth_step == 0:
-            self.logger.info("SGD step %d         " % batch_idx)
+            self.logger.info("SGD step %d, calling step_monitors...      " % batch_idx)
             for m in self.step_monitors:
                 m.on_iter(self.model)
 

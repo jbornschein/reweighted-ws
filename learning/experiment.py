@@ -23,6 +23,7 @@ from dataset import DataSet
 from model import Model
 from training import Trainer
 from termination import Termination
+from monitor import DLogModelParams
 
 _logger = logging.getLogger()
 
@@ -115,6 +116,11 @@ class Experiment(object):
     def sanity_check(self):
         if not isinstance(self.trainer, Trainer):
             raise ValueError("Trainer not set properly")
+
+        
+        if not any( [isinstance(m, DLogModelParams) for m in self.trainer.epoch_monitors] ):
+            self.logger.warn("DLogModelParams is not setup as an epoch_monitor. Model parameters wouldn't be saved. Configureing default DLogModelParams")
+            self.trainer.epoch_monitors += DLogModelParams()
 
     def set_trainer(self, trainer):
         assert isinstance(trainer, Trainer)

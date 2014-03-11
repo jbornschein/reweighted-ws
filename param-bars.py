@@ -8,7 +8,7 @@ from learning.termination import LogLikelihoodIncrease, EarlyStopping
 from learning.monitor import MonitorLL, DLogModelParams
 
 n_vis = 5*5
-n_hid = 20
+n_hid = 15
 n_qhid = 2*n_hid
 
 dataset = BarsData(which_set='train', n_datapoints=1000)

@@ -31,10 +31,11 @@ model = STBPStack(
 )
 
 trainer = Trainer(
-    n_samples=10,
+    n_samples=5,
     learning_rate_p=1e-3,
     learning_rate_q=1e-3,
-    layer_discount=0.25,
+    learning_rate_s=1e-3,
+    layer_discount=0.50,
     batch_size=10,
     data=dataset, 
     model=model,

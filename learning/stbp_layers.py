@@ -35,6 +35,9 @@ theano_rng = RandomStreams(seed=2341)
 #                M[i,7-j] = 1.
 #    return M
 
+def enumerate_pairs(start, end):
+    return [(i, i+1) for i in xrange(0, end-1)]
+
 def f_replicate_batch(X, repeat):
     X_ = X.dimshuffle((0, 'x', 1))
     X_ = X_ + T.zeros((X.shape[0], repeat, X.shape[1]), dtype=floatX)
@@ -158,11 +161,28 @@ class STBPStack(Model):
 
         return batch_log_PX, gradients
 
-    def get_sleep_gradients(self, lr_q=1., n_dreams=100):
-        lr_p = T.zeros(len(self.layers))
+    def get_sleep_gradients(self, lr_s=1., n_dreams=100):
+        layers = self.layers
+        n_layers = len(layers)
 
         p, log_p = self.sample_p(n_dreams)
-        return self.get_gradients(p[0], None, lr_p, lr_q, 1)
+
+        log_q = T.zeros((n_dreams,))
+        print n_layers
+        for i, j in enumerate_pairs(0, n_layers):
+            print "log_q", i, j
+            log_q += layers[i].log_q(p[i], p[i+1])
+
+        cost_q = T.sum(log_q)
+
+        gradients = OrderedDict()
+        for nl, layer in enumerate(self.layers):
+            for name, shvar in layer.get_q_params().iteritems():
+                print "Layer", nl, layer, name, shvar
+                gradients[shvar] = lr_s[nl] * T.grad(cost_q, shvar)
+                print "----"
+
+        return log_q, gradients
         
     #------------------------------------------------------------------------
     def get_p_params(self):
@@ -297,7 +317,7 @@ class STBPTop(Model):
         pass
 
     #-------------------------------------------------------------------------
-    def log_q(self, X, H):
+    def log_q(self, X, H=None):
         """ Should never be called """ 
         raise RuntimeError("Sombody called log_q on a TopLayer")
 
@@ -470,7 +490,7 @@ class SigmoidBeliefLayer(STBPLayer):
     #-------------------------------------------------------------------------
     def log_q(self, X, H):
         """ Calulate Q(H|X)
-            Return log(P(Q(H|X)))
+            Return log(Q(H|X))
         """
         q_nade = self.q_nade
         return q_nade.f_loglikelihood(H, X)
