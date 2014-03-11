@@ -38,7 +38,7 @@ trainer = Trainer(
     batch_size=10,
     data=dataset, 
     model=model,
-    termination=EarlyStopping,
+    termination=EarlyStopping(),
     epoch_monitors=[DLogModelParams()],
     step_monitors=[MonitorLL(data=smallset, n_samples=[1, 5, 25, 100])],
     monitor_nth_step=100,

@@ -106,8 +106,6 @@ class Trainer(TrainerBase):
         self.mk_shvar('lr_p', np.zeros(2), lambda self: calc_learning_rates(self.learning_rate_p))
         self.mk_shvar('lr_p', np.zeros(2), lambda self: calc_learning_rates(self.learning_rate_q))
 
-        self.mk_shvar('batch_idx', 1, lambda self: 0)
-
         self.set_hyper_params(hyper_params)
     
     def compile(self):
@@ -243,9 +241,7 @@ class Trainer(TrainerBase):
         for batch_idx in xrange(n_batches):
             LL = self.perform_step(batch_idx, update=False)
             LL_epoch += LL
-
             bar.update(batch_idx)
-            #self.logger.info("SGD step (%4d of %4d)\tLL=%f" % (batch_idx, n_batches, LL))
         t = time()-t0
         bar.finish()
 
@@ -270,6 +266,15 @@ class Trainer(TrainerBase):
         assert isinstance(termination, Termination)
         assert isinstance(model, Model)
         
+        # Print information
+        n_datapoints = self.data.n_datapoints
+        n_batches = n_datapoints // self.batch_size
+
+        self.logger.info("Dataset contains %d datapoints in %d mini-batches (%d datapoints per mini-batch)" %
+            (n_datapoints, n_batches, self.batch_size))
+        self.logger.info("Using %d samples, lr_p=%3.1e, lr_q=%3.1e, layer_discount=%4.2f" %
+            (self.n_samples, self.learning_rate_p, self.learning_rate_q, self.layer_discount))
+
         epoch = 0
         # Perform first epoch
         saved_step_monitors = self.step_monitors

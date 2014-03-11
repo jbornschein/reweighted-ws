@@ -84,12 +84,11 @@ class EarlyStopping(Termination):
         if self.epochs > self.max_epochs:
             return False
 
-
+        increase = (L-self.best_LL)/(np.abs(self.best_LL))
         if L > self.best_LL:
             self.best_LL = L
             self.fails = 0
-            increase = (L-self.best_LL)/(np.abs(self.best_LL))
-            _logger.info("Validation LL=%5.2f (increased by %f %%)" % (L, 100*increase))
+            _logger.info("Validation LL=%5.2f (increased by %4.2f %%)" % (L, 100*increase))
         else:
             self.fails += 1
             _logger.info("Validation LL stagnated (%dth)" % (self.fails))
