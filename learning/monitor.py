@@ -19,7 +19,6 @@ _logger = logging.getLogger(__name__)
 
 class Monitor(HyperBase):
     """ Abtract base class to monitor stuff """
-
     __metaclass__ = abc.ABCMeta
 
     def __init__(self):   
@@ -226,6 +225,9 @@ class MonitorLL(Monitor):
             Hq /= n_datapoints
 
             prefix = "%d." % K
+
+            global validation_LL
+            validation_LL = L
 
             self.logger.info("MonitorLL (%d datpoints, %d samples): LL=%5.2f KL=%s" % (n_datapoints, K, L, KL))
             self.dlog.append_all({

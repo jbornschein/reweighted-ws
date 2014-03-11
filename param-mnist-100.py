@@ -4,7 +4,7 @@ import numpy as np
 from learning.dataset import BarsData, FromModel, MNIST
 from learning.stbp_layers import  STBPStack, SigmoidBeliefLayer, FactoizedBernoulliTop
 from learning.training import Trainer
-from learning.termination import LogLikelihoodIncrease
+from learning.termination import LogLikelihoodIncrease, EarlyStopping
 from learning.monitor import MonitorLL, DLogModelParams
 
 n_vis = 28*28
@@ -30,13 +30,6 @@ model = STBPStack(
     layers=layers
 )
 
-
-termination = LogLikelihoodIncrease(
-    min_increase=0.005,
-    min_epochs=10,
-    max_epochs=200.
-)
-
 trainer = Trainer(
     n_samples=10,
     learning_rate_p=1e-3,
@@ -45,7 +38,7 @@ trainer = Trainer(
     batch_size=10,
     data=dataset, 
     model=model,
-    termination=termination,
+    termination=EarlyStopping,
     epoch_monitors=[DLogModelParams()],
     step_monitors=[MonitorLL(data=smallset, n_samples=[1, 5, 25, 100])],
     monitor_nth_step=100,

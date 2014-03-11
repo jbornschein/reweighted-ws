@@ -283,6 +283,7 @@ class Trainer(TrainerBase):
         self.step_monitors = saved_step_monitors
 
         # remaining epochs...
+        termination.reset()
         while self.termination.continue_learning(L):
             epoch = epoch + 1
             self.logger.info("Starting epoch %d..." % epoch)
