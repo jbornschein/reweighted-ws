@@ -168,9 +168,7 @@ class STBPStack(Model):
         p, log_p = self.sample_p(n_dreams)
 
         log_q = T.zeros((n_dreams,))
-        print n_layers
         for i, j in enumerate_pairs(0, n_layers):
-            print "log_q", i, j
             log_q += layers[i].log_q(p[i], p[i+1])
 
         cost_q = T.sum(log_q)
@@ -178,9 +176,7 @@ class STBPStack(Model):
         gradients = OrderedDict()
         for nl, layer in enumerate(self.layers):
             for name, shvar in layer.get_q_params().iteritems():
-                print "Layer", nl, layer, name, shvar
                 gradients[shvar] = lr_s[nl] * T.grad(cost_q, shvar)
-                print "----"
 
         return log_q, gradients
         

@@ -37,6 +37,8 @@ class TrainerBase(HyperBase):
         self.logger = logging.getLogger(__name__)
         self.dlog = dlog.getLogger(__name__)
 
+        self.step = 0 
+
         self.register_hyper_param("model", default=None, help="")
         self.register_hyper_param("data", default=None, help="")
         self.register_hyper_param("termination", default=None, help="")
@@ -219,61 +221,6 @@ class Trainer(TrainerBase):
                             allow_input_downcast=True,
                             on_unused_input='warn')
 
-    def perform_step(self, batch_idx, update=True):
-        if update:
-            self.update_shvars()
-
-        LL = self.do_step(batch_idx)
-
-        if batch_idx % self.n_samples == 0:
-            self.logger.debug("Performing sleep cycle %d         " % batch_idx)
-            self.perform_sleep()
-
-        if batch_idx % self.monitor_nth_step == 0:
-            self.logger.info("SGD step %d, calling step_monitors...      " % batch_idx)
-            for m in self.step_monitors:
-                m.on_iter(self.model)
-
-        self.dlog.append("pstep_L", LL)
-        return LL
-
-    def perform_sleep(self):
-        n_dreams = self.n_samples * self.batch_size
-        LL = self.do_sleep_step(n_dreams)
-        self.dlog.append("psleep_L", LL)
-        
-    def perform_epoch(self):
-        self.update_shvars()
-        self.shuffle_train_data()
-
-
-        n_datapoints = self.data.n_datapoints
-        n_batches = n_datapoints // self.batch_size
-        LL_epoch = 0
-
-        widgets = ["SGD step ", pbar.Counter(), ' (', pbar.Percentage(), ') ', pbar.Bar(), ' ', pbar.Timer(), ' ', pbar.ETA()]
-        bar = pbar.ProgressBar(widgets=widgets, maxval=n_batches)
-        bar.start()
-
-        t0 = time()
-        for batch_idx in xrange(n_batches):
-            LL = self.perform_step(batch_idx, update=False)
-            LL_epoch += LL
-            bar.update(batch_idx)
-        t = time()-t0
-        bar.finish()
-
-        self.logger.info("Completed epoch (%d datapoints) in %f s; (%f ms per SGD step)" % (n_datapoints, t, t/n_batches*1000))
-        LL_epoch /= n_batches
-        
-        for m in self.epoch_monitors:
-            m.on_iter(self.model)
-
-        self.dlog.append_all({
-            'timing.epoch':  t,
-            'timing.step': t/n_batches
-        })
-        return LL_epoch
 
     def perform_learning(self):
         self.update_shvars()
@@ -312,3 +259,75 @@ class Trainer(TrainerBase):
             self.logger.info("Starting epoch %d..." % epoch)
             L = self.perform_epoch()
 
+    #-----------------------------------------------------------------------
+    def perform_epoch(self):
+        n_datapoints = self.data.n_datapoints
+        batch_size = self.batch_size
+        n_batches = n_datapoints // batch_size
+        epoch = self.step // n_batches
+        LL_epoch = 0
+
+        self.update_shvars()
+        self.shuffle_train_data()
+
+        widgets = ["Epoch %d, step "%(epoch+1), pbar.Counter(), ' (', pbar.Percentage(), ') ', pbar.Bar(), ' ', pbar.Timer(), ' ', pbar.ETA()]
+        bar = pbar.ProgressBar(widgets=widgets, maxval=n_batches).start()
+
+        t0 = time()
+        while True:
+            LL = self.perform_step(update=False)
+            LL_epoch += LL
+
+            batch_idx = self.step % n_batches
+            bar.update(batch_idx)
+
+            if self.step % n_batches == 0:
+                break
+        t = time()-t0
+        bar.finish()
+
+        LL_epoch /= n_batches
+
+        self.logger.info("Completed epoch %d in %f s (%f ms per SGD step). Calling epoch_monitors..." % (epoch+1, t, t/n_batches*1000))
+        for m in self.epoch_monitors:
+            m.on_iter(self.model)
+
+        self.dlog.append_all({
+            'timing.epoch':  t,
+            'timing.step': t/n_batches
+        })
+        return LL_epoch
+
+    def perform_step(self, update=True):
+        n_batches = self.data.n_datapoints // self.batch_size
+        batch_idx = self.step % n_batches
+
+        # Do we need to update shared variables/parameters?
+        if update:
+            self.update_shvars()
+
+        LL = self.do_step(batch_idx)
+
+        #
+        self.step = self.step + 1
+        epoch = self.step // n_batches
+        batch_idx = self.step % n_batches
+
+        self.dlog.append("pstep_L", LL)
+
+        if (self.step % self.n_samples == 0) and (self.learning_rate_s > 0.0):
+            self.logger.debug("Epoch %d, step %d (%d steps total): Performing sleep cycle\x1b[K" % (epoch+1, batch_idx, self.step))
+            n_dreams = self.n_samples * self.batch_size
+            LL = self.do_sleep_step(n_dreams)
+            self.dlog.append("psleep_L", LL)
+
+        if (self.step % self.monitor_nth_step == 0) and (len(self.step_monitors) > 0):
+            self.logger.info("Epoch %d, step %d (%d steps total): Calling step_monitors...\x1b[K" % (epoch+1, batch_idx, self.step))
+            for m in self.step_monitors:
+                m.on_iter(self.model)
+
+        return LL
+
+    
+        
+    
