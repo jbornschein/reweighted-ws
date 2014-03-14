@@ -49,7 +49,7 @@ class ToyData(DataSet):
 #-----------------------------------------------------------------------------
 class BarsData(DataSet):
     def __init__(self, which_set='train', n_datapoints=1000, D=5):
-        _logger.debug("generating bars data")
+        _logger.debug("Generating bars data")
 
         n_vis = D**2
         n_hid = 2*D
@@ -72,7 +72,7 @@ class BarsData(DataSet):
 #-----------------------------------------------------------------------------
 class MNIST(DataSet):
     def __init__(self, which_set='train', n_datapoints=None, fname="mnist.pkl.gz"):
-        _logger.info("loading MNIST data")
+        _logger.info("Loading MNIST data")
 
         with gzip.open(fname) as f:
             (train_x, train_y), (valid_x, valid_y), (test_x, test_y) = pickle.load(f)
@@ -98,11 +98,14 @@ class MNIST(DataSet):
         x = x[:N]
         y = y[:N]
 
-        perm = np.random.permutation(N)
-        x = x[perm,:]
-        y = y[perm]
+        #perm = np.random.permutation(N)
+        #x = x[perm,:]
+        #y = y[perm]
 
-        x = 1.*(x > 0.5)       # binarize x
+        # Binarize
+        r = np.random.uniform(size=x.shape)
+        x = 1. * (x > r)
+        #x = 1.*(x > 0.5)       # binarize x
 
         one_hot = np.zeros( (N, 10), dtype=floatX)
         for n in xrange(N):
