@@ -288,7 +288,7 @@ class Trainer(TrainerBase):
 
         LL_epoch /= n_batches
 
-        self.logger.info("Completed epoch %d in %f s (%f ms per SGD step). Calling epoch_monitors..." % (epoch+1, t, t/n_batches*1000))
+        self.logger.info("Completed epoch %d in %.1fs (%.1fms/step). Calling epoch_monitors..." % (epoch+1, t, t/n_batches*1000))
         for m in self.epoch_monitors:
             m.on_iter(self.model)
 

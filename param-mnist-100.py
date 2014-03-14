@@ -31,7 +31,7 @@ model = STBPStack(
 )
 
 trainer = Trainer(
-    n_samples=5,
+    n_samples=10,
     learning_rate_p=1e-3,
     learning_rate_q=1e-3,
     learning_rate_s=1e-3,
@@ -40,7 +40,7 @@ trainer = Trainer(
     data=dataset, 
     model=model,
     termination=EarlyStopping(),
-    epoch_monitors=[DLogModelParams()],
+    epoch_monitors=[MonitorLL(data=valiset, n_samples=25), DLogModelParams()],
     step_monitors=[MonitorLL(data=smallset, n_samples=[1, 5, 25, 100])],
     monitor_nth_step=100,
 )
