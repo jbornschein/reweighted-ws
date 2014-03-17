@@ -56,7 +56,11 @@ class HyperBase(object):
 
     def get_hyper_params(self, keys=None):
         """ """
-        return [self.get_hyper_param(k) for k in keys]
+        if keys is None:
+            keys = self._hyper_params.keys()
+            return {k: self.get_hyper_param(k) for k in keys}
+        else:
+            return [self.get_hyper_param(k) for k in keys]
 
     def set_hyper_param(self, key, val=None):
         param = self._hyper_params.get(key, None)

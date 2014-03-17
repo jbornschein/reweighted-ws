@@ -36,15 +36,12 @@ if __name__ == "__main__":
     DATEFMT = "%H:%M:%S"
     logging.basicConfig(format=FORMAT, datefmt=DATEFMT, level=logging.INFO)
 
-    logger.info("Starting experiment: %s" % args.param_file)
-    
     experiment = Experiment.from_param_file(args.param_file)
     experiment.setup_output_dir(args.param_file, with_suffix=(not args.overwrite))
-
-    logger.info("Output directory: %s" % experiment.out_dir)
-
     experiment.setup_logging()
-    experiment.run_experiment()
+    experiment.print_summary()
 
+    experiment.run_experiment()
     
     logger.info("Finished. Exiting")
+    experiment.print_summary()

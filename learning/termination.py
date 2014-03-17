@@ -91,7 +91,7 @@ class EarlyStopping(Termination):
             _logger.info("Validation LL=%5.2f (increased by %4.2f %%)" % (L, 100*increase))
         else:
             self.fails += 1
-            _logger.info("Validation LL stagnated (%dth)" % (self.fails))
+            _logger.info("Validation LL=%5.2f stagnated (%dth)" % (L, self.fails))
 
         return self.fails < self.interval
 

@@ -40,10 +40,13 @@ class Experiment(object):
         self.params = {}
         self.param_fname = None
         self.out_dir = None
+        self.logger = _logger
         
     def load_param_file(self, fname):
         self.param_fname = fname
         execfile(fname, self.params)
+
+        self.set_trainer(self.params['trainer'])
 
     def setup_output_dir(self, exp_name=None, with_suffix=True):
         if exp_name is None:
@@ -93,16 +96,37 @@ class Experiment(object):
         if self.param_fname:
             copyfile(self.param_fname, os.path.join(self.out_dir, "paramfile.py"))
         
-
     def setup_logging(self):
         assert self.out_dir
 
         results_fname = os.path.join(self.out_dir, "results.h5")
         dlog.set_handler("*", StoreToH5, results_fname)
-        #dlog.set_handler(["L", "L_sgd"], TextPrinter)
-    
+
+        logger_fname = os.path.join(self.out_dir, "logfile.txt")
+        fh = logging.FileHandler(logger_fname)
+        logging
+
+    def print_summary(self):
+        logger = self.logger
+        
+        logger.info("Parameter file:   %s" % self.param_fname)
+        logger.info("Output directory: %s" % self.out_dir)
+        logger.info("-- Trainer hyperparameter --")
+        for k, v in self.trainer.get_hyper_params().iteritems():
+            if not isinstance(v, (int, float)):
+                continue
+            logger.info("  %20s: %s" % (k, v))
+        logger.info("-- Model hyperparameter --")
+        for l in self.trainer.model.layers[::-1]:
+            logger.info("    %s" % l.__class__)
+            for k, v in l.get_hyper_params().iteritems():
+                logger.info("      %20s: %s" % (k, v))
+            
+        
+        
+        #logger.info("Total runtime:    %f4.1 h" % runtime)
+ 
     def run_experiment(self):
-        self.set_trainer(self.params['trainer'])
 
         self.sanity_check()
 
@@ -119,7 +143,7 @@ class Experiment(object):
 
         
         if not any( [isinstance(m, DLogModelParams) for m in self.trainer.epoch_monitors] ):
-            self.logger.warn("DLogModelParams is not setup as an epoch_monitor. Model parameters wouldn't be saved. Configureing default DLogModelParams")
+            self.logger.warn("DLogModelParams is not setup as an epoch_monitor. Model parameters wouldn't be saved. Adding default DLogModelParams()")
             self.trainer.epoch_monitors += DLogModelParams()
 
     def set_trainer(self, trainer):
