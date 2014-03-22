@@ -23,11 +23,11 @@ from termination import Termination
 from dataset import DataSet
 from model import Model
 
-_logger = logging.getLogger(__name__)
-
 theano_rng = RandomStreams(seed=2341)
 floatX = theano.config.floatX
 
+#=============================================================================
+# Trainer base class
 class TrainerBase(HyperBase):
     __metaclass__ = abc.ABCMeta
 
@@ -330,7 +330,3 @@ class Trainer(TrainerBase):
                 m.on_iter(self.model)
 
         return LL
-
-    
-        
-    

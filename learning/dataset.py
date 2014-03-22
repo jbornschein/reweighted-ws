@@ -1,5 +1,4 @@
-""" 
-
+"""
 """
 
 from __future__ import division
@@ -21,14 +20,18 @@ floatX = theano.config.floatX
 
 theano_rng = RandomStreams(seed=2341)
 
+
+#-----------------------------------------------------------------------------
+# Dataset base class
 class DataSet(object):
     __metaclass__ = abc.ABCMeta
 
     def preprocess(self, X):
         """ Given a mini-batch of datapoints in a Theano tensor, this
-            method returns a Theano tensor with the preprocessed datapoints 
+            method returns a Theano tensor with the preprocessed datapoints
         """
         return X
+
 
 #-----------------------------------------------------------------------------
 class ToyData(DataSet):
@@ -53,8 +56,9 @@ class ToyData(DataSet):
             self.Y = np.concatenate([Y]*2)
         else:
             raise ValueError("Unknown dataset %s" % which_set)
-        
+
         self.n_datapoints = self.X.shape[0]
+
 
 #-----------------------------------------------------------------------------
 class BarsData(DataSet):
@@ -64,20 +68,21 @@ class BarsData(DataSet):
         n_vis = D**2
         n_hid = 2*D
         bar_prob = 1./n_hid
-        
+
         X = np.zeros((n_datapoints, D, D), dtype=floatX)
         Y = 1. * (np.random.uniform(size=(n_datapoints, n_hid)) < bar_prob)
 
         for n in xrange(n_datapoints):
             for d in xrange(D):
-                if Y[n,d] > 0.5:
-                    X[n,d,:] = 1.0
-                if Y[n,D+d] > 0.5:
-                    X[n,:,d] = 1.0
+                if Y[n, d] > 0.5:
+                    X[n, d, :] = 1.0
+                if Y[n, D+d] > 0.5:
+                    X[n, :, d] = 1.0
 
         self.X = X.reshape((n_datapoints, n_vis)).astype(floatX)
         self.Y = Y.astype(floatX)
         self.n_datapoints = n_datapoints
+
 
 #-----------------------------------------------------------------------------
 class MNIST(DataSet):
@@ -92,7 +97,7 @@ class MNIST(DataSet):
         elif which_set == 'valid':
             self.X, self.Y = self.static_preprocess(valid_x, valid_y, n_datapoints)
         elif which_set == 'test':
-            self.X , self.Y  = self.static_preprocess(test_x, test_y, n_datapoints)
+            self.X, self.Y = self.static_preprocess(test_x, test_y, n_datapoints)
         elif which_set == 'salakhutdinov_train':
             train_x = np.concatenate([train_x, valid_x])
             train_y = np.concatenate([train_y, valid_y])
@@ -103,7 +108,7 @@ class MNIST(DataSet):
             self.X, self.Y = self.static_preprocess(train_x, train_y, n_datapoints)
         else:
             raise ValueError("Unknown dataset %s" % which_set)
- 
+
         self.n_datapoints = self.X.shape[0]
 
     def static_preprocess(self, x, y, n_datapoints):
@@ -112,7 +117,7 @@ class MNIST(DataSet):
 
         if n_datapoints is not None:
             N = n_datapoints
-    
+
         x = x[:N]
         y = y[:N]
 
@@ -120,7 +125,7 @@ class MNIST(DataSet):
         #x = x[perm,:]
         #y = y[perm]
 
-        one_hot = np.zeros( (N, 10), dtype=floatX)
+        one_hot = np.zeros((N, 10), dtype=floatX)
         for n in xrange(N):
             one_hot[n, y[n]] = 1.
 
@@ -128,18 +133,19 @@ class MNIST(DataSet):
 
     def preprocess(self, X):
         """ Given a mini-batch of datapoints in a Theano tensor, this
-            method returns a Theano tensor with the preprocessed datapoints 
+        method returns a Theano tensor with the preprocessed datapoints
         """
         #draw uniform random
-        U = theano_rng.uniform(size=X.shape, ndim=2, low=0.1, high=0.9) 
+        U = theano_rng.uniform(size=X.shape, ndim=2, low=0.1, high=0.9)
 
         return 1.*(X >= U)
+
 
 #-----------------------------------------------------------------------------
 class FromModel(DataSet):
     def __init__(self, model, n_datapoints):
         batch_size = 100
-    
+
         # Compile a Theano function to draw samples from the model
         n_samples = T.iscalar('n_samples')
         n_samples.tag.test_value = 10
@@ -147,29 +153,29 @@ class FromModel(DataSet):
         X, _ = model.sample_p(n_samples)
 
         do_sample = theano.function(
-                        inputs=[n_samples], 
-                        outputs=X[0],
-                        name='sample_p')
+            inputs=[n_samples],
+            outputs=X[0],
+            name='sample_p')
 
         model.setup()
         n_vis = model.n_lower
         #n_hid = model.n_hid
 
-        X = np.empty( (n_datapoints, n_vis), dtype=floatX)
-        #Y = np.empty( (n_datapoints, n_hid), dtype=np.floatX)
+        X = np.empty((n_datapoints, n_vis), dtype=floatX)
+        #Y = np.empty((n_datapoints, n_hid), dtype=np.floatX)
 
         for b in xrange(n_datapoints//batch_size):
             first = b*batch_size
-            last  = first + batch_size
+            last = first + batch_size
             X[first:last] = do_sample(batch_size)
         remain = n_datapoints % batch_size
         if remain > 0:
             X[last:] = do_sample(remain)
-        
+
         self.n_datapoints = n_datapoints
         self.X = X
         self.Y = None
-        
+
 
 #-----------------------------------------------------------------------------
 def permute_cols(x, idx=None):
@@ -178,13 +184,13 @@ def permute_cols(x, idx=None):
             _, n_vis = x[0].shape
         idx = np.random.permutation(n_vis)
         return [permute(i, idx) for i in x]
-    
+
     if idx is None:
         _, n_vis = x.shape
         idx = np.random.permutation(n_vis)
-    return x[:,idx]
+    return x[:, idx]
+
 
 #-----------------------------------------------------------------------------
 def get_toy_data():
     return BarsData(which_set="train", n_datapoints=500)
-    
