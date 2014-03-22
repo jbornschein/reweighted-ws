@@ -165,11 +165,11 @@ class TestSTBTStack(unittest.TestCase):
     
         n_samples, n_samples_ = testing.iscalar('n_samples')
         X, log_P = stack.sample_p(n_samples=n_samples)
-        do_sample = theano.function([n_samples], [X, log_P], name="do_sample")
+        do_sample = theano.function([n_samples], [X[0], log_P], name="do_sample")
 
-        X_, log_P_ = do_sample(n_samples_)
+        X0_, log_P_ = do_sample(n_samples_)
     
-        assert X_.shape == (n_samples_, self.n_vis)
+        assert X0_.shape == (n_samples_, self.n_vis)
         assert log_P_.shape == (n_samples_, )
 
     def test_log_likelihood(self):

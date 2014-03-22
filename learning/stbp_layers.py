@@ -76,6 +76,11 @@ class STBPStack(Model):
         self.n_lower = layers[0].n_lower
 
     def sample_p(self, n_samples):
+        """ Draw *n_samples* drawn from the P-model.
+        
+        This method returns a list with the samples values on all layers
+        and the correesponding log_p.
+        """
         layers = self.layers
         n_layers = len(layers)
 

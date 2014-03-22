@@ -15,7 +15,7 @@ before_install:
 
 install:
   - pip install recordtype
-  - pip install progressbar >= 2.3
+  - pip install progressbar
   - pip install theano
 
 # run tests

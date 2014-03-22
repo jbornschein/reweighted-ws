@@ -137,9 +137,10 @@ class MNIST(DataSet):
 
 #-----------------------------------------------------------------------------
 class FromModel(DataSet):
-    def __init__(self, model, n_datapoints=10000):
+    def __init__(self, model, n_datapoints):
         batch_size = 100
     
+        # Compile a Theano function to draw samples from the model
         n_samples = T.iscalar('n_samples')
         n_samples.tag.test_value = 10
 
@@ -147,7 +148,7 @@ class FromModel(DataSet):
 
         do_sample = theano.function(
                         inputs=[n_samples], 
-                        outputs=X,
+                        outputs=X[0],
                         name='sample_p')
 
         model.setup()

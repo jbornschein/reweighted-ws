@@ -144,6 +144,7 @@ class Trainer(TrainerBase):
         n_samples = self.shvar['n_samples']
 
         batch_idx = T.iscalar('batch_idx')
+        batch_idx.tag.test_value = 0
 
         first = batch_idx*batch_size
         last  = first + batch_size
@@ -198,6 +199,7 @@ class Trainer(TrainerBase):
         #---------------------------------------------------------------------
         self.logger.info("compiling do_sleep_step")
         n_dreams = T.iscalar('n_dreams')
+        n_dreams.tag.test_value = 10 
 
         beta = self.shvar['beta']
         lr_s = self.shvar['lr_s']
