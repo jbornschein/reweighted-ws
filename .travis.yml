@@ -14,10 +14,14 @@ before_install:
   - python -c "import scipy; print scipy.__version__"
 
 install:
+  - pip install http://python-progressbar.googlecode.com/files/progressbar-2.3.tar.gz
   - pip install recordtype
-  - pip install progressbar
   - pip install theano
 
 # run tests
 script: 
   - THEANO_FLAGS="floatX=float32" nosetests -v
+
+# Be more verbose
+after_failure:
+  - cat /home/travis/.pip/pip.log
