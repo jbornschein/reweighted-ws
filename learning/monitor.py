@@ -90,6 +90,7 @@ class MonitorAnalyse(Monitor):
         first = batch_idx*batch_size
         last  = first + batch_size
         X_batch = self.train_X[first:last]
+        X_batch = self.data.preprocess(X_batch)
         
         log_PX, w, log_p, log_q, KL, Hp, Hq = model.log_likelihood(X_batch, n_samples=n_samples)
 

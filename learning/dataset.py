@@ -4,6 +4,7 @@
 
 from __future__ import division
 
+import abc
 import logging
 import cPickle as pickle
 import gzip
@@ -12,13 +13,22 @@ import numpy as np
 
 import theano
 import theano.tensor as T
+from theano.tensor.shared_randomstreams import RandomStreams
 
 _logger = logging.getLogger(__name__)
 
 floatX = theano.config.floatX
 
+theano_rng = RandomStreams(seed=2341)
+
 class DataSet(object):
-    pass
+    __metaclass__ = abc.ABCMeta
+
+    def preprocess(self, X):
+        """ Given a mini-batch of datapoints in a Theano tensor, this
+            method returns a Theano tensor with the preprocessed datapoints 
+        """
+        return X
 
 #-----------------------------------------------------------------------------
 class ToyData(DataSet):
@@ -78,17 +88,25 @@ class MNIST(DataSet):
             (train_x, train_y), (valid_x, valid_y), (test_x, test_y) = pickle.load(f)
 
         if which_set == 'train':
-            self.X, self.Y = self.preprocess(train_x, train_y, n_datapoints)
+            self.X, self.Y = self.static_preprocess(train_x, train_y, n_datapoints)
         elif which_set == 'valid':
-            self.X, self.Y = self.preprocess(valid_x, valid_y, n_datapoints)
+            self.X, self.Y = self.static_preprocess(valid_x, valid_y, n_datapoints)
         elif which_set == 'test':
-            self.X , self.Y  = self.preprocess(test_x, test_y, n_datapoints)
+            self.X , self.Y  = self.static_preprocess(test_x, test_y, n_datapoints)
+        elif which_set == 'salakhutdinov_train':
+            train_x = np.concatenate([train_x, valid_x])
+            train_y = np.concatenate([train_y, valid_y])
+            self.X, self.Y = self.static_preprocess(train_x, train_y, n_datapoints)
+        elif which_set == 'salakhutdinov_valid':
+            train_x = np.concatenate([train_x, valid_x])[::-1]
+            train_y = np.concatenate([train_y, valid_y])[::-1]
+            self.X, self.Y = self.static_preprocess(train_x, train_y, n_datapoints)
         else:
             raise ValueError("Unknown dataset %s" % which_set)
  
         self.n_datapoints = self.X.shape[0]
 
-    def preprocess(self, x, y, n_datapoints):
+    def static_preprocess(self, x, y, n_datapoints):
         N = x.shape[0]
         assert N == y.shape[0]
 
@@ -102,16 +120,20 @@ class MNIST(DataSet):
         #x = x[perm,:]
         #y = y[perm]
 
-        # Binarize
-        r = np.random.uniform(size=x.shape)
-        x = 1. * (x > r)
-        #x = 1.*(x > 0.5)       # binarize x
-
         one_hot = np.zeros( (N, 10), dtype=floatX)
         for n in xrange(N):
             one_hot[n, y[n]] = 1.
 
         return x.astype(floatX), one_hot.astype(floatX)
+
+    def preprocess(self, X):
+        """ Given a mini-batch of datapoints in a Theano tensor, this
+            method returns a Theano tensor with the preprocessed datapoints 
+        """
+        #draw uniform random
+        U = theano_rng.uniform(size=X.shape, ndim=2, low=0.1, high=0.9) 
+
+        return 1.*(X >= U)
 
 #-----------------------------------------------------------------------------
 class FromModel(DataSet):
