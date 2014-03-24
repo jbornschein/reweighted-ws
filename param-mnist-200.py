@@ -8,12 +8,13 @@ from learning.termination import LogLikelihoodIncrease, EarlyStopping
 from learning.monitor import MonitorLL, DLogModelParams
 
 n_vis = 28*28
-n_hid = 100
+n_hid = 200
 n_qhid = 2*n_hid
 
 dataset = MNIST(which_set='salakhutdinov_train', n_datapoints=59000)
 valiset = MNIST(which_set='salakhutdinov_valid', n_datapoints=1000)
 smallset = MNIST(which_set='salakhutdinov_valid', n_datapoints=100)
+
 
 layers=[
     SigmoidBeliefLayer( 
