@@ -17,6 +17,8 @@ import utils.datalog as datalog
 
 _logger = logging.getLogger(__name__)
 
+
+#-----------------------------------------------------------------------------
 class Monitor(HyperBase):
     """ Abtract base class to monitor stuff """
     __metaclass__ = abc.ABCMeta
@@ -42,13 +44,17 @@ class Monitor(HyperBase):
         """
         pass
 
+
+#-----------------------------------------------------------------------------
 class DLogHyperParams(Monitor):
     def __init__(self):
         super(DLogHyperParams, self).__init__()
 
     def on_iter(self, model):
-        model.model_params_to_dlog(self.dlog)
+        model.hyper_params_to_dlog(self.dlog)
 
+
+#-----------------------------------------------------------------------------
 class DLogModelParams(Monitor):
     """
     Write all model parameters to a DataLogger called "model_params".
@@ -61,80 +67,7 @@ class DLogModelParams(Monitor):
         model.model_params_to_dlog(self.dlog)
 
 
-class MonitorAnalyse(Monitor):
-    def __init__(self, data, n_samples):
-        super(MonitorAnalyse, self).__init__()
-
-        assert isinstance(data, DataSet)
-        self.data = data
-
-        if isinstance(n_samples, int):
-            n_samples = [n_samples]
-        self.n_samples = n_samples
-
-    def compile(self, model):
-        assert isinstance(model, Model)
-        self.model = model
-
-        data = self.data
-        assert isinstance(data, DataSet)
-        self.train_X = theano.shared(data.X, "train_X")
-        self.train_Y = theano.shared(data.Y, "train_Y")
-
-
-        self.logger.info("compiling do_analyze")
-        n_samples = T.iscalar("n_samples")
-        batch_idx  = T.iscalar('batch_idx')
-        batch_size = T.iscalar('batch_size')
-
-        first = batch_idx*batch_size
-        last  = first + batch_size
-        X_batch = self.train_X[first:last]
-        X_batch = self.data.preprocess(X_batch)
-        
-        log_PX, w, log_p, log_q, KL, Hp, Hq = model.log_likelihood(X_batch, n_samples=n_samples)
-
-        # calculate
-        #log_KLpq()
-        #Hp = [.,.,.]
-        #Hq = [.,.,.]
-
-        self.do_analyze = theano.function(  
-                            inputs=[batch_idx, batch_size, n_samples], 
-                            outputs=[batch_log_PX, log_KL, Hp, Hq], 
-                            name="do_analyze",
-                            allow_input_downcast=True,
-                            on_unused_input='warn')
-
-    def on_init(self, model):
-        self.compile(model)
-        self.on_iter(model)
-
-    def on_iter(self, model):
-        n_samples = self.n_samples
-        n_datapoints = self.data.n_datapoints
-
-        #
-        for K in n_samples:
-            if K <= 10:
-                batch_size = 100
-            elif K <= 100:
-                batch_size = 10
-            else:
-                batch_size = 1
-    
-
-            # Iterate over dataset
-            L = 0
-            for batch_idx in xrange(n_datapoints//batch_size):
-                log_PX = self.do_loglikelihood(batch_idx, batch_size, K)
-                L += log_PX
-            L /= n_datapoints
-
-            self.logger.info("Test LL for %d datapoints with %s samples: %5.2f" % (n_datapoints, K, L))
-            self.dlog.append("LL_%d"%K, L)
- 
-
+#-----------------------------------------------------------------------------
 class MonitorLL(Monitor):
     """ Monitor the LL after each training epoch on an arbitrary 
         test or validation data set
@@ -143,7 +76,7 @@ class MonitorLL(Monitor):
         super(MonitorLL, self).__init__()
 
         assert isinstance(data, DataSet)
-        self.data = data
+        self.dataset = data
 
         if isinstance(n_samples, int):
             n_samples = [n_samples]
@@ -153,10 +86,9 @@ class MonitorLL(Monitor):
         assert isinstance(model, Model)
         self.model = model
 
-        data = self.data
-        assert isinstance(data, DataSet)
-        self.train_X = theano.shared(data.X, "train_X")
-        self.train_Y = theano.shared(data.Y, "train_Y")
+        dataset = self.dataset
+        self.train_X = theano.shared(dataset.X, "train_X")
+        self.train_Y = theano.shared(dataset.Y, "train_Y")
 
         batch_idx  = T.iscalar('batch_idx')
         batch_size = T.iscalar('batch_size')
@@ -180,8 +112,7 @@ class MonitorLL(Monitor):
                             inputs=[batch_idx, batch_size, n_samples], 
                             outputs=[batch_log_PX] + batch_KL + batch_Hp + batch_Hq, 
                             name="do_likelihood",
-                            allow_input_downcast=True,
-                            on_unused_input='warn')
+                            allow_input_downcast=True)
 
     def on_init(self, model):
         self.compile(model)
@@ -189,7 +120,7 @@ class MonitorLL(Monitor):
 
     def on_iter(self, model):
         n_samples = self.n_samples
-        n_datapoints = self.data.n_datapoints
+        n_datapoints = self.dataset.n_datapoints
 
         #
         for K in n_samples:
@@ -238,11 +169,48 @@ class MonitorLL(Monitor):
                 prefix+"Hq": Hq,
             })
         
+
+#-----------------------------------------------------------------------------
 class SampleFromP(Monitor):
     """ Draw a number of samples from the P-Model """
-    def __init__(self, n_samples=100):
+    def __init__(self, data, n_samples=100):
+        super(SampleFromP, self).__init__()
+
+        assert isinstance(data, DataSet)
+        self.dataset = data
         self.n_samples = n_samples
 
+    def compile(self, model):
+        assert isinstance(model, Model)
+
+        self.logger.info("compiling do_sample")
+
+        n_samples = T.iscalar('n_samples')
+        n_samples.tag.test_value = self.n_samples
+        samples, log_p = model.sample_p(n_samples)
+
+        self.do_sample = theano.function(
+                            inputs=[n_samples],
+                            outputs=[log_p] + samples,
+                            name="do_sample")
+
+    def on_init(self, model):
+        self.logger.info("SampleFromP.on_init()")
+        
+        self.compile(model)
+        self.on_iter(model)
+
     def on_iter(self, model):
-        raise NotImplemented()
+        n_samples = self.n_samples
+        n_layers = len(model.layers)
+
+        outputs = self.do_sample(n_samples)
+        log_p = outputs[0]
+        samples = outputs[1:]
+
+        self.logger.info("SampleFromP(n_samples=%d)" % n_samples)
+        self.dlog.append("log_p", log_p)
+        for l in xrange(n_layers):
+            prefix = "L%d" % l
+            self.dlog.append(prefix, samples[l])
 

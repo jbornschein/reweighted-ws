@@ -42,6 +42,7 @@ class TrainerBase(HyperBase):
         self.register_hyper_param("model", default=None, help="")
         self.register_hyper_param("data", default=None, help="")
         self.register_hyper_param("termination", default=None, help="")
+        self.register_hyper_param("final_monitors", default=[], help="")
         self.register_hyper_param("epoch_monitors", default=[], help="")
         self.register_hyper_param("step_monitors", default=[], help="")
         self.register_hyper_param("first_epoch_step_monitors", default=[], help="")
@@ -261,6 +262,11 @@ class Trainer(TrainerBase):
             epoch = epoch + 1
             self.logger.info("Starting epoch %d..." % epoch)
             L = self.perform_epoch()
+
+        # run final_monitors after lerning converged...
+        self.logger.info("Calling final_monitors...")
+        for m in self.final_monitors:
+            m.on_init(model)
 
     #-----------------------------------------------------------------------
     def perform_epoch(self):
