@@ -5,10 +5,10 @@ import numpy as np
 import theano 
 import theano.tensor as T
 
-from dataset import ToyData
+from learning.dataset import ToyData
 
 # Unit Under Test
-from monitor import * 
+from learning.monitor import * 
 
 def test_MonitorLL():
     dataset = ToyData('valid')

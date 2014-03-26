@@ -2,8 +2,10 @@ import unittest
 
 import numpy as np
 
+from learning.stbp_layers import STBPStack, SigmoidBeliefLayer, FactoizedBernoulliTop
+
 # unit under test
-from dataset import *
+from learning.dataset import *
 
 def skip_check(reason):
     raise unittest.SkipTest(reason)
@@ -58,7 +60,6 @@ def test_datasets():
 #-----------------------------------------------------------------------------
 
 def test_FromModel():
-    from stbp_layers import STBPStack, SigmoidBeliefLayer, FactoizedBernoulliTop
     D = 5
     n_vis = D**2
     n_hid = 2*D

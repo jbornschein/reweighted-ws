@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 # Unit Under Test
-from hyperbase import * 
+from learning.hyperbase import * 
 
 class ExampleThing(HyperBase):
     def __init__(self, **hyper_params):

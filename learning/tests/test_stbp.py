@@ -8,7 +8,7 @@ import theano.tensor as T
 import testing
 
 # Unit Under Test
-from stbp_layers import *
+from learning.stbp_layers import *
 
 #-----------------------------------------------------------------------------
 

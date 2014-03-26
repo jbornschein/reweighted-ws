@@ -6,7 +6,7 @@ import theano
 import theano.tensor as T
 
 # Unit Under Test
-from termination import * 
+from learning.termination import * 
 
 def test_ll_maxepochs():
     termination = LogLikelihoodIncrease(min_increase=0.0, max_epochs=10)

@@ -6,7 +6,7 @@ import theano
 import theano.tensor as T
 
 # Unit Under Test
-from cnade import * 
+from learning.cnade import * 
 
 params = {
     'n_vis':  16, 

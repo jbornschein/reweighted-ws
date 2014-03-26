@@ -5,7 +5,7 @@ import numpy as np
 from collections import OrderedDict
 
 # Unit Under Test
-from model import * 
+from learning.model import * 
 
 class ExampleModel(Model):
     def __init__(self, **hyper_params):
