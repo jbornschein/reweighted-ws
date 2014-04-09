@@ -37,7 +37,7 @@ trainer = Trainer(
     learning_rate_s=1e-3,
     layer_discount=0.50,
     batch_size=10,
-    data=dataset, 
+    dataset=dataset, 
     model=model,
     termination=EarlyStopping(),
     epoch_monitors=[MonitorLL(data=valiset, n_samples=100), DLogModelParams()],

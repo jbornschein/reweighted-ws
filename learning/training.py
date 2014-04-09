@@ -40,7 +40,7 @@ class TrainerBase(HyperBase):
         self.step = 0 
 
         self.register_hyper_param("model", default=None, help="")
-        self.register_hyper_param("data", default=None, help="")
+        self.register_hyper_param("dataset", default=None, help="")
         self.register_hyper_param("termination", default=None, help="")
         self.register_hyper_param("final_monitors", default=[], help="")
         self.register_hyper_param("epoch_monitors", default=[], help="")
@@ -78,7 +78,7 @@ class TrainerBase(HyperBase):
             shvar.set_value(value)
 
     def load_data(self):
-        data = self.data
+        data = self.dataset
         assert isinstance(data, DataSet)
 
         n_datapoints = data.n_datapoints
@@ -90,12 +90,13 @@ class TrainerBase(HyperBase):
         self.train_perm = theano.shared(np.random.permutation(n_datapoints))
 
     def shuffle_train_data(self):
-        n_datapoints = self.data.n_datapoints
+        n_datapoints = self.dataset.n_datapoints
         self.train_perm.set_value(np.random.permutation(n_datapoints))
 
     @abc.abstractmethod
     def compile(self):
         pass
+
 
 #=============================================================================
 # BatchedSGD trainer
@@ -150,7 +151,7 @@ class Trainer(TrainerBase):
         first = batch_idx*batch_size
         last  = first + batch_size
         X_batch = self.train_X[self.train_perm[first:last]]
-        X_batch = self.data.preprocess(X_batch)
+        X_batch = self.dataset.preprocess(X_batch)
         #Y_batch = self.train_Y[self.train_perm[first:last]]
         
         batch_log_PX, gradients = model.get_gradients(X_batch, None,
@@ -177,25 +178,7 @@ class Trainer(TrainerBase):
                             inputs=[batch_idx],
                             outputs=batch_log_PX, #, Lp, Lq, w],
                             updates=updates,
-                            name="sgd_step",
-                            allow_input_downcast=True,
-                            on_unused_input='warn')
-
-        #---------------------------------------------------------------------
-        #self.logger.debug("compiling f_loglikelihood")
-
-        #X = T.fmatrix('X')
-        #Y = T.fmatrix('Y')
-
-        #LL = model.f_loglikelihood(X, Y)
-        #total_LL = T.mean(LL)
-
-        #self.f_loglikelihood = theano.function(
-        #                    inputs=[X, Y], 
-        #                    outputs=[total_LL, LL],
-        #                    name="f_loglikelihood",
-        #                    allow_input_downcast=True)
-
+                            name="do_step")
 
         #---------------------------------------------------------------------
         self.logger.info("compiling do_sleep_step")
@@ -221,10 +204,7 @@ class Trainer(TrainerBase):
                             inputs=[n_dreams],
                             outputs=log_PX,
                             updates=updates,
-                            name="do_sleep_step",
-                            allow_input_downcast=True,
-                            on_unused_input='warn')
-
+                            name="do_sleep_step")
 
     def perform_learning(self):
         self.update_shvars()
@@ -236,7 +216,7 @@ class Trainer(TrainerBase):
         assert isinstance(model, Model)
         
         # Print information
-        n_datapoints = self.data.n_datapoints
+        n_datapoints = self.dataset.n_datapoints
         n_batches = n_datapoints // self.batch_size
 
         self.logger.info("Dataset contains %d datapoints in %d mini-batches (%d datapoints per mini-batch)" %
@@ -270,7 +250,7 @@ class Trainer(TrainerBase):
 
     #-----------------------------------------------------------------------
     def perform_epoch(self):
-        n_datapoints = self.data.n_datapoints
+        n_datapoints = self.dataset.n_datapoints
         batch_size = self.batch_size
         n_batches = n_datapoints // batch_size
         epoch = self.step // n_batches
@@ -308,7 +288,7 @@ class Trainer(TrainerBase):
         return LL_epoch
 
     def perform_step(self, update=True):
-        n_batches = self.data.n_datapoints // self.batch_size
+        n_batches = self.dataset.n_datapoints // self.batch_size
         batch_idx = self.step % n_batches
 
         # Do we need to update shared variables/parameters?
