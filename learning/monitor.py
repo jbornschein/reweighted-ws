@@ -111,8 +111,7 @@ class MonitorLL(Monitor):
         self.do_loglikelihood = theano.function(  
                             inputs=[batch_idx, batch_size, n_samples], 
                             outputs=[batch_log_PX] + batch_KL + batch_Hp + batch_Hq, 
-                            name="do_likelihood",
-                            allow_input_downcast=True)
+                            name="do_likelihood")
 
     def on_init(self, model):
         self.compile(model)

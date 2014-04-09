@@ -21,7 +21,7 @@ from utils.datalog import dlog, StoreToH5, TextPrinter
 
 from dataset import DataSet
 from model import Model
-from training import Trainer
+from training import TrainerBase
 from termination import Termination
 from monitor import DLogModelParams
 
@@ -138,7 +138,7 @@ class Experiment(object):
     #---------------------------------------------------------------
     
     def sanity_check(self):
-        if not isinstance(self.trainer, Trainer):
+        if not isinstance(self.trainer, TrainerBase):
             raise ValueError("Trainer not set properly")
 
         
@@ -147,7 +147,7 @@ class Experiment(object):
             self.trainer.epoch_monitors += DLogModelParams()
 
     def set_trainer(self, trainer):
-        assert isinstance(trainer, Trainer)
+        assert isinstance(trainer, TrainerBase)
         self.trainer = trainer
 
 #-----------------------------------------------------------------------------
