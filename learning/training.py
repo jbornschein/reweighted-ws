@@ -238,7 +238,7 @@ class Trainer(TrainerBase):
 
         # remaining epochs...
         termination.reset()
-        while self.termination.continue_learning(L):
+        while termination.continue_learning(L):
             epoch = epoch + 1
             self.logger.info("Starting epoch %d..." % epoch)
             L = self.perform_epoch()

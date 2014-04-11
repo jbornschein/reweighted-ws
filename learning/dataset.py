@@ -7,6 +7,7 @@ import abc
 import logging
 import cPickle as pickle
 import gzip
+import h5py
 
 import numpy as np
 
@@ -176,7 +177,32 @@ class FromModel(DataSet):
         self.X = X
         self.Y = None
 
+#-----------------------------------------------------------------------------
+class FromH5(DataSet):
+    def __init__(self, fname, n_datapoints=None, offset=0, table_X="X", table_Y="Y"):
+        """ Load a dataset from an HDF5 file.
+        """
+        with h5py.File(fname, "r") as h5:
+            # 
+            if not table_X in h5.keys():
+                _logger.error("H5 file %s does not contain a table named %s" % (fname, table_X))
+                raise ArgumentError()
+            
+            N_total, D = h5[table_X].shape
+            if n_datapoints is None:
+                n_datapoints = N_total-offset
 
+            X = h5[table_X][offset:(offset+n_datapoints)]
+            if table_Y in h5.keys():
+                Y = h5[table_Y][offset:(offset+n_datapoints)]
+            else:
+                Y = None
+
+        self.X = X.astype(floatX)
+        self.Y = Y.astype(floatX)
+        self.n_datapoints = self.X.shape[0]
+
+        
 #-----------------------------------------------------------------------------
 def permute_cols(x, idx=None):
     if isinstance(x, list) or isinstance(x, tuple):
