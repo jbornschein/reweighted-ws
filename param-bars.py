@@ -33,6 +33,7 @@ trainer = Trainer(
     n_samples=10,
     learning_rate_p=1e-1,
     learning_rate_q=1e-1,
+    learning_rate_s=1e-1,
     layer_discount=0.50,
     batch_size=10,
     dataset=dataset, 
