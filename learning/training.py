@@ -151,8 +151,9 @@ class Trainer(TrainerBase):
         first = batch_idx*batch_size
         last  = first + batch_size
         X_batch = self.train_X[self.train_perm[first:last]]
-        X_batch = self.dataset.preprocess(X_batch)
         #Y_batch = self.train_Y[self.train_perm[first:last]]
+
+        X_batch, _ = self.dataset.preprocess(X_batch, None)
         
         batch_log_PX, gradients = model.get_gradients(X_batch, None,
                     lr_p=lr_p, lr_q=lr_q,

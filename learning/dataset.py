@@ -27,11 +27,11 @@ theano_rng = RandomStreams(seed=2341)
 class DataSet(object):
     __metaclass__ = abc.ABCMeta
 
-    def preprocess(self, X):
+    def preprocess(self, X, Y):
         """ Given a mini-batch of datapoints in a Theano tensor, this
             method returns a Theano tensor with the preprocessed datapoints
         """
-        return X
+        return X, Y
 
 
 #-----------------------------------------------------------------------------
@@ -132,14 +132,14 @@ class MNIST(DataSet):
 
         return x.astype(floatX), one_hot.astype(floatX)
 
-    def preprocess(self, X):
+    def preprocess(self, X, Y):
         """ Given a mini-batch of datapoints in a Theano tensor, this
         method returns a Theano tensor with the preprocessed datapoints
         """
         #draw uniform random
         U = theano_rng.uniform(size=X.shape, ndim=2, low=0.1, high=0.9)
 
-        return 1.*(X >= U)
+        return 1.*(X >= U), Y
 
 
 #-----------------------------------------------------------------------------
