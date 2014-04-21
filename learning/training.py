@@ -153,7 +153,7 @@ class Trainer(TrainerBase):
         X_batch = self.train_X[self.train_perm[first:last]]
         #Y_batch = self.train_Y[self.train_perm[first:last]]
 
-        X_batch, _ = self.dataset.preprocess(X_batch, None)
+        X_batch, _ = self.dataset.preprocess_batch(X_batch, None)
         
         batch_log_PX, gradients = model.get_gradients(X_batch, None,
                     lr_p=lr_p, lr_q=lr_q,

@@ -101,6 +101,7 @@ class MonitorLL(Monitor):
         first = batch_idx*batch_size
         last  = first + batch_size
         X_batch = self.train_X[first:last]
+        X_batch, _ = self.dataset.preprocess_batch(X_batch, None)
         
         log_PX, _, _, _, KL, Hp, Hq = model.log_likelihood(X_batch, n_samples=n_samples)
         batch_log_PX = T.sum(log_PX)
