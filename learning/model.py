@@ -160,7 +160,7 @@ class Model(object):
 
     def model_params_to_dlog(self, dlog):
         """ Append all model params to dlog """
-        for key, param in self._hyper_params.iteritems():
+        for key, param in self._model_params.iteritems():
             assert isinstance(param, HyperParam)
             shvar = param.value
             value = shvar.get_value()
@@ -175,7 +175,7 @@ class Model(object):
 
     def hyper_params_to_dlog(self, dlog):
         """ Append all hyper params to dlog """
-        for key, param in self._model_params.iteritems():
+        for key, param in self._hyper_params.iteritems():
             assert isinstance(param, ModelParam)
             shvar = param.value
             value = shvar.get_value()

@@ -3,7 +3,6 @@
 from __future__ import division
 
 import sys
-# sys.setrecursionlimit(10000)
 
 import logging
 from time import time
