@@ -8,8 +8,6 @@ from learning.termination import LogLikelihoodIncrease, EarlyStopping
 from learning.monitor import MonitorLL, DLogModelParams, SampleFromP
 
 n_vis = 28*28
-n_hid = 200
-n_qhid = 2*n_hid
 
 dataset = MNIST(which_set='salakhutdinov_train', n_datapoints=59000)
 valiset = MNIST(which_set='salakhutdinov_valid', n_datapoints=1000)
@@ -20,10 +18,15 @@ layers=[
     SigmoidBeliefLayer( 
         unroll_scan=1,
         n_lower=n_vis,
-        n_qhid=n_qhid,
+        n_qhid=n_vis,
+    ),
+    SigmoidBeliefLayer( 
+        unroll_scan=1,
+        n_lower=200,
+        n_qhid=200,
     ),
     FactoizedBernoulliTop(
-        n_lower=n_hid,
+        n_lower=200,
     )
 ]
 
@@ -46,3 +49,4 @@ trainer = Trainer(
     step_monitors=[MonitorLL(data=smallset, n_samples=[1, 5, 25, 100]), SampleFromP(data=smallset, n_samples=100)],
     monitor_nth_step=100,
 )
+
