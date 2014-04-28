@@ -101,6 +101,7 @@ class MonitorLL(Monitor):
         first = batch_idx*batch_size
         last  = first + batch_size
         X_batch = self.train_X[first:last]
+        X_batch = self.dataset.preprocess(X_batch)
         
         log_PX, _, _, _, KL, Hp, Hq = model.log_likelihood(X_batch, n_samples=n_samples)
         batch_log_PX = T.sum(log_PX)
@@ -172,11 +173,9 @@ class MonitorLL(Monitor):
 #-----------------------------------------------------------------------------
 class SampleFromP(Monitor):
     """ Draw a number of samples from the P-Model """
-    def __init__(self, data, n_samples=100):
+    def __init__(self, n_samples=100, data=None):
         super(SampleFromP, self).__init__()
 
-        assert isinstance(data, DataSet)
-        self.dataset = data
         self.n_samples = n_samples
 
     def compile(self, model):
