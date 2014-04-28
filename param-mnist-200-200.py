@@ -18,7 +18,7 @@ layers=[
     SigmoidBeliefLayer( 
         unroll_scan=1,
         n_lower=n_vis,
-        n_qhid=n_vis,
+        n_qhid=400,
     ),
     SigmoidBeliefLayer( 
         unroll_scan=1,
@@ -46,7 +46,7 @@ trainer = Trainer(
     termination=EarlyStopping(),
     final_monitors=[MonitorLL(data=testset, n_samples=[1, 5, 25, 100, 500])],
     epoch_monitors=[MonitorLL(data=valiset, n_samples=100), DLogModelParams()],
-    step_monitors=[MonitorLL(data=smallset, n_samples=[1, 5, 25, 100]), SampleFromP(data=smallset, n_samples=100)],
+    step_monitors=[MonitorLL(data=smallset, n_samples=[1, 5, 25, 100]), SampleFromP(n_samples=100)],
     monitor_nth_step=100,
 )
 
