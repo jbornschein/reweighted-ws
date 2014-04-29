@@ -20,6 +20,11 @@ layers=[
         n_lower=n_vis,
         n_qhid=400,
     ),
+    SigmoidBeliefLayer( 
+        unroll_scan=1,
+        n_lower=200,
+        n_qhid=200,
+    ),
     FactoizedBernoulliTop(
         n_lower=200,
     )
@@ -44,3 +49,4 @@ trainer = Trainer(
     step_monitors=[MonitorLL(data=smallset, n_samples=[1, 5, 25, 100]), SampleFromP(n_samples=100)],
     monitor_nth_step=100,
 )
+
