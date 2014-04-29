@@ -87,8 +87,9 @@ class MonitorLL(Monitor):
         self.model = model
 
         dataset = self.dataset
-        self.train_X = theano.shared(dataset.X, "train_X")
-        self.train_Y = theano.shared(dataset.Y, "train_Y")
+        X, Y = dataset.preproc(dataset.X, dataset.Y)
+        self.X = theano.shared(X, "X")
+        self.Y = theano.shared(Y, "Y")
 
         batch_idx  = T.iscalar('batch_idx')
         batch_size = T.iscalar('batch_size')
@@ -100,8 +101,7 @@ class MonitorLL(Monitor):
 
         first = batch_idx*batch_size
         last  = first + batch_size
-        X_batch = self.train_X[first:last]
-        X_batch, _ = self.dataset.preprocess_batch(X_batch, None)
+        X_batch, Y_batch = dataset.late_preproc(self.X[first:last], self.Y[first:last])
         
         log_PX, _, _, _, KL, Hp, Hq = model.log_likelihood(X_batch, n_samples=n_samples)
         batch_log_PX = T.sum(log_PX)
