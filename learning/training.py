@@ -78,15 +78,16 @@ class TrainerBase(HyperBase):
             shvar.set_value(value)
 
     def load_data(self):
-        data = self.dataset
-        assert isinstance(data, DataSet)
+        dataset = self.dataset
+        assert isinstance(dataset, DataSet)
 
-        n_datapoints = data.n_datapoints
-        assert n_datapoints == data.X.shape[0]
-        #assert n_datapoints == data.Y.shape[0]
+        n_datapoints = dataset.n_datapoints
+        assert n_datapoints == dataset.X.shape[0]
 
-        self.train_X = theano.shared(data.X, "train_X")
-        self.train_Y = theano.shared(data.Y, "train_Y")
+        X, Y = dataset.preproc(dataset.X, dataset.Y)
+        self.train_X = theano.shared(X, "train_X")
+        self.train_Y = theano.shared(Y, "train_Y")
+
         self.train_perm = theano.shared(np.random.permutation(n_datapoints))
 
     def shuffle_train_data(self):
@@ -153,7 +154,7 @@ class Trainer(TrainerBase):
         X_batch = self.train_X[self.train_perm[first:last]]
         #Y_batch = self.train_Y[self.train_perm[first:last]]
 
-        X_batch, _ = self.dataset.preprocess(X_batch, None)
+        X_batch, _ = self.dataset.late_preproc(X_batch, None)
         
         batch_log_PX, gradients = model.get_gradients(X_batch, None,
                     lr_p=lr_p, lr_q=lr_q,

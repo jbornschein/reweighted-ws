@@ -198,7 +198,7 @@ class STBPStack(Model):
             params.update( l.get_q_params() )
         return params
 
-    def model_params_to_dlog(self, dlog):
+    def model_params_to_dict(self):
         vals = {}
         for n,l in enumerate(self.layers):
             for pname, shvar in l.get_p_params().iteritems():
@@ -207,6 +207,21 @@ class STBPStack(Model):
             for pname, shvar in l.get_q_params().iteritems():
                 key = "L%d.Q.%s" % (n, pname)
                 vals[key] = shvar.get_value()
+        return vals
+
+    def model_params_from_dict(self, vals):
+        for n,l in enumerate(self.layers):
+            for pname, shvar in l.get_p_params().iteritems():
+                key = "L%d.P.%s" % (n, pname)
+                value = vals[key]
+                shvar.set_value(value)
+            for pname, shvar in l.get_q_params().iteritems():
+                key = "L%d.Q.%s" % (n, pname)
+                value = vals[key]
+                shvar.set_value(value)
+
+    def model_params_to_dlog(self, dlog):
+        vals = self.model_params_to_dict()
         dlog.append_all(vals)
 
     def model_params_from_dlog(self, dlog, row=-1):

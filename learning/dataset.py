@@ -15,6 +15,8 @@ import theano
 import theano.tensor as T
 from theano.tensor.shared_randomstreams import RandomStreams
 
+from preproc import Preproc
+
 _logger = logging.getLogger(__name__)
 
 floatX = theano.config.floatX
@@ -27,17 +29,60 @@ theano_rng = RandomStreams(seed=2341)
 class DataSet(object):
     __metaclass__ = abc.ABCMeta
 
-    def preprocess(self, X, Y):
-        """ Given a mini-batch of datapoints in a Theano tensor, this
-            method returns a Theano tensor with the preprocessed datapoints
+    def __init__(self, preproc=[]):
+        self._preprocessors = []
+        self.add_preproc(preproc)
+
+    def add_preproc(self, preproc):
+        """ Add the given preprocessors to the list of preprocessors to be used
+
+        Parameters
+        ----------
+        preproc : {Preproc, list of Preprocessors}
         """
+        if isinstance(preproc, Preproc):
+            preproc = [preproc,]
+
+        for p in preproc:
+            assert isinstance(p, Preproc)
+
+        self._preprocessors += preproc
+        
+
+    def preproc(self, X, Y):
+        """ Statically preprocess data.
+        
+        Parameters
+        ----------
+        X, Y : ndarray
+
+        Returns
+        -------
+        X, Y : ndarray
+        """
+        for p in self._preprocessors:
+            X, Y = p.preproc(X, Y)
         return X, Y
 
+    def late_preproc(self, X, Y):
+        """ Preprocess a batch of data
+        
+        Parameters
+        ----------
+        X, Y : theano.tensor
+
+        Returns
+        -------
+        X, Y : theano.tensor
+        """
+        for p in self._preprocessors:
+            X, Y = p.late_preproc(X, Y)
+        return X, Y
 
 #-----------------------------------------------------------------------------
 class ToyData(DataSet):
-    def __init__(self, which_set='train'):
-        _logger.info("generating toy data")
+    def __init__(self, which_set='train', preproc=[]):
+        super(ToyData, self).__init__(preproc)
 
         self.which_set = which_set
 
@@ -63,15 +108,15 @@ class ToyData(DataSet):
 
 #-----------------------------------------------------------------------------
 class BarsData(DataSet):
-    def __init__(self, which_set='train', n_datapoints=1000, D=5):
-        _logger.debug("Generating bars data")
+    def __init__(self, which_set='train', n_datapoints=1000, D=5, preproc=[]):
+        super(BarsData, self).__init__(preproc)
 
         n_vis = D**2
         n_hid = 2*D
         bar_prob = 1./n_hid
 
         X = np.zeros((n_datapoints, D, D), dtype=floatX)
-        Y = 1. * (np.random.uniform(size=(n_datapoints, n_hid)) < bar_prob)
+        Y = (np.random.uniform(size=(n_datapoints, n_hid)) < bar_prob).astype(floatX)
 
         for n in xrange(n_datapoints):
             for d in xrange(D):
@@ -80,39 +125,41 @@ class BarsData(DataSet):
                 if Y[n, D+d] > 0.5:
                     X[n, :, d] = 1.0
 
-        self.X = X.reshape((n_datapoints, n_vis)).astype(floatX)
-        self.Y = Y.astype(floatX)
+        self.X = X.reshape((n_datapoints, n_vis))
+        self.Y = Y
         self.n_datapoints = n_datapoints
 
 
 #-----------------------------------------------------------------------------
 class MNIST(DataSet):
-    def __init__(self, which_set='train', n_datapoints=None, fname="mnist.pkl.gz"):
+    def __init__(self, which_set='train', n_datapoints=None, fname="mnist.pkl.gz", preproc=[]):
+        super(MNIST, self).__init__(preproc)
+
         _logger.info("Loading MNIST data")
 
         with gzip.open(fname) as f:
             (train_x, train_y), (valid_x, valid_y), (test_x, test_y) = pickle.load(f)
 
         if which_set == 'train':
-            self.X, self.Y = self.static_preprocess(train_x, train_y, n_datapoints)
+            self.X, self.Y = self.prepare(train_x, train_y, n_datapoints)
         elif which_set == 'valid':
-            self.X, self.Y = self.static_preprocess(valid_x, valid_y, n_datapoints)
+            self.X, self.Y = self.prepare(valid_x, valid_y, n_datapoints)
         elif which_set == 'test':
-            self.X, self.Y = self.static_preprocess(test_x, test_y, n_datapoints)
+            self.X, self.Y = self.prepare(test_x, test_y, n_datapoints)
         elif which_set == 'salakhutdinov_train':
             train_x = np.concatenate([train_x, valid_x])
             train_y = np.concatenate([train_y, valid_y])
-            self.X, self.Y = self.static_preprocess(train_x, train_y, n_datapoints)
+            self.X, self.Y = self.prepare(train_x, train_y, n_datapoints)
         elif which_set == 'salakhutdinov_valid':
             train_x = np.concatenate([train_x, valid_x])[::-1]
             train_y = np.concatenate([train_y, valid_y])[::-1]
-            self.X, self.Y = self.static_preprocess(train_x, train_y, n_datapoints)
+            self.X, self.Y = self.prepare(train_x, train_y, n_datapoints)
         else:
             raise ValueError("Unknown dataset %s" % which_set)
 
         self.n_datapoints = self.X.shape[0]
 
-    def static_preprocess(self, x, y, n_datapoints):
+    def prepare(self, x, y, n_datapoints):
         N = x.shape[0]
         assert N == y.shape[0]
 
@@ -132,19 +179,11 @@ class MNIST(DataSet):
 
         return x.astype(floatX), one_hot.astype(floatX)
 
-    def preprocess(self, X, Y):
-        """ Given a mini-batch of datapoints in a Theano tensor, this
-        method returns a Theano tensor with the preprocessed datapoints
-        """
-        #draw uniform random
-        U = theano_rng.uniform(size=X.shape, ndim=2, low=0.1, high=0.9)
-
-        return 1.*(X >= U), Y
-
-
 #-----------------------------------------------------------------------------
 class FromModel(DataSet):
-    def __init__(self, model, n_datapoints):
+    def __init__(self, model, n_datapoints, preproc=[]):
+        super(FromModel, self).__init__(preproc)
+
         batch_size = 100
 
         # Compile a Theano function to draw samples from the model
