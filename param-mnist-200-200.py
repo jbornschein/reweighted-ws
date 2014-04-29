@@ -2,6 +2,7 @@
 import numpy as np
 
 from learning.dataset import BarsData, FromModel, MNIST
+from learning.preproc import Binarize
 from learning.stbp_layers import  STBPStack, SigmoidBeliefLayer, FactoizedBernoulliTop
 from learning.training import Trainer
 from learning.termination import LogLikelihoodIncrease, EarlyStopping
