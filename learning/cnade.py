@@ -8,7 +8,7 @@ import numpy as np
 
 import theano 
 import theano.tensor as T
-from theano.tensor.shared_randomstreams import RandomStreams
+from theano.sandbox.rng_mrg import MRG_RandomStreams
 
 from model import Model, default_weights
 from utils.unrolled_scan import unrolled_scan
@@ -20,7 +20,7 @@ _logger = logging.getLogger(__name__)
 
 
 theano.config.exception_verbosity = 'high'
-theano_rng = RandomStreams(seed=2341)
+theano_rng = MRG_RandomStreams(seed=2341)
 
 class CNADE(Model):
     def __init__(self, **hyper_params):
@@ -93,18 +93,19 @@ class CNADE(Model):
         a_init    = c_cond
         post_init = T.zeros([batch_size], dtype=floatX)
         vis_init  = T.zeros([batch_size], dtype=floatX)
+        rand      = theano_rng.uniform((n_vis, batch_size), nstreams=256)
 
-        def one_iter(Wi, Vi, bi, a, vis_i, post):
+        def one_iter(Wi, Vi, bi, rand_i, a, vis_i, post):
             hid  = self.f_sigmoid(a)
             pi   = self.f_sigmoid(T.dot(hid, Vi) + bi)
-            vis_i = 1.*(theano_rng.uniform([batch_size]) <= pi)
+            vis_i = 1.*(rand_i <= pi)
             post  = post + T.cast(T.log(pi*vis_i + (1-pi)*(1-vis_i)), dtype=floatX)
             a     = a + T.outer(vis_i, Wi)
             return a, vis_i, post
 
         [a, vis, post], updates = unrolled_scan(
                     fn=one_iter,
-                    sequences=[W, V.T, b_cond.T], 
+                    sequences=[W, V.T, b_cond.T, rand], 
                     outputs_info=[a_init, vis_init, post_init],
                     unroll=self.unroll_scan
                 )
