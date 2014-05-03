@@ -56,7 +56,7 @@ class NADE(Model):
         def one_iter(vis_i, Wi, Vi, bi, a, post):
             hid  = self.f_sigmoid(a)
             pi   = self.f_sigmoid(T.dot(hid, Vi) + bi)
-            post = post + T.cast(T.log(pi*vis_i + (1-pi)*(1-vis_i)), dtype=floatX)
+            post = post + T.log(pi*vis_i + (1-pi)*(1-vis_i))
             a    = a + T.outer(vis_i, Wi)
             return a, post
 
@@ -82,8 +82,8 @@ class NADE(Model):
         def one_iter(Wi, Vi, bi, rand_i, a, vis_i, post):
             hid  = self.f_sigmoid(a)
             pi   = self.f_sigmoid(T.dot(hid, Vi) + bi)
-            vis_i = 1.*(rand_i <= pi)
-            post  = post + T.cast(T.log(pi*vis_i + (1-pi)*(1-vis_i)), dtype=floatX)
+            vis_i = T.cast(rand_i <= pi, dtype=floatX)
+            post  = post + T.log(pi*vis_i + (1-pi)*(1-vis_i))
             a     = a + T.outer(vis_i, Wi)
             return a, vis_i, post
 
