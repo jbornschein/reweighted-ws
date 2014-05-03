@@ -18,7 +18,7 @@ _logger = logging.getLogger(__name__)
 #------------------------------------------------------------------------------
 
 def default_weights(n_in, n_out):
-    return (2*np.random.normal( size=(n_in, n_out))-1) / n_in
+    return (2*np.random.uniform(size=(n_in, n_out))-1) / n_in
 
 #------------------------------------------------------------------------------
 
