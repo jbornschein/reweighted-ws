@@ -219,8 +219,9 @@ class FromModel(DataSet):
 #-----------------------------------------------------------------------------
 class FromH5(DataSet):
     def __init__(self, fname, n_datapoints=None, offset=0, table_X="X", table_Y="Y"):
-        """ Load a dataset from an HDF5 file.
-        """
+        """ Load a dataset from an HDF5 file. """
+        super(FromH5, self).__init__()        
+
         with h5py.File(fname, "r") as h5:
             # 
             if not table_X in h5.keys():
