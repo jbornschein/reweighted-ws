@@ -37,7 +37,7 @@ class Model(object):
 
     def _ensure_init(self):
         if not self.initialized:
-            raise ArgumentError("Model base class not initialized yet!"
+            raise ValueError("Model base class not initialized yet!"
                     "Call Model.__init__()  before doing anything else!")
 
     def register_hyper_param(self, key, default=None, help=None):
