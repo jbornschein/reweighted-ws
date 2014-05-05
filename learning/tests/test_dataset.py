@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from learning.stbp_layers import STBPStack, SigmoidBeliefLayer, FactoizedBernoulliTop
+from learning.stbp_layers import STBPStack, SigmoidBeliefLayer, FactoizedBernoulliTop, CNADE
 
 # unit under test
 from learning.dataset import *
@@ -74,19 +74,30 @@ def test_FromModel():
     P_b = -2*np.ones(n_vis)
     
     # Instantiate model...
-    layers = [
+    p_layers = [
         SigmoidBeliefLayer(
-            n_lower=n_vis, 
+            n_X=n_vis, 
+            n_Y=n_hid,
         ),
         FactoizedBernoulliTop(
-            n_lower=n_hid
+            n_X=n_hid
         )
     ]
-    layers[0].set_model_param('W', W_bars)
-    layers[0].set_model_param('b', P_b)
-    layers[1].set_model_param('a', P_a)
+    q_layers = [
+        CNADE(
+            n_X=n_hid, 
+            n_Y=n_vis,
+            n_hid=n_hid
+        )
+    ]
+    p_layers[0].set_model_param('W', W_bars)
+    p_layers[0].set_model_param('b', P_b)
+    p_layers[1].set_model_param('a', P_a)
 
-    model = STBPStack(layers=layers)
+    model = STBPStack(
+        p_layers=p_layers,
+        q_layers=q_layers
+    )
     
     # ...and generate data
     n_datapoints = 1000

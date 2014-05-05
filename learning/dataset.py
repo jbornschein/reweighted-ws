@@ -198,7 +198,7 @@ class FromModel(DataSet):
             name='sample_p')
 
         model.setup()
-        n_vis = model.n_lower
+        n_vis = model.n_X
         #n_hid = model.n_hid
 
         X = np.empty((n_datapoints, n_vis), dtype=floatX)

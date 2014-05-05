@@ -183,8 +183,8 @@ class FactoizedBernoulliTop(TopModule):
 
         # sample hiddens
         prob_X = self.sigmoid(a)
-        X = T.cast(theano_rng.uniform((n_samples, n_X)) <= prob_X, 
-                    dtype=floatX)
+        U = theano_rng.uniform((n_samples, n_X), nstreams=512)        
+        X = T.cast(U <= prob_X, dtype=floatX)
 
         return X, self.log_prob(X)
 
@@ -238,7 +238,8 @@ class ARSBNTop(TopModule):
 
         # sample hiddens
         p_X = self.sigmoid(a)
-        X = T.cast(theano_rng.uniform((n_samples, n_X)) <= p_X, dtype=floatX)
+        U = theano_rng.uniform((n_samples, n_X), nstreams=512)
+        X = T.cast(U <= p_X, dtype=floatX)
 
         return X, self.log_p(X)
 
@@ -282,7 +283,8 @@ class SigmoidBeliefLayer(Module):
 
         # sample X given Y
         prob_X = self.sigmoid(T.dot(Y, W) + b)
-        X = T.cast(theano_rng.uniform((n_samples, n_X)) <= prob_X, dtype=floatX)
+        U = theano_rng.uniform((n_samples, n_X), nstreams=512)
+        X = T.cast(U <= prob_X, dtype=floatX)
 
         log_prob = X*T.log(prob_X) + (1-X)*T.log(1-prob_X)
         log_prob = log_prob.sum(axis=1)
@@ -364,7 +366,7 @@ class CNADE(Module):
         a_init    = c_cond
         post_init = T.zeros([batch_size], dtype=floatX)
         vis_init  = T.zeros([batch_size], dtype=floatX)
-        rand      = theano_rng.uniform((n_X, batch_size), nstreams=256)
+        rand      = theano_rng.uniform((n_X, batch_size), nstreams=512)
 
         def one_iter(Wi, Vi, bi, rand_i, a, vis_i, post):
             hid  = self.sigmoid(a)
@@ -404,6 +406,8 @@ class STBPStack(Model):
         assert len(p_layers) == len(q_layers)+1
         assert isinstance(p_layers[-1], TopModule)
         
+        self.n_X = p_layers[0].n_X
+
         for l in xrange(0, n_layers-1):
             assert isinstance(p_layers[l], Module)
             assert isinstance(q_layers[l], Module)
@@ -584,17 +588,25 @@ class STBPStack(Model):
 #=============================================================================
 
 def get_toy_model():
-    layers = [
+    p_layers = [
         SigmoidBeliefLayer( 
-            unroll_scan=1,
-            n_lower=25,
-            n_qhid=25,
+            n_X=25,
+            n_Y=10
         ),
         FactoizedBernoulliTop(
-            n_lower=10,
+            n_X=10,
+        )
+    ]
+    q_layers = [
+        CNADE(
+            unroll_scan=1,
+            n_X=10,
+            n_Y=25,
+            n_hid=10
         )
     ]
     model = STBPStack(
-        layers=layers
+        p_layers=p_layers,
+        q_layers=q_layers,
     )
     return model
