@@ -2,7 +2,7 @@
 import numpy as np
 
 from learning.dataset import BarsData, FromModel, MNIST
-from learning.stbp_layers import  STBPStack, SigmoidBeliefLayer, FactoizedBernoulliTop
+from learning.stbp_layers import  STBPStack, SigmoidBeliefLayer, FactoizedBernoulliTop, CNADE
 from learning.training import Trainer
 from learning.termination import LogLikelihoodIncrease, EarlyStopping
 from learning.monitor import MonitorLL, DLogModelParams, SampleFromP
@@ -14,19 +14,28 @@ n_qhid = 2*n_hid
 dataset = BarsData(which_set='train', n_datapoints=1000)
 valiset = BarsData(which_set='valid', n_datapoints=100)
 
-layers=[
+p_layers=[
     SigmoidBeliefLayer( 
         unroll_scan=1,
-        n_lower=n_vis,
-        n_qhid=n_qhid,
+        n_X=n_vis,
+        n_Y=n_hid,
     ),
     FactoizedBernoulliTop(
-        n_lower=n_hid,
+        n_X=n_hid,
+    )
+]
+
+q_layers=[
+    CNADE(
+        n_X=n_hid,
+        n_Y=n_vis,
+        n_hid=n_qhid
     )
 ]
 
 model = STBPStack(
-    layers=layers
+    p_layers=p_layers,
+    q_layers=q_layers,
 )
 
 trainer = Trainer(

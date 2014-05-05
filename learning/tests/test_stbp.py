@@ -12,97 +12,70 @@ from learning.stbp_layers import *
 
 #-----------------------------------------------------------------------------
 
-class STBPLayerTest(object):
-
-    def test_basic_log_p(self):
-        n_samples = self.n_samples
-        layer = self.layer
-
-        X, X_ = testing.fmatrix( (n_samples, layer.n_lower), name="X")
-        H, H_ = testing.fmatrix( (n_samples, layer.n_upper), name="H")
-
-        log_p = layer.log_p(X, H)
-        do_log_p = theano.function([X, H], log_p, name="log_p")
-
-        log_p_ = do_log_p(X_, H_)
-        assert log_p_.shape == (n_samples,)
-
-
-    def test_basic_sample_p(self):
-        n_samples = self.n_samples
-        layer = self.layer
-
-        H, H_ = testing.fmatrix( (n_samples, layer.n_upper), name="H")
-
-        X, log_p = layer.sample_p(H)
-        do_sample_p = theano.function([H], [X, log_p], name="sample_p")
-        
-        X_, log_p_ = do_sample_p(H_)
-        assert X_.shape == (n_samples, layer.n_lower )
-        assert log_p_.shape == (n_samples,)
- 
-    #------------------------------------------------------------------------
-    def basic_log_q(self):
-        n_samples = self.n_samples
-        layer = self.layer
-        pass
-
-    def test_basic_sample_q(self):
-        n_samples = self.n_samples
-        layer = self.layer
-     
-        X, X_ = testing.fmatrix( (n_samples, layer.n_lower), "X")
-        H, log_q = layer.sample_q(X)
-
-        do_sample_q = theano.function([X], [H, log_q], name="sample_q")
-
-        H_, log_q_ = do_sample_q(X_)
-
-        assert H_.shape == (n_samples, layer.n_upper)
-        assert log_q_.shape == (n_samples,)
-
-
-       
-#    def test_dPdTheta(self):
-#        n_samples = self.n_samples
-#        layer = self.layer
-#
-#        X, log_p = layer.sample_p(H)
-#        
-#
-#
-#        updates = OrderedDict()
-#        for name,shvar in layer.get_p_params().iteritems():
-#            print "Taking gradient d P(X, H) / d%s" % name
-#            updates[shvar] = T.grad(log_p
-            
 class STBPTopLayerTest(object):
-    def test_basic_log_p(self):
+    def test_basic_log_prob(self):
         n_samples = self.n_samples
         layer = self.layer
 
-        X, X_ = testing.fmatrix( (n_samples, layer.n_lower), name="X")
+        X, X_ = testing.fmatrix( (n_samples, layer.n_X), name="X")
 
-        log_p = layer.log_p(X)
-        do_log_p = theano.function([X], log_p, name="log_p")
+        log_prob = layer.log_prob(X)
+        do_log_prob = theano.function([X], log_prob, name="log_prob")
 
-        log_p_ = do_log_p(X_)
-        assert log_p_.shape == (n_samples,)
+        log_prob_ = do_log_prob(X_)
+        assert log_prob_.shape == (n_samples,)
  
-    def test_basic_sample_p(self):
+    def test_basic_sample(self):
         n_samples = self.n_samples
         layer = self.layer
 
-        X, log_p = layer.sample_p(n_samples)
-        do_sample_p = theano.function([], [X, log_p], name="sample_p")
+        X, log_prob = layer.sample(n_samples)
+        do_sample_p = theano.function([], [X, log_prob], name="sample_p")
         
-        X_, log_p_ = do_sample_p()
-        assert X_.shape == (n_samples, layer.n_lower )
-        assert log_p_.shape == (n_samples,)
- 
+        X_, log_prob_ = do_sample_p()
+        assert X_.shape == (n_samples, layer.n_X )
+        assert log_prob_.shape == (n_samples,)
 
+
+class STBPLayerTest(object):
+    def test_basic_log_prob(self):
+        n_samples = self.n_samples
+        layer = self.layer
+
+        X, X_ = testing.fmatrix( (n_samples, layer.n_X), name="X")
+        Y, Y_ = testing.fmatrix( (n_samples, layer.n_Y), name="H")
+
+        log_prob = layer.log_prob(X, Y)
+        do_log_prob = theano.function([X, Y], log_prob, name="log_prob")
+
+        log_prob_ = do_log_prob(X_, Y_)
+        assert log_prob_.shape == (n_samples,)
+
+
+    def test_basic_sample(self):
+        n_samples = self.n_samples
+        layer = self.layer
+
+        Y, Y_ = testing.fmatrix( (n_samples, layer.n_Y), name="Y")
+
+        X, log_prob = layer.sample(Y)
+        do_sample_p = theano.function([Y], [X, log_prob], name="sample")
         
+        X_, log_prob_ = do_sample_p(Y_)
+        assert X_.shape == (n_samples, layer.n_X )
+        assert log_prob_.shape == (n_samples,)
 
+    #def test_dPdTheta(self):
+    #    n_samples = self.n_samples
+    #    layer = self.layer
+    #
+    #    X, log_prob = layer.sample_p(H)
+    #
+    #    updates = OrderedDict()
+    #    for name,shvar in layer.get_p_params().iteritems():
+    #        print "Taking gradient d P(X, H) / d%s" % name
+    #        updates[shvar] = T.grad(log_prob
+            
 #-----------------------------------------------------------------------------
 
 class TestFactorizedBernoulliTop(STBPTopLayerTest, unittest.TestCase):
@@ -110,7 +83,7 @@ class TestFactorizedBernoulliTop(STBPTopLayerTest, unittest.TestCase):
         self.n_samples = 10
         self.layer = FactoizedBernoulliTop(
                         clamp_sigmoid=True,
-                        n_lower=8
+                        n_X=8
                     )
         self.layer.setup()
 
@@ -119,8 +92,19 @@ class TestSigmoidBeliefLayer(STBPLayerTest, unittest.TestCase):
         self.n_samples = 10
         self.layer = SigmoidBeliefLayer(
                         clamp_sigmoid=True,
-                        n_lower=16,
-                        n_upper=8,
+                        n_X=16,
+                        n_Y=8,
+                    )
+        self.layer.setup()
+
+class TestSigmoidCNADE(STBPLayerTest, unittest.TestCase):
+    def setUp(self):
+        self.n_samples = 10
+        self.layer = CNADE(
+                        clamp_sigmoid=True,
+                        n_X=16,
+                        n_Y=8,
+                        n_hid=8,
                     )
         self.layer.setup()
 
@@ -134,31 +118,43 @@ class TestSTBTStack(unittest.TestCase):
     n_qhid = 32
 
     def setUp(self):
-        layers=[
+        p_layers=[
             SigmoidBeliefLayer( 
                 unroll_scan=1,
-                n_lower=self.n_vis,
-                n_qhid=self.n_qhid,
+                n_X=self.n_vis,
+                n_Y=self.n_hid,
             ),
             SigmoidBeliefLayer( 
                 unroll_scan=1,
-                n_lower=self.n_hid,
-                n_qhid=self.n_qhid,
+                n_X=self.n_hid,
+                n_Y=self.n_hid,
             ),
             FactoizedBernoulliTop(
-                n_lower=self.n_hid
+                n_X=self.n_hid
             )
         ]
-        self.stack = STBPStack(layers=layers)
+        q_layers=[
+            CNADE(
+                n_Y=self.n_vis,
+                n_X=self.n_hid,
+                n_hid=self.n_qhid
+            ),
+            CNADE(
+                n_Y=self.n_hid,
+                n_X=self.n_hid,
+                n_hid=self.n_qhid
+            )
+        ]
+        self.stack = STBPStack(p_layers=p_layers, q_layers=q_layers)
         self.stack.setup()
 
     def test_layer_sizes(self):
         stack = self.stack
-        layers = stack.layers
-        n_layers = len(layers)
+        p_layers = stack.p_layers
+        n_layers = len(p_layers)
 
         for l in xrange(n_layers-1):
-            assert layers[l].n_upper == layers[l+1].n_lower
+            assert p_layers[l].n_Y == p_layers[l+1].n_X
 
     def test_sample_p(self):
         stack = self.stack
@@ -198,51 +194,70 @@ class TestSTBTStack(unittest.TestCase):
         assert log_Q_.shape == (batch_size, n_samples_)
         assert w_.shape == (batch_size, n_samples_)
 
-        n_layers = len(stack.layers)
+        n_layers = len(stack.p_layers)
 
         assert len(KL) == n_layers
         assert len(Hp) == n_layers
         assert len(Hq) == n_layers
 
-    def test_ll_grad(self):
-        
-        learning_rate = 1e-3
+
+    def test_gradients(self):
         batch_size = 20
         stack = self.stack
+        n_layers = len(stack.p_layers)
     
         X, X_ = testing.fmatrix((batch_size, self.n_vis), 'X')
         n_samples, n_samples_ = testing.iscalar('n_samples')
         n_samples_ = self.n_samples
 
-        log_PX, w, log_P, log_Q, KL, Hp, Hq = stack.log_likelihood(X, n_samples=n_samples)
+        lr_p = np.ones(n_layers)
+        lr_q = np.ones(n_layers)
 
-        cost_p = T.sum(T.sum(log_P*w, axis=1))
-        cost_q = T.sum(T.sum(log_Q*w, axis=1))
+        log_PX, gradients = stack.get_gradients(X, None, 
+                    lr_p=lr_p, lr_q=lr_q, n_samples=n_samples_)
 
-        updates = OrderedDict()
-        for pname, shvar in stack.get_p_params().iteritems():
-            print "Calculating gradient dP/d%s" % pname
-            updates[shvar] = T.grad(cost_p, shvar, consider_constant=[w])
+    def test_sleep_gradients(self):
+        pass
 
-        for pname, shvar in stack.get_q_params().iteritems():
-            print "Calculating gradient dQ/d%s" % pname
-            updates[shvar] = T.grad(cost_q, shvar, consider_constant=[w])
-
-
-        do_sgd_step = theano.function(
-                                inputs=[X, n_samples],
-                                outputs=[log_PX, cost_p, cost_q],
-                                updates=updates,
-                                name="sgd_step",
-                            )
+    # def test_ll_grad(self):
+        
+    #     learning_rate = 1e-3
+    #     batch_size = 20
+    #     stack = self.stack
     
-        log_PX_, cost_p_, cost_q_, = do_sgd_step(X_, n_samples_)
+    #     X, X_ = testing.fmatrix((batch_size, self.n_vis), 'X')
+    #     n_samples, n_samples_ = testing.iscalar('n_samples')
+    #     n_samples_ = self.n_samples
 
-        assert log_PX_.shape == (batch_size,)
+    #     log_PX, w, log_P, log_Q, KL, Hp, Hq = stack.log_likelihood(X, n_samples=n_samples)
+
+    #     cost_p = T.sum(T.sum(log_P*w, axis=1))
+    #     cost_q = T.sum(T.sum(log_Q*w, axis=1))
+
+    #     updates = OrderedDict()
+    #     for pname, shvar in stack.get_p_params().iteritems():
+    #         print "Calculating gradient dP/d%s" % pname
+    #         updates[shvar] = T.grad(cost_p, shvar, consider_constant=[w])
+
+    #     for pname, shvar in stack.get_q_params().iteritems():
+    #         print "Calculating gradient dQ/d%s" % pname
+    #         updates[shvar] = T.grad(cost_q, shvar, consider_constant=[w])
+
+
+    #     do_sgd_step = theano.function(
+    #                             inputs=[X, n_samples],
+    #                             outputs=[log_PX, cost_p, cost_q],
+    #                             updates=updates,
+    #                             name="sgd_step",
+    #                         )
+    
+    #     log_PX_, cost_p_, cost_q_, = do_sgd_step(X_, n_samples_)
+
+    #     assert log_PX_.shape == (batch_size,)
 
 #-----------------------------------------------------------------------------
 
-def test_replicat():
+def test_replicate_batch():
     Av = np.array( [[1., 2., 3.], 
                     [2., 3., 4.]]).astype(np.float32)
     A = T.fmatrix('A')

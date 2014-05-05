@@ -114,7 +114,7 @@ class Trainer(TrainerBase):
         self.register_hyper_param("n_samples", default=10, help="No. samples used during training")
 
         def calc_learning_rates(base_rate):
-            n_layers = len(self.model.layers)
+            n_layers = len(self.model.p_layers)
             rng = np.arange(n_layers)
             return base_rate * self.layer_discount ** rng
 
@@ -306,11 +306,11 @@ class Trainer(TrainerBase):
 
         self.dlog.append("pstep_L", LL)
 
-        if (self.step % self.n_samples == 0) and (self.learning_rate_s > 0.0):
-            self.logger.debug("Epoch %d, step %d (%d steps total): Performing sleep cycle\x1b[K" % (epoch+1, batch_idx, self.step))
-            n_dreams = self.n_samples * self.batch_size
-            LL = self.do_sleep_step(n_dreams)
-            self.dlog.append("psleep_L", LL)
+        # if (self.step % self.n_samples == 0) and (self.learning_rate_s > 0.0):
+        #     self.logger.debug("Epoch %d, step %d (%d steps total): Performing sleep cycle\x1b[K" % (epoch+1, batch_idx, self.step))
+        #     n_dreams = self.n_samples * self.batch_size
+        #     LL = self.do_sleep_step(n_dreams)
+        #     self.dlog.append("psleep_L", LL)
 
         if (self.step % self.monitor_nth_step == 0) and (len(self.step_monitors) > 0):
             self.logger.info("Epoch %d, step %d (%d steps total): Calling step_monitors...\x1b[K" % (epoch+1, batch_idx, self.step))

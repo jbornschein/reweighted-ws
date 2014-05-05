@@ -116,11 +116,13 @@ class Experiment(object):
             if not isinstance(v, (int, float)):
                 continue
             logger.info("  %20s: %s" % (k, v))
-        logger.info("-- Model hyperparameter --")
-        for l in self.trainer.model.layers[::-1]:
-            logger.info("    %s" % l.__class__)
-            for k, v in l.get_hyper_params().iteritems():
-                logger.info("      %20s: %s" % (k, v))
+        #logger.info("-- Model hyperparameter --")
+        #model = self.trainer.model
+        #n_layers = len(model.p_layers)
+        #for pl, ql in zip(model.p_layers[:-1], model.q_layers):
+        #    logger.info("    %s" % l.__class__)
+        #    for k, v in l.get_hyper_params().iteritems():
+        #        logger.info("      %20s: %s" % (k, v))
             
         
         

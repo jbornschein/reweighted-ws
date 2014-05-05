@@ -131,7 +131,7 @@ class MonitorLL(Monitor):
             else:
                 batch_size = 1
     
-            n_layers = len(model.layers)
+            n_layers = len(model.p_layers)
 
             L = 0
             KL = np.zeros(n_layers)
@@ -200,7 +200,7 @@ class SampleFromP(Monitor):
 
     def on_iter(self, model):
         n_samples = self.n_samples
-        n_layers = len(model.layers)
+        n_layers = len(model.p_layers)
 
         outputs = self.do_sample(n_samples)
         log_p = outputs[0]
