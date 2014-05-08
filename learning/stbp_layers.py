@@ -257,6 +257,79 @@ class ARSBNTop(TopModule):
 
         return post
 
+
+class NADE(TopModule):
+    """ CNADE """
+    def __init__(self, **hyper_params):
+        super(NADE, self).__init__()
+
+        self.register_hyper_param('n_X', help='no. observed binary variables')
+        self.register_hyper_param('n_hid', help='no. latent binary variables')
+        self.register_hyper_param('unroll_scan', default=1)
+
+        self.register_model_param('b',  help='visible bias', default=lambda: np.zeros(self.n_X))
+        self.register_model_param('c',  help='hidden bias' , default=lambda: np.zeros(self.n_hid))
+        self.register_model_param('W',  help='encoder weights', default=lambda: default_weights(self.n_X, self.n_hid) )
+        self.register_model_param('V',  help='decoder weights', default=lambda: default_weights(self.n_hid, self.n_X) )
+        
+        self.set_hyper_params(hyper_params)
+   
+    def log_prob(self, X):
+        n_X, n_hid = self.get_hyper_params(['n_X', 'n_hid'])
+        b, c, W, V = self.get_model_params(['b', 'c', 'W', 'V'])
+        
+        batch_size = X.shape[0]
+        vis = X
+
+        #------------------------------------------------------------------
+    
+        a_init    = T.zeros([batch_size, n_hid]) + T.shape_padleft(c)
+        post_init = T.zeros([batch_size], dtype=floatX)
+
+        def one_iter(vis_i, Wi, Vi, bi, a, post):
+            hid  = self.sigmoid(a)
+            pi   = self.sigmoid(T.dot(hid, Vi) + bi)
+            post = post + T.log(pi*vis_i + (1-pi)*(1-vis_i))
+            a    = a + T.outer(vis_i, Wi)
+            return a, post
+
+        [a, post], updates = unrolled_scan(
+                    fn=one_iter,
+                    sequences=[vis.T, W, V.T, b],
+                    outputs_info=[a_init, post_init],
+                    unroll=self.unroll_scan
+                )
+        assert len(updates) == 0
+        return post[-1,:]
+
+    def sample(self, n_samples):
+        n_X, n_hid = self.get_hyper_params(['n_X', 'n_hid'])
+        b, c, W, V = self.get_model_params(['b', 'c', 'W', 'V'])
+
+        #------------------------------------------------------------------
+    
+        a_init    = T.zeros([n_samples, n_hid]) + T.shape_padleft(c)
+        post_init = T.zeros([n_samples], dtype=floatX)
+        vis_init  = T.zeros([n_samples], dtype=floatX)
+        rand      = theano_rng.uniform((n_X, n_samples), nstreams=512)
+
+        def one_iter(Wi, Vi, bi, rand_i, a, vis_i, post):
+            hid  = self.sigmoid(a)
+            pi   = self.sigmoid(T.dot(hid, Vi) + bi)
+            vis_i = T.cast(rand_i <= pi, floatX)
+            post  = post + T.log(pi*vis_i + (1-pi)*(1-vis_i))
+            a     = a + T.outer(vis_i, Wi)
+            return a, vis_i, post
+
+        [a, vis, post], updates = unrolled_scan(
+                    fn=one_iter,
+                    sequences=[W, V.T, b, rand], 
+                    outputs_info=[a_init, vis_init, post_init],
+                    unroll=self.unroll_scan
+                )
+        assert len(updates) == 0
+        return vis.T, post[-1,:]
+
 #----------------------------------------------------------------------------
 
 class SigmoidBeliefLayer(Module):
