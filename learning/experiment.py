@@ -150,7 +150,7 @@ class Experiment(object):
 
             self.trainer.load_data()
             self.trainer.compile()
-            self.trainer.model.model_params_from_dlog(h5)
+            self.trainer.model.model_params_from_h5(h5)
         self.trainer.perform_learning()
 
     #---------------------------------------------------------------
