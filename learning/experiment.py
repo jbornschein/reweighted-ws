@@ -60,10 +60,10 @@ class Experiment(object):
             # Determine suffix
             if 'PBS_JOBID' in os.environ:
                 job_no = os.environ['PBS_JOBID'].split('.')[0]   # Job Number
-                suffix = "d"+job_no
+                suffix = "j"+job_no
             elif 'SLURM_JOBID' in os.environ:
                 job_no = os.environ['SLURM_JOBID']
-                suffix = "d"+job_no
+                suffix = "j"+job_no
             else:
                 suffix = time.strftime("%Y-%m-%d-%H-%M")
     
