@@ -646,16 +646,15 @@ class STBPStack(Model):
         vals = self.model_params_to_dict()
         dlog.append_all(vals)
 
-    def model_params_from_dlog(self, dlog, row=-1):
-        for n,l in enumerate(self.p_layers):
-            for pname, shvar in l.get_model_params().iteritems():
-                key = "L%d.P.%s" % (n, pname)
-                value = dlog.load(key)
+    def model_params_from_h5(self, h5, row=-1, basekey="learning.monitor."):
+        for n,l in enumerate(self.layers):
+            for pname, shvar in l.get_p_params().iteritems():
+                key = "%sL%d.P.%s" % (basekey, n, pname)
+                value = h5[key][-1]
                 shvar.set_value(value)
-        for n,l in enumerate(self.q_layers):                
-            for pname, shvar in l.get_model_params().iteritems():
-                key = "L%d.Q.%s" % (n, pname)
-                value = dlog.load(key)
+            for pname, shvar in l.get_q_params().iteritems():
+                key = "%sL%d.Q.%s" % (basekey, n, pname)
+                value = h5[key][-1]
                 shvar.set_value(value)
  
 #=============================================================================

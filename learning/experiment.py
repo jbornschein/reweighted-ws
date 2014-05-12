@@ -13,6 +13,7 @@ import errno
 from shutil import copyfile
 
 import numpy as np
+import h5py
 
 import theano
 import theano.tensor as T
@@ -129,12 +130,27 @@ class Experiment(object):
         #logger.info("Total runtime:    %f4.1 h" % runtime)
  
     def run_experiment(self):
-
         self.sanity_check()
 
         self.trainer.load_data()
         self.trainer.compile()
 
+        self.trainer.perform_learning()
+
+    def continue_experiment(self, results_h5):
+        logger = self.logger
+        self.sanity_check()
+
+        logger.info("Copying results from %s" % results_h5)
+        with h5py.File(results_h5, "r") as h5:
+            for key in h5.keys():
+                n_rows = h5[key].shape[0]
+                for r in xrange(n_rows):
+                    dlog.append(key, h5[key][r])
+
+            self.trainer.load_data()
+            self.trainer.compile()
+            self.trainer.model.model_params_from_dlog(h5)
         self.trainer.perform_learning()
 
     #---------------------------------------------------------------
