@@ -102,9 +102,18 @@ class Experiment(object):
         results_fname = os.path.join(self.out_dir, "results.h5")
         dlog.set_handler("*", StoreToH5, results_fname)
 
+        FORMAT = '[%(asctime)s] %(module)-15s %(message)s'
+        DATEFMT = "%H:%M:%S"
+
+        formatter = logging.Formatter(FORMAT, DATEFMT)
+
         logger_fname = os.path.join(self.out_dir, "logfile.txt")
         fh = logging.FileHandler(logger_fname)
-        logging
+        fh.setLevel(logging.INFO)
+        fh.setFormatter(formatter)
+
+        root_logger = logging.getLogger("")
+        root_logger.addHandler(fh)
 
     def print_summary(self):
         logger = self.logger
