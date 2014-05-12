@@ -1,9 +1,15 @@
+#
+# Wake-sleep experiment with the same parameters as in
+#
+#   Neural Variational Inference and Learning in Belief Networks (Andriy Mnih, Karol Gregor; 2014)
+#   http://arxiv.org/abs/1402.0030
+#
 
 import numpy as np
 
 from learning.dataset import BarsData, FromModel, MNIST
 from learning.preproc import Binarize
-from learning.stbp_layers import  STBPStack, SigmoidBeliefLayer, FactoizedBernoulliTop, CNADE
+from learning.stbp_layers import  STBPStack, SigmoidBeliefLayer, FactoizedBernoulliTop
 from learning.training import Trainer
 from learning.termination import LogLikelihoodIncrease, EarlyStopping
 from learning.monitor import MonitorLL, DLogModelParams, SampleFromP
@@ -26,12 +32,10 @@ p_layers=[
 ]
 
 q_layers=[
-    CNADE(
-        unroll_scan=1,
+    SigmoidBeliefLayer(
         n_X=200,
         n_Y=n_vis,
-        n_hid=200
-    ),
+    )
 ]
 
 model = STBPStack(
@@ -40,17 +44,17 @@ model = STBPStack(
 )
 
 trainer = Trainer(
-    n_samples=5,
-    learning_rate_p=1e-3,
-    learning_rate_q=1e-3,
-    learning_rate_s=1e-3,
+    n_samples=1,
+    learning_rate_p=3e-4,
+    learning_rate_q=0,
+    learning_rate_s=3e-4,
     layer_discount=1.0,
-    batch_size=100,
+    batch_size=20,
     dataset=dataset, 
     model=model,
     termination=EarlyStopping(),
     #step_monitors=[MonitorLL(data=smallset, n_samples=[1, 5, 25, 100])],
-    epoch_monitors=[MonitorLL(data=valiset, n_samples=[100]), DLogModelParams(), SampleFromP(n_samples=100)],
+    epoch_monitors=[MonitorLL(data=valiset, n_samples=[1, 5, 25, 100]), DLogModelParams(), SampleFromP(n_samples=100)],
     final_monitors=[MonitorLL(data=testset, n_samples=[1, 5, 10, 25, 100, 500])],
-    monitor_nth_step=100,
+    #monitor_nth_step=100,
 )
