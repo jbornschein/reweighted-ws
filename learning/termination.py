@@ -62,7 +62,7 @@ class LogLikelihoodIncrease(Termination):
 
 #-----------------------------------------------------------------------------
 class EarlyStopping(Termination):
-    def __init__(self, lookahead=10, min_epochas=10, max_epochs=1000):
+    def __init__(self, lookahead=10, min_epochs=10, max_epochs=1000):
         super(EarlyStopping, self).__init__()
         
         self.lookahead = lookahead
