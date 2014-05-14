@@ -14,7 +14,7 @@ from theano.printing import Print
 from theano.tensor.shared_randomstreams import RandomStreams
 from theano.sandbox.rng_mrg import MRG_RandomStreams
 
-from model import Model, default_weights
+from model import Model, default_weights, default_weights6
 from cnade import CNADE
 from utils.unrolled_scan import unrolled_scan
 from utils.datalog  import dlog
@@ -344,7 +344,7 @@ class SigmoidBeliefLayer(Module):
 
         # Sigmoid Belief Layer
         self.register_model_param('b', help='P lower-layer bias', default=lambda: np.zeros(self.n_X))
-        self.register_model_param('W', help='P weights', default=lambda: default_weights(self.n_Y, self.n_X) )
+        self.register_model_param('W', help='P weights', default=lambda: default_weights6(self.n_Y, self.n_X) )
 
         self.set_hyper_params(hyper_params)
 
