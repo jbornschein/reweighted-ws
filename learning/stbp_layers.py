@@ -15,7 +15,6 @@ from theano.tensor.shared_randomstreams import RandomStreams
 from theano.sandbox.rng_mrg import MRG_RandomStreams
 
 from model import Model, default_weights, default_weights6
-from cnade import CNADE
 from utils.unrolled_scan import unrolled_scan
 from utils.datalog  import dlog
 
@@ -73,19 +72,25 @@ class TopModule(Model):
         pass
 
     def sigmoid(self, x):
+        """ Compute the element wise sigmoid function of x 
+
+        Depending on the *clamp_sigmoid* hyperparameter, this might
+        return a saturated sigmoid T.nnet.sigmoid(x)*0.9999 + 0.000005
+        """
         if self.clamp_sigmoid:
             return T.nnet.sigmoid(x)*0.9999 + 0.000005
         else:
             return T.nnet.sigmoid(x)
 
     @abstractmethod
-    def sample(self):
+    def sample(self, n_samples):
         """ Sample from this toplevel module and return X ~ P(X), log(P(X))
 
         Parameters
         ----------
         n_samples:
             number of samples to drawn
+
         Returns
         -------
         X:      T.tensor
@@ -102,7 +107,7 @@ class TopModule(Model):
         Parameters
         ----------
         X:      T.tensor
-            samples to Evaluate
+            samples to evaluate
 
         Returns
         -------
@@ -130,7 +135,7 @@ class Module(Model):
     @abstractmethod
     def sample(self, Y):
         """ Given samples from the upper layer Y, sample values from X
-            and return then together with their log posterior.
+            and return then together with their log probability.
 
         Parameters
         ----------
@@ -151,12 +156,17 @@ class Module(Model):
     def log_prob(self, X, Y):
         """ Evaluate the log-probability for the given samples.
 
-        Input
-        -----
+        Parameters
+        ----------
         Y:      T.tensor
             samples from the upper layer
         X:      T.tensor
-            sampees from the lower layer
+            samples from the lower layer
+
+        Returns
+        -------
+        log_p:  T.tensor
+            log-probabilities for the samples in X and Y
         """
         return log_p
 
@@ -177,7 +187,20 @@ class FactoizedBernoulliTop(TopModule):
         self.set_hyper_params(hyper_params)
     
     def sample(self, n_samples):
-        """ Draw samples """
+        """ Sample from this toplevel module and return X ~ P(X), log(P(X))
+
+        Parameters
+        ----------
+        n_samples:
+            number of samples to drawn
+
+        Returns
+        -------
+        X:      T.tensor
+            samples from this module
+        log_p:  T.tensor
+            log-probabilities for the samples returned in X
+        """
         n_X, = self.get_hyper_params(['n_X'])
         a, = self.get_model_params(['a'])
 
@@ -189,7 +212,18 @@ class FactoizedBernoulliTop(TopModule):
         return X, self.log_prob(X)
 
     def log_prob(self, X):
-        """ Calculate and return log(P(X)) """
+        """ Evaluate the log-probability for the given samples.
+
+        Parameters
+        ----------
+        X:      T.tensor 
+            samples from X
+
+        Returns
+        -------
+        log_p:  T.tensor
+            log-probabilities for the samples in X
+        """
         n_X, = self.get_hyper_params(['n_X'])
         a, = self.get_model_params(['a'])
 
@@ -201,7 +235,7 @@ class FactoizedBernoulliTop(TopModule):
         return log_prob
 
 
-class ARSBNTop(TopModule):
+class FVSBNTop(TopModule):
     def __init__(self, **hyper_params):
         super(ARSBNTop, self).__init__()
 
@@ -215,7 +249,20 @@ class ARSBNTop(TopModule):
         self.set_hyper_params(hyper_params)
 
     def sample(self, n_samples):
-        """ Draw samples         """
+        """ Sample from this toplevel module and return X ~ P(X), log(P(X))
+
+        Parameters
+        ----------
+        n_samples:
+            number of samples to drawn
+
+        Returns
+        -------
+        X:      T.tensor
+            samples from this module
+        log_p:  T.tensor
+            log-probabilities for the samples returned in X
+        """
         n_X, = self.get_hyper_params(['n_X'])
         W, b = self.get_model_params(['W', 'b'])
 
@@ -244,7 +291,18 @@ class ARSBNTop(TopModule):
         return X, self.log_p(X)
 
     def log_prob(self, X):
-        """ """
+        """ Evaluate the log-probability for the given samples.
+
+        Parameters
+        ----------
+        X:      T.tensor 
+            samples from X
+
+        Returns
+        -------
+        log_p:  T.tensor
+            log-probabilities for the samples in X
+        """
         n_X, = self.get_hyper_params(['n_X'])
         W, b = self.get_model_params(['W', 'b'])
 
@@ -259,7 +317,7 @@ class ARSBNTop(TopModule):
 
 
 class NADE(TopModule):
-    """ CNADE """
+    """ Top Level NADE """
     def __init__(self, **hyper_params):
         super(NADE, self).__init__()
 
@@ -275,6 +333,18 @@ class NADE(TopModule):
         self.set_hyper_params(hyper_params)
    
     def log_prob(self, X):
+        """ Evaluate the log-probability for the given samples.
+
+        Parameters
+        ----------
+        X:      T.tensor 
+            samples from X
+
+        Returns
+        -------
+        log_p:  T.tensor
+            log-probabilities for the samples in X
+        """
         n_X, n_hid = self.get_hyper_params(['n_X', 'n_hid'])
         b, c, W, V = self.get_model_params(['b', 'c', 'W', 'V'])
         
@@ -303,6 +373,20 @@ class NADE(TopModule):
         return post[-1,:]
 
     def sample(self, n_samples):
+        """ Sample from this toplevel module and return X ~ P(X), log(P(X))
+
+        Parameters
+        ----------
+        n_samples:
+            number of samples to drawn
+
+        Returns
+        -------
+        X:      T.tensor
+            samples from this module
+        log_p:  T.tensor
+            log-probabilities for the samples returned in X
+        """
         n_X, n_hid = self.get_hyper_params(['n_X', 'n_hid'])
         b, c, W, V = self.get_model_params(['b', 'c', 'W', 'V'])
 
@@ -349,6 +433,21 @@ class SigmoidBeliefLayer(Module):
         self.set_hyper_params(hyper_params)
 
     def sample(self, Y):
+        """ Given samples from the upper layer Y, sample values from X
+            and return then together with their log probability.
+
+        Parameters
+        ----------
+        Y:      T.tensor
+            samples from the upper layer
+
+        Returns
+        -------
+        X:      T.tensor
+            samples from the lower layer
+        log_p:  T.tensor
+            log-posterior for the samples returned in X
+        """
         n_X, = self.get_hyper_params(['n_X'])
         W, b = self.get_model_params(['W', 'b'])
 
@@ -365,6 +464,20 @@ class SigmoidBeliefLayer(Module):
         return X, log_prob
 
     def log_prob(self, X, Y):
+        """ Evaluate the log-probability for the given samples.
+
+        Parameters
+        ----------
+        Y:      T.tensor
+            samples from the upper layer
+        X:      T.tensor
+            samples from the lower layer
+
+        Returns
+        -------
+        log_p:  T.tensor
+            log-probabilities for the samples in X and Y
+        """
         W, b = self.get_model_params(['W', 'b'])
 
         # posterior P(X|Y)
@@ -376,7 +489,7 @@ class SigmoidBeliefLayer(Module):
 
 
 class CNADE(Module):
-    """ CNADE """
+    """ Conditional NADE """
     def __init__(self, **hyper_params):
         super(CNADE, self).__init__()
 
@@ -394,38 +507,21 @@ class CNADE(Module):
         
         self.set_hyper_params(hyper_params)
    
-    def log_prob(self, X, Y):
-        n_X, n_Y, n_hid    = self.get_hyper_params(['n_X', 'n_Y', 'n_hid'])
-        b, c, W, V, Ub, Uc = self.get_model_params(['b', 'c', 'W', 'V', 'Ub', 'Uc'])
-        
-        batch_size = X.shape[0]
-        vis = X
-        cond = Y
-
-        #------------------------------------------------------------------
-        b_cond = b + T.dot(cond, Ub)    # shape (batch, n_vis)
-        c_cond = c + T.dot(cond, Uc)    # shape (batch, n_hid)
-    
-        a_init    = c_cond
-        post_init = T.zeros([batch_size], dtype=floatX)
-
-        def one_iter(vis_i, Wi, Vi, bi, a, post):
-            hid  = self.sigmoid(a)
-            pi   = self.sigmoid(T.dot(hid, Vi) + bi)
-            post = post + T.log(pi*vis_i + (1-pi)*(1-vis_i))
-            a    = a + T.outer(vis_i, Wi)
-            return a, post
-
-        [a, post], updates = unrolled_scan(
-                    fn=one_iter,
-                    sequences=[vis.T, W, V.T, b_cond.T],
-                    outputs_info=[a_init, post_init],
-                    unroll=self.unroll_scan
-                )
-        assert len(updates) == 0
-        return post[-1,:]
-
     def sample(self, Y):
+        """ Evaluate the log-probability for the given samples.
+
+        Parameters
+        ----------
+        Y:      T.tensor
+            samples from the upper layer
+        X:      T.tensor
+            samples from the lower layer
+
+        Returns
+        -------
+        log_p:  T.tensor
+            log-probabilities for the samples in X and Y
+        """
         n_X, n_Y, n_hid = self.get_hyper_params(['n_X', 'n_Y', 'n_hid'])
         b, c, W, V, Ub, Uc = self.get_model_params(['b', 'c', 'W', 'V', 'Ub', 'Uc'])
 
@@ -457,6 +553,51 @@ class CNADE(Module):
                 )
         assert len(updates) == 0
         return vis.T, post[-1,:]
+
+    def log_prob(self, X, Y):
+        """ Evaluate the log-probability for the given samples.
+
+        Parameters
+        ----------
+        Y:      T.tensor
+            samples from the upper layer
+        X:      T.tensor
+            samples from the lower layer
+
+        Returns
+        -------
+        log_p:  T.tensor
+            log-probabilities for the samples in X and Y
+        """
+        n_X, n_Y, n_hid    = self.get_hyper_params(['n_X', 'n_Y', 'n_hid'])
+        b, c, W, V, Ub, Uc = self.get_model_params(['b', 'c', 'W', 'V', 'Ub', 'Uc'])
+        
+        batch_size = X.shape[0]
+        vis = X
+        cond = Y
+
+        #------------------------------------------------------------------
+        b_cond = b + T.dot(cond, Ub)    # shape (batch, n_vis)
+        c_cond = c + T.dot(cond, Uc)    # shape (batch, n_hid)
+    
+        a_init    = c_cond
+        post_init = T.zeros([batch_size], dtype=floatX)
+
+        def one_iter(vis_i, Wi, Vi, bi, a, post):
+            hid  = self.sigmoid(a)
+            pi   = self.sigmoid(T.dot(hid, Vi) + bi)
+            post = post + T.log(pi*vis_i + (1-pi)*(1-vis_i))
+            a    = a + T.outer(vis_i, Wi)
+            return a, post
+
+        [a, post], updates = unrolled_scan(
+                    fn=one_iter,
+                    sequences=[vis.T, W, V.T, b_cond.T],
+                    outputs_info=[a_init, post_init],
+                    unroll=self.unroll_scan
+                )
+        assert len(updates) == 0
+        return post[-1,:]
 
 #=============================================================================
 
