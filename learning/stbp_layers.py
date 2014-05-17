@@ -66,7 +66,7 @@ class TopModule(Model):
 
     def __init__(self):
         super(TopModule, self).__init__()
-        self.register_hyper_param('clamp_sigmoid', default=True)
+        self.register_hyper_param('clamp_sigmoid', default=False)
 
     def setup(self):
         pass
