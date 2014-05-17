@@ -86,7 +86,7 @@ class TestFactorizedBernoulliTop(STBPTopLayerTest, unittest.TestCase):
                     )
         self.layer.setup()
 
-class TestNADE(STBPLayerTest, unittest.TestCase):
+class TestNADE(STBPTopLayerTest, unittest.TestCase):
     def setUp(self):
         self.n_samples = 10
         self.layer = NADE(
