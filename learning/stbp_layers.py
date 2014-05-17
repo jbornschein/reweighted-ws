@@ -121,7 +121,7 @@ class Module(Model):
     def __init__(self):
         super(Module, self).__init__()
 
-        self.register_hyper_param('clamp_sigmoid', default=True)
+        self.register_hyper_param('clamp_sigmoid', default=False)
 
     def setup(self):
         pass
