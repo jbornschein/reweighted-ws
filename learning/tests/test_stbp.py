@@ -82,26 +82,33 @@ class TestFactorizedBernoulliTop(STBPTopLayerTest, unittest.TestCase):
     def setUp(self):
         self.n_samples = 10
         self.layer = FactoizedBernoulliTop(
-                        clamp_sigmoid=True,
                         n_X=8
                     )
         self.layer.setup()
+
+class TestNADE(STBPLayerTest, unittest.TestCase):
+    def setUp(self):
+        self.n_samples = 10
+        self.layer = NADE(
+                        n_X=16,
+                        n_hid=8,
+                    )
+        self.layer.setup()
+
 
 class TestSigmoidBeliefLayer(STBPLayerTest, unittest.TestCase):
     def setUp(self):
         self.n_samples = 10
         self.layer = SigmoidBeliefLayer(
-                        clamp_sigmoid=True,
                         n_X=16,
                         n_Y=8,
                     )
         self.layer.setup()
 
-class TestSigmoidCNADE(STBPLayerTest, unittest.TestCase):
+class TestCNADE(STBPLayerTest, unittest.TestCase):
     def setUp(self):
         self.n_samples = 10
         self.layer = CNADE(
-                        clamp_sigmoid=True,
                         n_X=16,
                         n_Y=8,
                         n_hid=8,

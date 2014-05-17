@@ -15,8 +15,7 @@ dataset = BarsData(which_set='train', n_datapoints=1000)
 valiset = BarsData(which_set='valid', n_datapoints=100)
 
 p_layers=[
-    SigmoidBeliefLayer( 
-        unroll_scan=1,
+    SigmoidBeliefLayer(      
         n_X=n_vis,
         n_Y=n_hid,
     ),
@@ -29,7 +28,8 @@ q_layers=[
     CNADE(
         n_X=n_hid,
         n_Y=n_vis,
-        n_hid=n_qhid
+        n_hid=n_qhid,
+        unroll_scan=1        
     )
 ]
 
