@@ -17,13 +17,9 @@ _logger = logging.getLogger(__name__)
 
 #------------------------------------------------------------------------------
 
-
-def default_weights6(n_in, n_out):
-    scale = np.sqrt(6) / np.sqrt(n_in+n_out)
-    return scale*(2*np.random.uniform(size=(n_in, n_out))-1)
-
 def default_weights(n_in, n_out):
-    return (2*np.random.uniform(size=(n_in, n_out))-1) / n_in
+    scale = np.sqrt(6) / np.sqrt(n_in+n_out)
+    return scale*(2*np.random.uniform(size=(n_in, n_out))-1) / n_in
 
 #------------------------------------------------------------------------------
 
