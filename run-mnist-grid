@@ -1,0 +1,195 @@
+#!/usr/bin/env python 
+
+
+from __future__ import division
+
+import numpy as np
+
+from learning.stbp_layers import *
+from learning.training import Trainer
+from learning.termination import EarlyStopping
+from learning.monitor import MonitorLL, DLogModelParams, SampleFromP
+from learning.dataset import BarsData, FromModel, MNIST
+#from learning.preproc import Binarize
+
+"""
+n_vis = 28*28
+
+dataset  = MNIST(fname="data/mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_train', n_datapoints=59000)
+smallset = MNIST(fname="data/mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', n_datapoints=100)
+valiset  = MNIST(fname="data/mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', n_datapoints=1000)
+testset  = MNIST(fname="data/mnist_salakhutdinov.pkl.gz", which_set='test', n_datapoints=10000)
+
+%(LAYER_DEF)
+p_layers=[
+    SigmoidBeliefLayer( 
+        n_X=n_vis,
+        n_Y=200,
+    ),
+    SigmoidBeliefLayer( 
+        n_X=200,
+        n_Y=200,
+    ),
+    FactoizedBernoulliTop(
+        n_X=200,
+    )
+]
+
+q_layers=[
+    CNADE(
+        unroll_scan=1,
+        n_X=200,
+        n_Y=n_vis,
+        n_hid=200
+    ),
+    CNADE(
+        unroll_scan=1,
+        n_X=200,
+        n_Y=200,
+        n_hid=200
+    )
+]
+
+model = STBPStack(
+    p_layers=p_layers,
+    q_layers=q_layers,
+)
+
+trainer = Trainer(
+    n_samples=5,
+    learning_rate_p=1e-3,
+    learning_rate_q=1e-3,
+    learning_rate_s=1e-3,
+    layer_discount=1.0,
+    batch_size=100,
+    dataset=dataset, 
+    model=model,
+    termination=EarlyStopping(),
+    #step_monitors=[MonitorLL(data=smallset, n_samples=[1, 5, 25, 100])],
+    epoch_monitors=[MonitorLL(data=valiset, n_samples=[1, 5, 25, 100]), DLogModelParams(), SampleFromP(n_samples=100)],
+    final_monitors=[MonitorLL(data=testset, n_samples=[1, 5, 25, 100, 500])],
+    monitor_nth_step=100,
+)
+"""
+
+SPECS = (
+	# name, batch_size, samples, p-layer, q-layer, arch,
+	("sbn-sbn-200", 			25, 5 , SigmoidBeliefLayer, SigmoidBeliefLayer, [200]),
+	("sbn-sbn-500", 			25, 5 , SigmoidBeliefLayer, SigmoidBeliefLayer, [500]),
+	("sbn-sbn-200-200", 		25, 5 , SigmoidBeliefLayer, SigmoidBeliefLayer, [200, 200]),	
+	("sbn-sbn-200-200-200",		25, 5 , SigmoidBeliefLayer, SigmoidBeliefLayer, [200, 200, 200]),		
+
+	("sbn-darn-200", 			25, 5 , SigmoidBeliefLayer, DARN, [200]),
+	("sbn-darn-500", 			25, 5 , SigmoidBeliefLayer, DARN, [500]),
+	("sbn-darn-200-200", 		25, 5 , SigmoidBeliefLayer, DARN, [200, 200]),	
+	("sbn-darn-200-200-200", 	25, 5 , SigmoidBeliefLayer, DARN, [200, 200, 200]),		
+
+	("sbn-nade-200", 			25, 5 , SigmoidBeliefLayer, DARN, [200]),
+	("sbn-nade-500", 			25, 5 , SigmoidBeliefLayer, DARN, [500]),
+	("sbn-nade-200-200", 		25, 5 , SigmoidBeliefLayer, DARN, [200, 200]),	
+	("sbn-nade-200-200-200", 	25, 5 , SigmoidBeliefLayer, DARN, [200, 200, 200]),		
+
+	("darn-darn-200", 			25, 5 , DARN, DARN, [200]),
+	("darn-darn-500", 			25, 5 , DARN, DARN, [500]),
+	("darn-darn-200-200", 		25, 5 , DARN, DARN, [200, 200]),	
+	("darn-darn-200-200-200", 	25, 5 , DARN, DARN, [200, 200, 200]),		
+
+	("darn-nade-200", 			25, 5 , DARN, NADE, [200]),
+	("darn-nade-500", 			25, 5 , DARN, NADE, [500]),
+	("darn-nade-200-200", 		25, 5 , DARN, NADE, [200, 200]),	
+	("darn-nade-200-200-200", 	25, 5 , DARN, NADE, [200, 200, 200]),			
+
+	("nade-nade-200", 			25, 5 , NADE, NADE, [200]),
+	("nade-nade-500", 			25, 5 , NADE, NADE, [500]),
+	("nade-nade-200-200", 		25, 5 , NADE, NADE, [200, 200]),	
+	("nade-nade-200-200-200", 	25, 5 , NADE, NADE, [200, 200, 200]),		
+)
+
+
+_logger = logging.getLogger()
+
+
+
+def run_experiment(spec):
+    name, batch_size, samples, p_layer, q_layer, arch = spec
+
+    _logger.info("Running %s" % name)
+    
+    if p_layer == SigmoidBeliefLayer:
+        p_top = FactoizedBernoulliTop
+    elif p_layer == DARN:
+        p_top = DARNTop
+    elif p_layer == NADE:
+        p_top = NADETop
+    else:
+        print p_layer
+        raise "Unknown Top"
+    
+    p_layers = []
+    q_layers = []
+
+    n_X = 28*28
+
+    for ls in arch:
+        n_Y = ls
+        p_layers.append(
+            p_layer(n_X=n_X, n_Y=n_Y)
+        )
+        p_layers.append(
+            q_layer(n_X=n_Y, n_Y=n_X)
+        )
+        n_X = n_Y
+    p_layers.append( p_top(n_X=n_X) )
+            
+
+    model = STBPStack(
+        p_layers=p_layers,
+        q_layers=q_layers
+    )
+
+    dataset  = MNIST(fname="data/mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_train', n_datapoints=59000)
+    valiset  = MNIST(fname="data/mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', n_datapoints=1000)
+    testset  = MNIST(fname="data/mnist_salakhutdinov.pkl.gz", which_set='test', n_datapoints=10000)
+    
+    trainer = Trainer(
+        batch_size=batch_size,
+        n_samples=n_samples,
+        learning_rate_p=1e-3,
+        learning_rate_q=1e-3,
+        learning_rate_s=1e-3,
+        layer_discount=1.0,
+        dataset=dataset, 
+        model=model,
+        termination=EarlyStopping(),
+        epoch_monitors=[MonitorLL(data=valiset, n_samples=100), DLogModelParams(), SampleFromP(n_samples=100)],
+        final_monitors=[MonitorLL(data=testset, n_samples=[1, 5, 25, 10, 100, 500])],
+    )
+
+
+#=============================================================================
+if __name__ == "__main__":
+    import argparse 
+
+    logger = logging.getLogger(__name__)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--verbose', '-v', action='count')
+    parser.add_argument('--random', "-r", action='store_true')
+    parser.add_argument('--slurm', action='store_true')
+    args = parser.parse_args()
+
+    FORMAT = '[%(asctime)s] %(module)-15s %(message)s'
+    DATEFMT = "%H:%M:%S"
+    logging.basicConfig(format=FORMAT, datefmt=DATEFMT, level=logging.INFO)
+
+    if args.random:
+        i = np.random.randint(len(SPECS))
+        run_experiment(SPECS[i])
+    elif args.slurm:
+        i = 0
+        run_experiment(SPECS[i])
+    else:
+        for id, (name, batch_size, n_samples, p_layers, q_layers, arch) in enumerate(GRID):
+        	print "%40s (batch_size=%d, n_samples=%d, arch=%s)" % (name, batch_size, n_samples, arch)
+
+
