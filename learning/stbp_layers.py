@@ -186,6 +186,29 @@ class FactoizedBernoulliTop(TopModule):
 
         self.set_hyper_params(hyper_params)
     
+    def log_prob(self, X):
+        """ Evaluate the log-probability for the given samples.
+
+        Parameters
+        ----------
+        X:      T.tensor 
+            samples from X
+
+        Returns
+        -------
+        log_p:  T.tensor
+            log-probabilities for the samples in X
+        """
+        n_X, = self.get_hyper_params(['n_X'])
+        a, = self.get_model_params(['a'])
+
+        # Calculate log-bernoulli
+        prob_X = self.sigmoid(a)
+        log_prob = X*T.log(prob_X) + (1-X)*T.log(1-prob_X)
+        log_prob = log_prob.sum(axis=1)
+
+        return log_prob
+
     def sample(self, n_samples):
         """ Sample from this toplevel module and return X ~ P(X), log(P(X))
 
@@ -211,6 +234,22 @@ class FactoizedBernoulliTop(TopModule):
 
         return X, self.log_prob(X)
 
+
+class DARNTop(TopModule):
+    def __init__(self, **hyper_params):
+        super(DARNTop, self).__init__()
+
+        # Hyper parameters
+        self.register_hyper_param('n_X', help='no. binary variables')
+        self.register_hyper_param('unroll_scan', default=1)        
+
+        # Model parameters
+        self.register_model_param('b', help='sigmoid(b)-bias ', default=lambda: np.zeros(self.n_X))
+        self.register_model_param('W', help='weights (triangular)', default=lambda: default_weights(self.n_X, self.n_X) )
+
+        self.set_hyper_params(hyper_params)
+
+
     def log_prob(self, X):
         """ Evaluate the log-probability for the given samples.
 
@@ -225,28 +264,29 @@ class FactoizedBernoulliTop(TopModule):
             log-probabilities for the samples in X
         """
         n_X, = self.get_hyper_params(['n_X'])
-        a, = self.get_model_params(['a'])
+        b, W = self.get_model_params(['b', 'W'])
+        
+        batch_size = X.shape[0]
 
-        # Calculate log-bernoulli
-        prob_X = self.sigmoid(a)
-        log_prob = X*T.log(prob_X) + (1-X)*T.log(1-prob_X)
-        log_prob = log_prob.sum(axis=1)
+        #------------------------------------------------------------------
+    
+        a_init    = T.zeros([batch_size, n_X]) + T.shape_padleft(b)
+        post_init = T.zeros([batch_size], dtype=floatX)
 
-        return log_prob
+        def one_iter(i, xi, Wi, bi, a, post):
+            pi   = self.sigmoid(a[:,i])
+            post = post + T.log(pi*xi + (1-pi)*(1-xi))            
+            a    = a + T.outer(xi, Wi) 
+            return a, post
 
-
-class FVSBNTop(TopModule):
-    def __init__(self, **hyper_params):
-        super(ARSBNTop, self).__init__()
-
-        # Hyper parameters
-        self.register_hyper_param('n_X', help='no. binary variables')
-
-        # Model parameters
-        self.register_model_param('b', help='sigmoid(b)-bias ', default=lambda: np.zeros(self.n_X))
-        self.register_model_param('W', help='weights (triangular)', default=lambda: default_weights(self.n_X, self.n_X) )
-
-        self.set_hyper_params(hyper_params)
+        [a, post], updates = unrolled_scan(
+                    fn=one_iter,
+                    sequences=[T.arange(n_X), X.T, W, b],
+                    outputs_info=[a_init, post_init],
+                    unroll=self.unroll_scan
+                )
+        assert len(updates) == 0
+        return post[-1,:]
 
     def sample(self, n_samples):
         """ Sample from this toplevel module and return X ~ P(X), log(P(X))
@@ -264,56 +304,30 @@ class FVSBNTop(TopModule):
             log-probabilities for the samples returned in X
         """
         n_X, = self.get_hyper_params(['n_X'])
-        W, b = self.get_model_params(['W', 'b'])
+        b, W = self.get_model_params(['b', 'W'])
 
-        # Calculate log-bernoulli
-        W   = tensor.tril(W, k=-1)
-        p_i = self.sigmoid(T.dot(H, W)+b)
+        #------------------------------------------------------------------
 
-        post_init = T.zeros(n_samples, dtype=floatX)
-        X_init    = T.zeros((n_samples, n_X), dtype=floatX)
+        a_init    = T.zeros([n_samples, n_X]) + T.shape_padleft(b)
+        post_init = T.zeros([n_samples], dtype=floatX)
+        x_init    = T.zeros([n_samples], dtype=floatX)
+        rand      = theano_rng.uniform((n_X, n_samples), nstreams=512)
 
-        def one_iter():
-            pass
-    
-        [X, post], updates = unroll_scan(
-                    fn=one_iter, 
-                    sequences=[W, b], 
-                    outputs_info=[X_init, post_init]
+        def one_iter(i, Wi, rand_i, a, X, post):
+            pi   = self.sigmoid(a[:,i])
+            xi   = T.cast(rand_i <= pi, floatX)
+            post = post + T.log(pi*xi + (1-pi)*(1-xi))            
+            a    = a + T.outer(xi, Wi) 
+            return a, xi, post
+
+        [a, X, post], updates = unrolled_scan(
+                    fn=one_iter,
+                    sequences=[T.arange(n_X), W, rand],
+                    outputs_info=[a_init, x_init, post_init],
+                    unroll=self.unroll_scan
                 )
         assert len(updates) == 0
-
-        # sample hiddens
-        p_X = self.sigmoid(a)
-        U = theano_rng.uniform((n_samples, n_X), nstreams=512)
-        X = T.cast(U <= p_X, dtype=floatX)
-
-        return X, self.log_p(X)
-
-    def log_prob(self, X):
-        """ Evaluate the log-probability for the given samples.
-
-        Parameters
-        ----------
-        X:      T.tensor 
-            samples from X
-
-        Returns
-        -------
-        log_p:  T.tensor
-            log-probabilities for the samples in X
-        """
-        n_X, = self.get_hyper_params(['n_X'])
-        W, b = self.get_model_params(['W', 'b'])
-
-        # Calculate log-bernoulli
-        W   = tensor.tril(W, k=-1)
-        p_i = self.sigmoid(T.dot(H, W)+b)
-
-        post = H*T.log(p_i) + (1-H)*T.log(1-p_i)
-        post = post.sum(axis=1)
-
-        return post
+        return X.T, post[-1,:]
 
 
 class NADE(TopModule):
@@ -432,6 +446,30 @@ class SigmoidBeliefLayer(Module):
 
         self.set_hyper_params(hyper_params)
 
+    def log_prob(self, X, Y):
+        """ Evaluate the log-probability for the given samples.
+
+        Parameters
+        ----------
+        Y:      T.tensor
+            samples from the upper layer
+        X:      T.tensor
+            samples from the lower layer
+
+        Returns
+        -------
+        log_p:  T.tensor
+            log-probabilities for the samples in X and Y
+        """
+        W, b = self.get_model_params(['W', 'b'])
+
+        # posterior P(X|Y)
+        prob_X = self.sigmoid(T.dot(Y, W) + b)
+        log_prob = X*T.log(prob_X) + (1-X)*T.log(1-prob_X)
+        log_prob = T.sum(log_prob, axis=1)
+
+        return log_prob
+
     def sample(self, Y):
         """ Given samples from the upper layer Y, sample values from X
             and return then together with their log probability.
@@ -463,6 +501,24 @@ class SigmoidBeliefLayer(Module):
 
         return X, log_prob
 
+
+class DARN(Module):
+    def __init__(self, **hyper_params):
+        super(DARN, self).__init__()
+
+        # Hyper parameters
+        self.register_hyper_param('n_X', help='no. binary variables')
+        self.register_hyper_param('n_Y', help='no. conditioning binary variables')        
+        self.register_hyper_param('unroll_scan', default=1)        
+
+        # Model parameters
+        self.register_model_param('b', help='sigmoid(b)-bias ', default=lambda: np.zeros(self.n_X))
+        self.register_model_param('W', help='weights (triangular)', default=lambda: default_weights(self.n_X, self.n_X) )
+        self.register_model_param('U', help='cond. weights U', default=lambda: default_weights(self.n_Y, self.n_X) )
+
+        self.set_hyper_params(hyper_params)
+
+
     def log_prob(self, X, Y):
         """ Evaluate the log-probability for the given samples.
 
@@ -478,14 +534,73 @@ class SigmoidBeliefLayer(Module):
         log_p:  T.tensor
             log-probabilities for the samples in X and Y
         """
-        W, b = self.get_model_params(['W', 'b'])
+        n_X, n_Y = self.get_hyper_params(['n_X', 'n_Y'])
+        b, W, U  = self.get_model_params(['b', 'W', 'U'])
+        
+        batch_size = X.shape[0]
 
-        # posterior P(X|Y)
-        prob_X = self.sigmoid(T.dot(Y, W) + b)
-        log_prob = X*T.log(prob_X) + (1-X)*T.log(1-prob_X)
-        log_prob = T.sum(log_prob, axis=1)
+        #------------------------------------------------------------------
+    
+        a_init    = T.dot(Y, U) + T.shape_padleft(b)   # shape (batch, n_vis)
+        post_init = T.zeros([batch_size], dtype=floatX)
 
-        return log_prob
+        def one_iter(i, xi, Wi, bi, a, post):
+            pi   = self.sigmoid(a[:,i])
+            post = post + T.log(pi*xi + (1-pi)*(1-xi))            
+            a    = a + T.outer(xi, Wi) 
+            return a, post
+
+        [a, post], updates = unrolled_scan(
+                    fn=one_iter,
+                    sequences=[T.arange(n_X), X.T, W, b],
+                    outputs_info=[a_init, post_init],
+                    unroll=self.unroll_scan
+                )
+        assert len(updates) == 0
+        return post[-1,:]
+
+    def sample(self, Y):
+        """ Evaluate the log-probability for the given samples.
+
+        Parameters
+        ----------
+        Y:      T.tensor
+            samples from the upper layer
+
+        Returns
+        -------
+        X:      T.tensor
+            samples from the lower layer       
+        log_p:  T.tensor
+            log-probabilities for the samples in X and Y
+        """
+        n_X, n_Y = self.get_hyper_params(['n_X', 'n_Y'])
+        b, W, U = self.get_model_params(['b', 'W', 'U'])
+
+        batch_size = Y.shape[0]
+
+        #------------------------------------------------------------------
+
+        a_init    = T.dot(Y, U) + T.shape_padleft(b)   # shape (batch, n_vis)
+        post_init = T.zeros([batch_size], dtype=floatX)
+        x_init    = T.zeros([batch_size], dtype=floatX)
+        rand      = theano_rng.uniform((n_X, batch_size), nstreams=512)
+
+        def one_iter(i, Wi, rand_i, a, X, post):
+            pi   = self.sigmoid(a[:,i])
+            xi   = T.cast(rand_i <= pi, floatX)
+            post = post + T.log(pi*xi + (1-pi)*(1-xi))            
+            a    = a + T.outer(xi, Wi) 
+            return a, xi, post
+
+        [a, X, post], updates = unrolled_scan(
+                    fn=one_iter,
+                    sequences=[T.arange(n_X), W, rand],
+                    outputs_info=[a_init, x_init, post_init],
+                    unroll=self.unroll_scan
+                )
+        assert len(updates) == 0
+        return X.T, post[-1,:]
 
 
 class CNADE(Module):
@@ -494,7 +609,7 @@ class CNADE(Module):
         super(CNADE, self).__init__()
 
         self.register_hyper_param('n_X', help='no. observed binary variables')
-        self.register_hyper_param('n_Y', help='no. conditioning binary variables')        
+        self.register_hyper_param('n_Y', help='no. conditioning binary variables')
         self.register_hyper_param('n_hid', help='no. latent binary variables')
         self.register_hyper_param('unroll_scan', default=1)
 
@@ -506,53 +621,6 @@ class CNADE(Module):
         self.register_model_param('V',  help='decoder weights', default=lambda: default_weights(self.n_hid, self.n_X) )
         
         self.set_hyper_params(hyper_params)
-   
-    def sample(self, Y):
-        """ Evaluate the log-probability for the given samples.
-
-        Parameters
-        ----------
-        Y:      T.tensor
-            samples from the upper layer
-        X:      T.tensor
-            samples from the lower layer
-
-        Returns
-        -------
-        log_p:  T.tensor
-            log-probabilities for the samples in X and Y
-        """
-        n_X, n_Y, n_hid = self.get_hyper_params(['n_X', 'n_Y', 'n_hid'])
-        b, c, W, V, Ub, Uc = self.get_model_params(['b', 'c', 'W', 'V', 'Ub', 'Uc'])
-
-        batch_size = Y.shape[0]
-        cond = Y
-
-        #------------------------------------------------------------------
-        b_cond = b + T.dot(cond, Ub)    # shape (batch, n_vis)
-        c_cond = c + T.dot(cond, Uc)    # shape (batch, n_hid)
-    
-        a_init    = c_cond
-        post_init = T.zeros([batch_size], dtype=floatX)
-        vis_init  = T.zeros([batch_size], dtype=floatX)
-        rand      = theano_rng.uniform((n_X, batch_size), nstreams=512)
-
-        def one_iter(Wi, Vi, bi, rand_i, a, vis_i, post):
-            hid  = self.sigmoid(a)
-            pi   = self.sigmoid(T.dot(hid, Vi) + bi)
-            vis_i = T.cast(rand_i <= pi, floatX)
-            post  = post + T.log(pi*vis_i + (1-pi)*(1-vis_i))
-            a     = a + T.outer(vis_i, Wi)
-            return a, vis_i, post
-
-        [a, vis, post], updates = unrolled_scan(
-                    fn=one_iter,
-                    sequences=[W, V.T, b_cond.T, rand], 
-                    outputs_info=[a_init, vis_init, post_init],
-                    unroll=self.unroll_scan
-                )
-        assert len(updates) == 0
-        return vis.T, post[-1,:]
 
     def log_prob(self, X, Y):
         """ Evaluate the log-probability for the given samples.
@@ -598,6 +666,54 @@ class CNADE(Module):
                 )
         assert len(updates) == 0
         return post[-1,:]
+   
+    def sample(self, Y):
+        """ Evaluate the log-probability for the given samples.
+
+        Parameters
+        ----------
+        Y:      T.tensor
+            samples from the upper layer
+
+        Returns
+        -------
+        X:      T.tensor
+            samples from the lower layer        
+        log_p:  T.tensor
+            log-probabilities for the samples in X and Y
+        """
+        n_X, n_Y, n_hid = self.get_hyper_params(['n_X', 'n_Y', 'n_hid'])
+        b, c, W, V, Ub, Uc = self.get_model_params(['b', 'c', 'W', 'V', 'Ub', 'Uc'])
+
+        batch_size = Y.shape[0]
+        cond = Y
+
+        #------------------------------------------------------------------
+        b_cond = b + T.dot(cond, Ub)    # shape (batch, n_vis)
+        c_cond = c + T.dot(cond, Uc)    # shape (batch, n_hid)
+    
+        a_init    = c_cond
+        post_init = T.zeros([batch_size], dtype=floatX)
+        vis_init  = T.zeros([batch_size], dtype=floatX)
+        rand      = theano_rng.uniform((n_X, batch_size), nstreams=512)
+
+        def one_iter(Wi, Vi, bi, rand_i, a, vis_i, post):
+            hid  = self.sigmoid(a)
+            pi   = self.sigmoid(T.dot(hid, Vi) + bi)
+            vis_i = T.cast(rand_i <= pi, floatX)
+            post  = post + T.log(pi*vis_i + (1-pi)*(1-vis_i))
+            a     = a + T.outer(vis_i, Wi)
+            return a, vis_i, post
+
+        [a, vis, post], updates = unrolled_scan(
+                    fn=one_iter,
+                    sequences=[W, V.T, b_cond.T, rand], 
+                    outputs_info=[a_init, vis_init, post_init],
+                    unroll=self.unroll_scan
+                )
+        assert len(updates) == 0
+        return vis.T, post[-1,:]
+
 
 #=============================================================================
 
