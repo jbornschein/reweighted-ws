@@ -144,30 +144,26 @@ class TestSTBTStack(unittest.TestCase):
 
     def setUp(self):
         p_layers=[
-            SigmoidBeliefLayer( 
-                unroll_scan=1,
+            SBN( 
                 n_X=self.n_vis,
                 n_Y=self.n_hid,
             ),
-            SigmoidBeliefLayer( 
-                unroll_scan=1,
+            SBN( 
                 n_X=self.n_hid,
                 n_Y=self.n_hid,
             ),
-            FactoizedBernoulliTop(
+            SBNTop(
                 n_X=self.n_hid
             )
         ]
         q_layers=[
-            CNADE(
+            SBN(
                 n_Y=self.n_vis,
                 n_X=self.n_hid,
-                n_hid=self.n_qhid
             ),
-            CNADE(
+            SBN(
                 n_Y=self.n_hid,
                 n_X=self.n_hid,
-                n_hid=self.n_qhid
             )
         ]
         self.stack = STBPStack(p_layers=p_layers, q_layers=q_layers)
