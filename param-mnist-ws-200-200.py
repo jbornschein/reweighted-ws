@@ -53,9 +53,9 @@ model = STBPStack(
 
 trainer = Trainer(
     n_samples=1,
-    learning_rate_p=3e-4,
+    learning_rate_p=1e-4,
     learning_rate_q=0,
-    learning_rate_s=3e-4,
+    learning_rate_s=2e-5,
     layer_discount=1.0,
     batch_size=20,
     dataset=dataset, 
