@@ -2,20 +2,25 @@
 
 from __future__ import division
 
-import logging
+"""
+This file exist for backward compatibility and presets various 
+classes under their old name:
 
-#=============================================================================
+    STBPSTack = ISStack
+
+    FactoizedBernoulliTop, SigmoidBeliefLayer = SBNTop, SBN
+    NADE, CNADE = NADETop, NADE
+
+"""
+
 
 from isws import *
-
-STBPStack = ISStack
 
 from sbn import SBN, SBNTop
 from darn import DARN, DARNTop
 from nade import NADE, NADETop
 
-SigmoidBeliefLayer = SBN
-FactoizedBernoulliTop = SBNTop
+STBPStack = ISStack
 
-CNADE = NADE
-NADE = NADETop
+SigmoidBeliefLayer, FactoizedBernoulliTop = SBN, SBNTop
+CNADE, NADE = NADE, NADETop

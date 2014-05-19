@@ -12,7 +12,7 @@ from learning.stbp_layers import *
 
 #-----------------------------------------------------------------------------
 
-class STBPTopLayerTest(object):
+class ISTopLayerTest(object):
     def test_basic_log_prob(self):
         n_samples = self.n_samples
         layer = self.layer
@@ -37,7 +37,7 @@ class STBPTopLayerTest(object):
         assert log_prob_.shape == (n_samples,)
 
 
-class STBPLayerTest(object):
+class ISLayerTest(object):
     def test_basic_log_prob(self):
         n_samples = self.n_samples
         layer = self.layer
@@ -77,64 +77,6 @@ class STBPLayerTest(object):
     #        updates[shvar] = T.grad(log_prob
             
 #-----------------------------------------------------------------------------
-
-class TestFactorizedBernoulliTop(STBPTopLayerTest, unittest.TestCase):
-    def setUp(self):
-        self.n_samples = 10
-        self.layer = FactoizedBernoulliTop(
-                        n_X=8
-                    )
-        self.layer.setup()
-
-class TestDARN(STBPTopLayerTest, unittest.TestCase):
-    def setUp(self):
-        self.n_samples = 10
-        self.layer = DARNTop(
-                        n_X=8,
-                    )
-        self.layer.setup()
-
-class TestNADE(STBPTopLayerTest, unittest.TestCase):
-    def setUp(self):
-        self.n_samples = 10
-        self.layer = NADE(
-                        n_X=8,
-                        n_hid=8,
-                    )
-        self.layer.setup()
-
-
-
-class TestSigmoidBeliefLayer(STBPLayerTest, unittest.TestCase):
-    def setUp(self):
-        self.n_samples = 10
-        self.layer = SigmoidBeliefLayer(
-                        n_X=16,
-                        n_Y=8,
-                    )
-        self.layer.setup()
-
-class TestDARN(STBPLayerTest, unittest.TestCase):
-    def setUp(self):
-        self.n_samples = 10
-        self.layer = DARN(
-                        n_X=16,
-                        n_Y=8,
-                    )
-        self.layer.setup()
-
-class TestCNADE(STBPLayerTest, unittest.TestCase):
-    def setUp(self):
-        self.n_samples = 10
-        self.layer = CNADE(
-                        n_X=16,
-                        n_Y=8,
-                        n_hid=8,
-                    )
-        self.layer.setup()
-
-#-----------------------------------------------------------------------------
-# Test full STBTStack
 
 class TestSTBTStack(unittest.TestCase):
     n_samples = 25
