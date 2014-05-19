@@ -93,6 +93,7 @@ def run_experiment(spec):
         p_layers=p_layers,
         q_layers=q_layers
     )
+    model.setup()
 
     dataset  = MNIST(fname="data/mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_train', n_datapoints=59000)
     valiset  = MNIST(fname="data/mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', n_datapoints=1000)
@@ -111,7 +112,7 @@ def run_experiment(spec):
         layer_discount=1.0,
         dataset=dataset, 
         model=model,
-        termination=EarlyStopping()
+        termination=EarlyStopping(),
 #        termination=EarlyStopping(max_epochs=1),
         epoch_monitors=[MonitorLL(data=valiset, n_samples=100), DLogModelParams(), SampleFromP(n_samples=100)],
         final_monitors=[MonitorLL(data=testset, n_samples=[1, 5, 25, 10, 100, 500])],
@@ -129,7 +130,7 @@ def run_experiment(spec):
     logger.info("Finished. Wrinting metadata")
 
     meta = {
-        "tag"         : "first"
+        "tag"         : "first",
         "name"        : name,
         "batch_size"  : batch_size,
         "n_samples"   : n_samples,

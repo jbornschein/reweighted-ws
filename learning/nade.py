@@ -35,6 +35,11 @@ class NADETop(TopModule):
         
         self.set_hyper_params(hyper_params)
    
+    def setup(self):
+        _logger.info("setup")
+        if self.n_hid is None:
+            self.n_hid = self.n_X
+
     def log_prob(self, X):
         """ Evaluate the log-probability for the given samples.
 
@@ -137,6 +142,10 @@ class NADE(Module):
         self.register_model_param('V',  help='decoder weights', default=lambda: default_weights(self.n_hid, self.n_X) )
         
         self.set_hyper_params(hyper_params)
+
+    def setup(self):
+        if self.n_hid is None:
+            self.n_hid = self.n_X
 
     def log_prob(self, X, Y):
         """ Evaluate the log-probability for the given samples.

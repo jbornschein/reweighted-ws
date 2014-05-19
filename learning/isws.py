@@ -189,6 +189,8 @@ class ISStack(Model):
         
         assert len(p_layers) == len(q_layers)+1
         assert isinstance(p_layers[-1], TopModule)
+
+        p_layers[-1].setup()
         
         self.n_X = p_layers[0].n_X
 
