@@ -20,7 +20,7 @@ from learning.sbn  import SBN, SBNTop
 from learning.darn import DARN, DARNTop
 from learning.nade import NADE, NADETop
 
-TAGS = ['lh5']
+TAGS = ['lr33', 'clamp']
 SPECS = (
 	# name, batch_size, samples, p-layer, q-layer, arch,
 	("sbn-sbn-ws-200", 			25, 1 , SBN, SBN, [200]),
@@ -84,13 +84,13 @@ def run_experiment(spec):
     for ls in arch:
         n_Y = ls
         p_layers.append(
-            p_layer(n_X=n_X, n_Y=n_Y)
+            p_layer(n_X=n_X, n_Y=n_Y, clamp_sigmoid=True)
         )
         q_layers.append(
             q_layer(n_X=n_Y, n_Y=n_X)
         )
         n_X = n_Y
-    p_layers.append( p_top(n_X=n_X) )
+    p_layers.append( p_top(n_X=n_X, clamp_sigmoid=True) )
             
 
     model = ISStack(
@@ -107,7 +107,7 @@ def run_experiment(spec):
     #dataset  = valiset
     #testset  = valiset
 
-    lr=1e-3
+    lr=3e-3
     # Switch to wake-sleep when n_samples=1
     if n_samples == 1:
         lr_p = lr
@@ -131,16 +131,17 @@ def run_experiment(spec):
         termination=EarlyStopping(lookahead=5),
 #        termination=EarlyStopping(max_epochs=1),
         epoch_monitors=[MonitorLL(data=valiset, n_samples=100), DLogModelParams(), SampleFromP(n_samples=100)],
-        final_monitors=[MonitorLL(data=testset, n_samples=[1, 5, 25, 10, 100, 500])],
+        final_monitors=[MonitorLL(data=testset, n_samples=[1, 5, 10, 25, 100, 500])],
     )
+
+    tagname = "-".join(TAGS)
 
     experiment = Experiment()
     experiment.trainer = trainer
-    experiment.setup_output_dir(name)
+    experiment.setup_output_dir("%s-%s" % (tagname, name))
     experiment.print_summary()
     experiment.setup_logging()
 
-    tagname = "-".join(TAGS)
     meta = {
         "tag"         : tagname,
         "tags"        : TAGS,
