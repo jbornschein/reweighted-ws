@@ -145,7 +145,7 @@ class NADE(Module):
 
     def setup(self):
         if self.n_hid is None:
-            self.n_hid = self.n_X
+            self.n_hid = min(self.n_X, self.n_Y)
 
     def log_prob(self, X, Y):
         """ Evaluate the log-probability for the given samples.
