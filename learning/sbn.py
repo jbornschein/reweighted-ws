@@ -29,7 +29,7 @@ class SBNTop(TopModule):
 
         # Model parameters
         self.register_model_param('a', help='sigmoid(a) prior', 
-            default=lambda: np.zeros(self.n_X))
+            default=lambda: -np.ones(self.n_X))
 
         self.set_hyper_params(hyper_params)
     
@@ -92,7 +92,7 @@ class SBN(Module):
         self.register_hyper_param('n_Y', help='no. upper-layer binary variables')
 
         # Sigmoid Belief Layer
-        self.register_model_param('b', help='P lower-layer bias', default=lambda: np.zeros(self.n_X))
+        self.register_model_param('b', help='P lower-layer bias', default=lambda: -np.ones(self.n_X))
         self.register_model_param('W', help='P weights', default=lambda: default_weights(self.n_Y, self.n_X) )
 
         self.set_hyper_params(hyper_params)
