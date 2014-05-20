@@ -82,6 +82,9 @@ class EarlyStopping(Termination):
         L = monitor.validation_LL
         assert isinstance(L, float)
 
+        if self.epochs <= self.min_epochs:
+            self.fails = 0
+
         increase = (L-self.best_LL)/(np.abs(self.best_LL))
         if L > self.best_LL:
             self.best_LL = L
@@ -93,9 +96,6 @@ class EarlyStopping(Termination):
 
         if self.epochs > self.max_epochs:
             return False
-
-        if self.epochs <= self.min_epochs:
-            return True
 
         return self.fails < self.lookahead
 
