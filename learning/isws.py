@@ -190,19 +190,20 @@ class ISStack(Model):
         assert len(p_layers) == len(q_layers)+1
         assert isinstance(p_layers[-1], TopModule)
 
-        p_layers[-1].setup()
         
         self.n_X = p_layers[0].n_X
 
         for l in xrange(0, n_layers-1):
             assert isinstance(p_layers[l], Module)
             assert isinstance(q_layers[l], Module)
+            assert p_layers[l].n_Y == p_layers[l+1].n_X
+            assert p_layers[l].n_Y == q_layers[l].n_X 
 
             p_layers[l].setup()
             q_layers[l].setup()
 
-            assert p_layers[l].n_Y == p_layers[l+1].n_X
-            assert p_layers[l].n_Y == q_layers[l].n_X 
+
+        p_layers[-1].setup()
 
     def sample_p(self, n_samples):
         """ Draw *n_samples* drawn from the P-model.
