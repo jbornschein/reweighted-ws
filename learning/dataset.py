@@ -137,7 +137,13 @@ class MNIST(DataSet):
 
         _logger.info("Loading MNIST data")
 
-        with gzip.open(fname) as f:
+        #with gzip.open(fname) as f:
+        if fname[-3:] == ".gz":
+            open_func = gzip.open
+        else:
+            open_func = open
+
+        with open_func(fname) as f:
             (train_x, train_y), (valid_x, valid_y), (test_x, test_y) = pickle.load(f)
 
         if which_set == 'train':
