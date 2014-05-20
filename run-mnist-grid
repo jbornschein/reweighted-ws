@@ -20,8 +20,14 @@ from learning.sbn  import SBN, SBNTop
 from learning.darn import DARN, DARNTop
 from learning.nade import NADE, NADETop
 
+TAGS = ['lh5']
 SPECS = (
 	# name, batch_size, samples, p-layer, q-layer, arch,
+	("sbn-sbn-ws-200", 			25, 1 , SBN, SBN, [200]),
+	("sbn-sbn-ws-500", 			25, 1 , SBN, SBN, [500]),
+	("sbn-sbn-ws-200-200", 		25, 1 , SBN, SBN, [200, 200]),	
+	("sbn-sbn-ws-200-200-200",	25, 1 , SBN, SBN, [200, 200, 200]),		
+
 	("sbn-sbn-200", 			25, 5 , SBN, SBN, [200]),
 	("sbn-sbn-500", 			25, 5 , SBN, SBN, [500]),
 	("sbn-sbn-200-200", 		25, 5 , SBN, SBN, [200, 200]),	
@@ -56,13 +62,11 @@ SPECS = (
 _logger = logging.getLogger()
 
 
-
 def run_experiment(spec):
     name, batch_size, n_samples, p_layer, q_layer, arch = spec
 
     _logger.info("Running %s" % name)
 
-  
     if p_layer == SBN:
         p_top = SBNTop
     elif p_layer == DARN:
@@ -102,17 +106,28 @@ def run_experiment(spec):
     #valiset  = MNIST(fname="data/mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', n_datapoints=1000)
     #dataset  = valiset
     #testset  = valiset
+
+    lr=1e-3
+    # Switch to wake-sleep when n_samples=1
+    if n_samples == 1:
+        lr_p = lr
+        lr_q = 0.
+        lr_s = lr
+    else:
+        lr_p = lr
+        lr_q = lr
+        lr_s = lr
     
     trainer = Trainer(
         batch_size=batch_size,
         n_samples=n_samples,
-        learning_rate_p=1e-3,
-        learning_rate_q=1e-3,
-        learning_rate_s=1e-3,
+        learning_rate_p=lr_p,
+        learning_rate_q=lr_q,
+        learning_rate_s=lr_s,
         layer_discount=1.0,
         dataset=dataset, 
         model=model,
-        termination=EarlyStopping(),
+        termination=EarlyStopping(lookahead=5),
 #        termination=EarlyStopping(max_epochs=1),
         epoch_monitors=[MonitorLL(data=valiset, n_samples=100), DLogModelParams(), SampleFromP(n_samples=100)],
         final_monitors=[MonitorLL(data=testset, n_samples=[1, 5, 25, 10, 100, 500])],
@@ -124,13 +139,10 @@ def run_experiment(spec):
     experiment.print_summary()
     experiment.setup_logging()
 
- 
-    experiment.run_experiment()
-
-    logger.info("Finished. Wrinting metadata")
-
+    tagname = "-".join(TAGS)
     meta = {
-        "tag"         : "first",
+        "tag"         : tagname,
+        "tags"        : TAGS,
         "name"        : name,
         "batch_size"  : batch_size,
         "n_samples"   : n_samples,
@@ -140,9 +152,12 @@ def run_experiment(spec):
         "out_dir"     : experiment.out_dir
     }
    
-    with open("run-mnist-grid.log", "a") as f:
+    with open("run-mnist-grid.%s.state"%tagname, "a") as f:
         pickle.dump(meta, f)
     
+    experiment.run_experiment()
+    logger.info("Finished. Wrinting metadata")
+
     experiment.print_summary()
 
 #=============================================================================
