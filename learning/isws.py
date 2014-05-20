@@ -225,7 +225,7 @@ class ISStack(Model):
         
         return samples, log_prob
 
-    def log_likelihood(self, X, Y=None, n_samples=None):
+    def log_likelihood(self, X, Y=None, n_samples=None, anneal=1.):
         p_layers = self.p_layers
         q_layers = self.q_layers
         n_layers = len(p_layers)
@@ -266,8 +266,11 @@ class ISStack(Model):
         # Approximate P(X)
         log_px = f_logsumexp(log_p_all-log_q_all, axis=1)
         
+        log_pq_annealed = anneal * (log_p_all-log_q_all)
+
         # Calculate samplig weights
-        w = T.exp(log_p_all-log_q_all-T.shape_padright(log_px))
+        w_norm = f_logsumexp(log_pq_annealed, axis=1)
+        w = T.exp(log_pq_annealed-T.shape_padright(w_norm))
 
         # Calculate KL(P|Q), Hp, Hq
         KL = [None]*n_layers
@@ -280,9 +283,9 @@ class ISStack(Model):
 
         return log_px, w, log_p_all, log_q_all, KL, Hp, Hq
 
-    def get_gradients(self, X, Y, lr_p, lr_q, n_samples):
+    def get_gradients(self, X, Y, lr_p, lr_q, n_samples, anneal=1.):
         """ return log_PX and an OrderedDict with parameter gradients """
-        log_PX, w, log_p, log_q, KL, Hp, Hq = self.log_likelihood(X, Y, n_samples=n_samples)
+        log_PX, w, log_p, log_q, KL, Hp, Hq = self.log_likelihood(X, Y, n_samples=n_samples, anneal=anneal)
         
         batch_log_PX = T.sum(log_PX)
         cost_p = T.sum(T.sum(log_p*w, axis=1))

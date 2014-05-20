@@ -110,6 +110,7 @@ def run_experiment(spec):
         learning_rate_q=1e-3,
         learning_rate_s=1e-3,
         layer_discount=1.0,
+        anneal=1.,
         dataset=dataset, 
         model=model,
         termination=EarlyStopping(),
