@@ -186,6 +186,33 @@ class MNIST(DataSet):
         return x.astype(floatX), one_hot.astype(floatX)
 
 #-----------------------------------------------------------------------------
+class CalTechSilhouettes(DataSet):
+    def __init__(self, which_set='train', n_datapoints=None, path="../data/caltech-silhouettes", preproc=[]):
+        super(CalTechSilhouettes, self).__init__(preproc)
+
+        _logger.info("Loading CalTech 101 Silhouettes data (28x28)")
+
+
+
+        test_x = np.load(path+"/test_data.npy")
+        test_y = np.load(path+"/test_labels.npy")
+
+        if which_set == 'train':
+            self.X = np.load(path+"/train_data.npy")
+            self.Y = np.load(path+"/train_labels.npy")
+        elif which_set == 'valid':
+            self.X = np.load(path+"/val_data.npy")
+            self.Y = np.load(path+"/val_labels.npy")
+        elif which_set == 'test':
+            self.X = np.load(path+"/test_data.npy")
+            self.Y = np.load(path+"/test_labels.npy")
+        else:
+            raise ValueError("Unknown dataset %s" % which_set)
+
+        self.n_datapoints = self.X.shape[0]
+
+
+#-----------------------------------------------------------------------------
 class FromModel(DataSet):
     def __init__(self, model, n_datapoints, preproc=[]):
         super(FromModel, self).__init__(preproc)
