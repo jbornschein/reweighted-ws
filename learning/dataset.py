@@ -3,9 +3,11 @@
 
 from __future__ import division
 
+import os
 import abc
 import logging
 import cPickle as pickle
+import os.path as path
 import gzip
 import h5py
 
@@ -13,7 +15,6 @@ import numpy as np
 
 import theano
 import theano.tensor as T
-from theano.tensor.shared_randomstreams import RandomStreams
 
 from preproc import Preproc
 
@@ -21,8 +22,25 @@ _logger = logging.getLogger(__name__)
 
 floatX = theano.config.floatX
 
-theano_rng = RandomStreams(seed=2341)
+#-----------------------------------------------------------------------------
+def datapath(fname):
+    """ Try to find *fname* in the dataset directory and return 
+        a absolute path.
+    """
+    candidates = [
+        path.abspath(path.join(path.dirname(__file__), "../data")),
+        path.abspath("."),
+        path.abspath("data"),
+    ]
+    if 'DATASET_PATH' in os.environ:
+        candidates.append(os.environ['DATASET_PATH'])
 
+    for c in candidates:
+        c = path.join(c, fname)
+        if path.exists(c):
+            return c
+
+    raise IOError("Could not find %s" % fname)
 
 #-----------------------------------------------------------------------------
 # Dataset base class
@@ -136,6 +154,7 @@ class MNIST(DataSet):
         super(MNIST, self).__init__(preproc)
 
         _logger.info("Loading MNIST data")
+        fname = datapath(fname)
 
         #with gzip.open(fname) as f:
         if fname[-3:] == ".gz":
@@ -187,12 +206,11 @@ class MNIST(DataSet):
 
 #-----------------------------------------------------------------------------
 class CalTechSilhouettes(DataSet):
-    def __init__(self, which_set='train', n_datapoints=None, path="../data/caltech-silhouettes", preproc=[]):
+    def __init__(self, which_set='train', n_datapoints=None, path="caltech-silhouettes", preproc=[]):
         super(CalTechSilhouettes, self).__init__(preproc)
 
         _logger.info("Loading CalTech 101 Silhouettes data (28x28)")
-
-
+        path = datapath(path)
 
         test_x = np.load(path+"/test_data.npy")
         test_y = np.load(path+"/test_labels.npy")
@@ -274,20 +292,6 @@ class FromH5(DataSet):
         self.X = X.astype(floatX)
         self.Y = Y.astype(floatX)
         self.n_datapoints = self.X.shape[0]
-
-        
-#-----------------------------------------------------------------------------
-def permute_cols(x, idx=None):
-    if isinstance(x, list) or isinstance(x, tuple):
-        if idx is None:
-            _, n_vis = x[0].shape
-        idx = np.random.permutation(n_vis)
-        return [permute(i, idx) for i in x]
-
-    if idx is None:
-        _, n_vis = x.shape
-        idx = np.random.permutation(n_vis)
-    return x[:, idx]
 
 
 #-----------------------------------------------------------------------------

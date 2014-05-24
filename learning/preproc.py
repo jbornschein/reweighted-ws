@@ -100,3 +100,24 @@ class Binarize(Preproc):
         X = (X >= threshold)
         return X, Y
 
+#-----------------------------------------------------------------------------
+class PermuteColumns(Preproc):
+    def __init__(self):  
+        """
+        Create a random permutation and permute each feature-vector X of each 
+        datapoint with it.
+        """
+        self.permutation = None
+
+    def preproc(self, X, Y):
+        """ Permute X """
+        _, n_vis = X.shape
+
+        if self.permutation is None:
+            self.permutation = np.random.permutation(n_vis)
+
+        assert self.permutation.size == n_vis
+
+        X = X[:, self.permutation]
+
+        return X, Y

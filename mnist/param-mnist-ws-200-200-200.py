@@ -16,10 +16,10 @@ from learning.monitor import MonitorLL, DLogModelParams, SampleFromP
 
 n_vis = 28*28
 
-dataset  = MNIST(fname="data/mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_train', n_datapoints=59000)
-smallset = MNIST(fname="data/mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', n_datapoints=100)
-valiset  = MNIST(fname="data/mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', n_datapoints=1000)
-testset  = MNIST(fname="data/mnist_salakhutdinov.pkl.gz", which_set='test', n_datapoints=10000)
+dataset  = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_train', n_datapoints=59000)
+smallset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', n_datapoints=100)
+valiset  = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', n_datapoints=1000)
+testset  = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='test', n_datapoints=10000)
 
 p_layers=[
     SigmoidBeliefLayer( 
