@@ -20,8 +20,15 @@ if __name__ == "__main__":
     parser.add_argument('--overwrite', action='store_true')
     parser.add_argument('--name', "-n", default=None)
     parser.add_argument('param_file')
+    parser.add_argument('result_dir', nargs='?', default=None,
+        help="Continue a previous in result_dir")
     args = parser.parse_args()
 
+    from learning.utils.datalog import dlog, StoreToH5, TextPrinter
+    from learning.experiment import Experiment
+
+    import theano
+    import theano.tensor as T
 
     FORMAT = '[%(asctime)s] %(module)-15s %(message)s'
     DATEFMT = "%H:%M:%S"
@@ -38,7 +45,10 @@ if __name__ == "__main__":
     experiment.setup_logging()
     experiment.print_summary()
 
-    experiment.run_experiment()
+    if args.result_dir is None:
+        experiment.run_experiment()
+    else:
+        experiment.continue_experiment(args.result_dir+"/results.h5")
     
     logger.info("Finished. Exiting")
     experiment.print_summary()

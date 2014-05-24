@@ -375,6 +375,18 @@ class ISStack(Model):
                 value = dlog.load(key)
                 shvar.set_value(value)
  
+    def model_params_from_h5(self, h5, row=-1, basekey="learning.monitor."):
+        for n,l in enumerate(self.p_layers):
+            for pname, shvar in l.get_model_params().iteritems():
+                key = "%sL%d.P.%s" % (basekey, n, pname)
+                value = h5[key][row]
+                shvar.set_value(value)
+        for n,l in enumerate(self.q_layers):                
+            for pname, shvar in l.get_model_params().iteritems():
+                key = "%sL%d.Q.%s" % (basekey, n, pname)
+                value = h5[key][row]
+                shvar.set_value(value)
+
 
 #=============================================================================
 

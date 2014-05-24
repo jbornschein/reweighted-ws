@@ -24,3 +24,4 @@ STBPStack = ISStack
 
 SigmoidBeliefLayer, FactoizedBernoulliTop = SBN, SBNTop
 CNADE, NADE = NADE, NADETop
+
