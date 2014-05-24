@@ -14,7 +14,7 @@ from learning.nade import NADE, NADETop
 n_vis = 28*28
 
 dataset  = CalTechSilhouettes(which_set='train')
-valiset  = CalTechSilhouettes(which_set='valid')
+valiset  = CalTechSilhouettes(which_set='valid', n_datapoints=1000)
 testset  = CalTechSilhouettes(which_set='test')
 
 p_layers=[
@@ -50,7 +50,7 @@ trainer = Trainer(
     model=model,
     termination=EarlyStopping(),
     #step_monitors=[MonitorLL(data=smallset, n_samples=[1, 5, 25, 100])],
-    epoch_monitors=[MonitorLL(data=testset, n_samples=[100]), MonitorLL(data=valiset, n_samples=[100]), DLogModelParams(), SampleFromP(n_samples=100)],
-    final_monitors=[MonitorLL(data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000])],
+    epoch_monitors=[MonitorLL(data=valiset, n_samples=[100]), DLogModelParams(), SampleFromP(n_samples=100)],
+    final_monitors=[MonitorLL(data=testset, n_samples=[1, 5, 10, 25, 100, 500])],
     monitor_nth_step=100,
 )

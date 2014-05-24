@@ -141,9 +141,6 @@ class Experiment(object):
         #    logger.info("    %s" % l.__class__)
         #    for k, v in l.get_hyper_params().iteritems():
         #        logger.info("      %20s: %s" % (k, v))
-            
-        
-        
         #logger.info("Total runtime:    %f4.1 h" % runtime)
  
     def run_experiment(self):
@@ -156,7 +153,6 @@ class Experiment(object):
         self.trainer.perform_learning()
 
     #---------------------------------------------------------------
-    
     def sanity_check(self):
         if not isinstance(self.trainer, TrainerBase):
             raise ValueError("Trainer not set properly")
@@ -169,7 +165,4 @@ class Experiment(object):
     def set_trainer(self, trainer):
         assert isinstance(trainer, TrainerBase)
         self.trainer = trainer
-
-#-----------------------------------------------------------------------------
-
 

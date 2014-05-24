@@ -14,7 +14,7 @@ from learning.nade import NADE, NADETop
 n_vis = 28*28
 
 dataset  = CalTechSilhouettes(which_set='train')
-valiset  = CalTechSilhouettes(which_set='valid')
+valiset  = CalTechSilhouettes(which_set='valid', n_datapoints=1000)
 testset  = CalTechSilhouettes(which_set='test')
 
 p_layers=[

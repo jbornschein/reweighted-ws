@@ -206,7 +206,7 @@ class MNIST(DataSet):
 
 #-----------------------------------------------------------------------------
 class CalTechSilhouettes(DataSet):
-    def __init__(self, which_set='train', n_datapoints=None, path="caltech-silhouettes", preproc=[]):
+    def __init__(self, which_set='train', n_datapoints=-1, path="caltech-silhouettes", preproc=[]):
         super(CalTechSilhouettes, self).__init__(preproc)
 
         _logger.info("Loading CalTech 101 Silhouettes data (28x28)")
@@ -226,6 +226,9 @@ class CalTechSilhouettes(DataSet):
             self.Y = np.load(path+"/test_labels.npy")
         else:
             raise ValueError("Unknown dataset %s" % which_set)
+
+        self.X = self.X[:n_datapoints]
+        self.Y = self.Y[:n_datapoints]
 
         self.n_datapoints = self.X.shape[0]
 
