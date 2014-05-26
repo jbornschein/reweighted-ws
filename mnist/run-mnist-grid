@@ -65,7 +65,7 @@ SPECS = (
 _logger = logging.getLogger()
 
 
-def run_experiment(spec):
+def run_experiment(spec, pickup=None):
     name, batch_size, n_samples, p_layer, q_layer, arch = spec
 
     _logger.info("Running %s" % name)
@@ -105,10 +105,6 @@ def run_experiment(spec):
     dataset  = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_train', n_datapoints=59000)
     valiset  = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', n_datapoints=1000)
     testset  = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='test', n_datapoints=10000)
-
-    #valiset  = MNIST(fname="data/mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', n_datapoints=1000)
-    #dataset  = valiset
-    #testset  = valiset
 
     lr=3e-3
     # Switch to wake-sleep when n_samples=1
@@ -159,8 +155,12 @@ def run_experiment(spec):
    
     with open("run-mnist-grid.%s.state"%tagname, "a") as f:
         pickle.dump(meta, f)
-    
-    experiment.run_experiment()
+
+    if pickup is None:
+        experiment.run_experiment()
+    else:
+        experiment.continue_experiment(pickup+"/results.h5")
+ 
     logger.info("Finished. Wrinting metadata")
 
     experiment.print_summary()
@@ -176,6 +176,8 @@ if __name__ == "__main__":
     parser.add_argument('--random', "-z", action='store_true')
     parser.add_argument('--slurm', action='store_true')
     parser.add_argument('name', nargs='*')
+    parser.add_argument('pickup_dir', nargs='?', default=None,
+        help="Continue a previous in result_dir")
     args = parser.parse_args()
 
     FORMAT = '[%(asctime)s] %(module)-15s %(message)s'
@@ -185,16 +187,16 @@ if __name__ == "__main__":
     if args.random:
         logger.info("Randomly chosing one of %d experiments" % len(SPECS))
         i = np.random.randint(len(SPECS))
-        run_experiment(SPECS[i])
+        run_experiment(SPECS[i], args.pickup_dir)
     elif args.slurm:
         i = 0
-        run_experiment(SPECS[i])
+        run_experiment(SPECS[i], args.pickup_dir)
     else:
         for spec in SPECS:
             name, batch_size, n_samples, p_layers, q_layers, arch = spec
 
             if name in args.name:
-                run_experiment(spec)
+                run_experiment(spec, args.pickup_dir)
 #        	print "%40s (batch_size=%d, n_samples=%d, arch=%s)" % (name, batch_size, n_samples, arch)
 
 

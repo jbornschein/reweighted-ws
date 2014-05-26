@@ -163,9 +163,15 @@ class Experiment(object):
                 for r in xrange(n_rows):
                     dlog.append(key, h5[key][r])
 
+            # Identify last row without NaN's
+            LL100 = h5['learning.monitor.100.LL']
+            row = max(np.where(np.isfinite(LL100))[0])
+
+            logger.info("Continuing from row %d (%d rows total)" %(row, LL100.shape[0]))
+
             self.trainer.load_data()
             self.trainer.compile()
-            self.trainer.model.model_params_from_h5(h5)
+            self.trainer.model.model_params_from_h5(h5, row=row)
         self.trainer.perform_learning()
 
     #---------------------------------------------------------------

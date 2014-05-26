@@ -7,8 +7,6 @@ import sys
 import logging
 import numpy as np
 
-from learning.experiment import Experiment
-
 #=============================================================================
 if __name__ == "__main__":
     import argparse 
@@ -24,11 +22,11 @@ if __name__ == "__main__":
         help="Continue a previous in result_dir")
     args = parser.parse_args()
 
-    from learning.utils.datalog import dlog, StoreToH5, TextPrinter
-    from learning.experiment import Experiment
-
     import theano
     import theano.tensor as T
+
+    from learning.utils.datalog import dlog, StoreToH5, TextPrinter
+    from learning.experiment import Experiment
 
     FORMAT = '[%(asctime)s] %(module)-15s %(message)s'
     DATEFMT = "%H:%M:%S"
