@@ -15,7 +15,10 @@ import theano
 import theano.tensor as T
 from theano.tensor.shared_randomstreams import RandomStreams
 
+import utils.datalog as dlog
+
 _logger = logging.getLogger(__name__)
+
 
 floatX = theano.config.floatX
 
@@ -107,14 +110,22 @@ class PermuteColumns(Preproc):
         Create a random permutation and permute each feature-vector X of each 
         datapoint with it.
         """
+        self.dlog = dlog.getLogger("preproc.permute_columns")
         self.permutation = None
+
+    def set_permutation(self, permutation):
+        self.permutation = permutation
+
+        self.dlog.append("permutation", self.permutation)
+        self.dlog.append("permutation_inv", np.argsort(self.permutation))
 
     def preproc(self, X, Y):
         """ Permute X """
         _, n_vis = X.shape
 
         if self.permutation is None:
-            self.permutation = np.random.permutation(n_vis)
+            permutation = np.random.permutation(n_vis)
+            self.set_permutation(permutation)
 
         assert self.permutation.size == n_vis
 
