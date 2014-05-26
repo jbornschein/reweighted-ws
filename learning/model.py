@@ -119,6 +119,8 @@ class Model(object):
         if param is None:
             raise ValueError('Trying to set unknown model parameter "%s"' % key)
         if not isinstance(val, T.sharedvar.SharedVariable):
+            if not isinstance(val, np.ndarray):
+                val = np.asarray(val)
             if val.dtype == np.float:
                 val = np.asarray(val, dtype=floatX)
             val = theano.shared(val, key)
