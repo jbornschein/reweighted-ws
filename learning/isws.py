@@ -127,6 +127,11 @@ class Module(Model):
         pass
 
     def sigmoid(self, x):
+        """ Compute the element wise sigmoid function of x 
+
+        Depending on the *clamp_sigmoid* hyperparameter, this might
+        return a saturated sigmoid T.nnet.sigmoid(x)*0.9999 + 0.000005
+        """
         if self.clamp_sigmoid:
             return T.nnet.sigmoid(x)*0.9999 + 0.000005
         else:
@@ -266,9 +271,9 @@ class ISStack(Model):
         # Approximate P(X)
         log_px = f_logsumexp(log_p_all-log_q_all, axis=1)
         
-        log_pq_annealed = anneal * (log_p_all-log_q_all)
 
         # Calculate samplig weights
+        log_pq_annealed = anneal * (log_p_all-log_q_all)
         w_norm = f_logsumexp(log_pq_annealed, axis=1)
         w = T.exp(log_pq_annealed-T.shape_padright(w_norm))
 
