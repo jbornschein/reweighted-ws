@@ -16,8 +16,10 @@ from isws import TopModule, Module, f_replicate_batch, f_logsumexp, theano_rng
 from utils.unrolled_scan import unrolled_scan
 
 _logger = logging.getLogger(__name__)
+
 floatX = theano.config.floatX
 
+#------------------------------------------------------------------------------
 
 class NADETop(TopModule):
     """ Top Level NADE """

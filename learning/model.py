@@ -14,6 +14,7 @@ import theano.tensor as T
 
 _logger = logging.getLogger(__name__)
 
+floatX = theano.config.floatX
 
 #------------------------------------------------------------------------------
 
@@ -118,7 +119,8 @@ class Model(object):
         if param is None:
             raise ValueError('Trying to set unknown model parameter "%s"' % key)
         if not isinstance(val, T.sharedvar.SharedVariable):
-            val = np.asarray(val, dtype='float32')
+            if val.dtype == np.float:
+                val = np.asarray(val, dtype=floatX)
             val = theano.shared(val, key)
             val.tag.test_value = val
         param.value = val
