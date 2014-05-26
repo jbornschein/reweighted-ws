@@ -2,6 +2,7 @@
 import numpy as np
 
 from learning.dataset import CalTechSilhouettes
+from learning.preproc import PermuteColumns
 from learning.termination import LogLikelihoodIncrease, EarlyStopping
 from learning.monitor import MonitorLL, DLogModelParams, SampleFromP
 from learning.training import Trainer
@@ -13,24 +14,26 @@ from learning.nade import NADE, NADETop
 
 n_vis = 28*28
 
-dataset  = CalTechSilhouettes(which_set='train')
-valiset  = CalTechSilhouettes(which_set='valid', n_datapoints=1000)
-testset  = CalTechSilhouettes(which_set='test')
+preproc = PermuteColumns()
+
+dataset  = CalTechSilhouettes(which_set='train', preproc=[preproc])
+valiset  = CalTechSilhouettes(which_set='valid', preproc=[preproc], n_datapoints=1000)
+testset  = CalTechSilhouettes(which_set='test', preproc=[preproc])
 
 p_layers=[
     NADE( 
         n_X=n_vis,
-        n_Y=50,
+        n_Y=150,
     ),
     NADETop( 
-        n_X=50,
+        n_X=150,
     ),
 ]
 
 q_layers=[
     NADE(
         n_Y=n_vis,
-        n_X=50,
+        n_X=150,
     ),
 ]
 

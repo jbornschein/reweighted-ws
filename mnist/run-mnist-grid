@@ -12,11 +12,12 @@ import cPickle as pickle
 
 import numpy as np
 
+from learning.experiment import Experiment
 from learning.training import Trainer
 from learning.termination import EarlyStopping
 from learning.monitor import MonitorLL, DLogModelParams, SampleFromP
-from learning.dataset import BarsData, FromModel, MNIST
-from learning.experiment import Experiment
+from learning.dataset import MNIST
+from learning.preproc import PermuteColumns
 
 from learning.isws import ISStack
 from learning.sbn  import SBN, SBNTop
@@ -102,9 +103,10 @@ def run_experiment(spec, pickup=None):
     )
     model.setup()
 
-    dataset  = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_train', n_datapoints=59000)
-    valiset  = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', n_datapoints=1000)
-    testset  = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='test', n_datapoints=10000)
+    preproc = PermuteColumns()
+    dataset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_train', preproc=[preproc], n_datapoints=59000)
+    valiset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', preproc=[preproc], n_datapoints=1000)
+    testset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='test', preproc=[preproc], n_datapoints=10000)
 
     lr=3e-3
     # Switch to wake-sleep when n_samples=1
@@ -130,7 +132,7 @@ def run_experiment(spec, pickup=None):
         termination=EarlyStopping(lookahead=5),
 #        termination=EarlyStopping(max_epochs=1),
         epoch_monitors=[MonitorLL(data=valiset, n_samples=100), DLogModelParams(), SampleFromP(n_samples=100)],
-        final_monitors=[MonitorLL(data=testset, n_samples=[1, 5, 10, 25, 100, 500])],
+        final_monitors=[MonitorLL(data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000])],
     )
 
     tagname = "-".join(TAGS)

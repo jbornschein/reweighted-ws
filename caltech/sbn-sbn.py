@@ -20,6 +20,10 @@ testset  = CalTechSilhouettes(which_set='test')
 p_layers=[
     SBN( 
         n_X=n_vis,
+        n_Y=500,
+    ),
+    SBN( 
+        n_X=500,
         n_Y=300,
     ),
     SBN( 
@@ -42,6 +46,10 @@ p_layers=[
 q_layers=[
     SBN(
         n_Y=n_vis,
+        n_X=500,
+    ),
+    SBN(
+        n_Y=500,
         n_X=300,
     ),
     SBN(
