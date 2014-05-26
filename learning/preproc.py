@@ -26,7 +26,7 @@ theano_rng = RandomStreams(seed=2341)
 class Preproc(object):
     __metaclass__ = abc.ABCMeta
 
-    def preproc(X, Y):
+    def preproc(self, X, Y):
         """ Preprocess data and return and X, Y tuple.
 
         Parameters
@@ -39,7 +39,7 @@ class Preproc(object):
         """
         return X, Y
 
-    def late_preproc(X, Y):
+    def late_preproc(self, X, Y):
         """ Preprocess data and return and X, Y tuple.
         
         Parameters
