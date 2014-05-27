@@ -1,9 +1,4 @@
 #
-# Wake-sleep experiment with the same parameters as in
-#
-#   Neural Variational Inference and Learning in Belief Networks (Andriy Mnih, Karol Gregor; 2014)
-#   http://arxiv.org/abs/1402.0030
-#
 
 import numpy as np
 
@@ -59,7 +54,7 @@ trainer = Trainer(
     batch_size=20,
     dataset=dataset, 
     model=model,
-    termination=EarlyStopping(min_epochs=500, max_epochs=500),
+    termination=EarlyStopping(min_epochs=250, max_epochs=250),
     #step_monitors=[MonitorLL(data=smallset, n_samples=[1, 5, 25, 100])],
     epoch_monitors=[MonitorLL(data=valiset, n_samples=[100]), DLogModelParams(), SampleFromP(n_samples=100)],
     final_monitors=[MonitorLL(data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000])],
