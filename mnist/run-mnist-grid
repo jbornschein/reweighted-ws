@@ -24,7 +24,7 @@ from learning.sbn  import SBN, SBNTop
 from learning.darn import DARN, DARNTop
 from learning.nade import NADE, NADETop
 
-TAGS = ['lr33', 'clamp']
+TAGS = ['lr13', 'nanguard']
 SPECS = (
 	# name, batch_size, samples, p-layer, q-layer, arch,
 	("sbn-sbn-ws-200", 			25, 1 , SBN, SBN, [200]),
@@ -108,7 +108,7 @@ def run_experiment(spec, pickup=None):
     valiset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', preproc=[preproc], n_datapoints=1000)
     testset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='test', preproc=[preproc], n_datapoints=10000)
 
-    lr=3e-3
+    lr=1e-3
     # Switch to wake-sleep when n_samples=1
     if n_samples == 1:
         lr_p = lr
