@@ -70,6 +70,7 @@ def run_experiment(spec, pickup=None):
     name, batch_size, n_samples, p_layer, q_layer, arch = spec
 
     _logger.info("Running %s" % name)
+    np.random.seed(23)
 
     if p_layer == SBN:
         p_top = SBNTop
