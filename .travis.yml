@@ -14,9 +14,7 @@ before_install:
   - python -c "import scipy; print scipy.__version__"
 
 install:
-  - pip install http://python-progressbar.googlecode.com/files/progressbar-2.3.tar.gz
-  - pip install recordtype
-  - pip install theano
+  - pip install -r requirements.txt
 
 # run tests
 script: 
