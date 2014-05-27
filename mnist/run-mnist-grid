@@ -177,7 +177,7 @@ if __name__ == "__main__":
     parser.add_argument('--verbose', '-v', action='count')
     parser.add_argument('--random', "-z", action='store_true')
     parser.add_argument('--slurm', action='store_true')
-    parser.add_argument('name', nargs='*')
+    parser.add_argument('name', nargs='?')
     parser.add_argument('pickup_dir', nargs='?', default=None,
         help="Continue a previous in result_dir")
     args = parser.parse_args()
