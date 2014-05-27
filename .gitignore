@@ -1,4 +1,6 @@
 *.pyc
 .*.swp
 *.h5
+*.txt
+*.state
 notebooks/.ipynb_checkpoints/
