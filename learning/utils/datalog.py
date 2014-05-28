@@ -12,13 +12,13 @@ from os.path import isfile
 from multiprocessing import Process, Queue
 from time import strftime
 
-from mpi4py import MPI
+#from mpi4py import MPI
 import numpy as np
 
 from parallel import pprint
 from autotable import AutoTable
 
-comm = MPI.COMM_WORLD
+#comm = MPI.COMM_WORLD
 
 #=============================================================================
 # DataHandler (AbstractBaseClass)
