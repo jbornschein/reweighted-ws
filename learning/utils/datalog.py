@@ -18,7 +18,14 @@ import numpy as np
 from parallel import pprint
 from autotable import AutoTable
 
-#comm = MPI.COMM_WORLD
+
+class MPI_COMM:
+    rank = 0
+    size = 1
+
+
+comm = MPI_COMM()
+
 
 #=============================================================================
 # DataHandler (AbstractBaseClass)
@@ -229,7 +236,7 @@ class ChildLogger(DataLog):
 
 #-----------------------------------------------------------------------------
 class RootLogger(DataLog):
-    def __init__(self, comm=MPI.COMM_WORLD):
+    def __init__(self, comm=comm):
         self.comm = comm
         self.policy = []             # Ordered list of (tbname, handler)-tuples
         self._lookup_cache = {}      # Cache for tblname -> hanlders lookups
