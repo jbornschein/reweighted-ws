@@ -15,7 +15,7 @@ from time import strftime
 #from mpi4py import MPI
 import numpy as np
 
-from parallel import pprint
+#from parallel import pprint
 from autotable import AutoTable
 
 
@@ -145,11 +145,11 @@ class TextPrinter(DataHandler):
         pass
 
     def append(self, tblname, value):
-        pprint("  %8s = %s " % (tblname, value))
+        print "  %8s = %s " % (tblname, value)
 
     def append_all(self, valdict):
         for (name,val) in valdict.items():
-            pprint("  %8s = %s \n" % (name, val), end="")
+            print "  %8s = %s \n" % (name, val)
 
 
 #=============================================================================
