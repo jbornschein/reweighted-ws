@@ -11,6 +11,7 @@ import os.path as path
 import gzip
 import h5py
 
+import os.path
 import numpy as np
 
 import theano
@@ -275,6 +276,9 @@ class FromH5(DataSet):
     def __init__(self, fname, n_datapoints=None, offset=0, table_X="X", table_Y="Y"):
         """ Load a dataset from an HDF5 file. """
         super(FromH5, self).__init__()        
+
+        if not os.path.exists(fname):
+            fname = datapath(fname)
 
         with h5py.File(fname, "r") as h5:
             # 
