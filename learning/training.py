@@ -174,7 +174,10 @@ class Trainer(TrainerBase):
         for shvar, value in gradients.iteritems():
             gradient_old = gradients_old[shvar]
 
-            dTheta = beta*gradient_old + (1.-beta)*value
+            dTheta = T.switch(T.isnan(value),
+                gradient_old,
+                beta*gradient_old + (1.-beta)*value
+            )
 
             updates[gradient_old] = dTheta
             updates[shvar] = shvar + dTheta
@@ -200,7 +203,10 @@ class Trainer(TrainerBase):
         for shvar, value in gradients.iteritems():
             gradient_old = gradients_old[shvar]
 
-            dTheta = beta*gradient_old + (1.-beta)*value
+            dTheta = T.switch(T.isnan(value),
+                gradient_old,
+                beta*gradient_old + (1.-beta)*value
+            )
 
             updates[gradient_old] = dTheta
             updates[shvar] = shvar + dTheta

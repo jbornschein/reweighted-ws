@@ -37,7 +37,7 @@ if __name__ == "__main__":
     else:
         out_name = args.name
 
-
+    np.random.seed(23)
     experiment = Experiment.from_param_file(args.param_file)
     experiment.setup_output_dir(out_name, with_suffix=(not args.overwrite))
     experiment.setup_logging()

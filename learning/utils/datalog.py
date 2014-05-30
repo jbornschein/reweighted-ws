@@ -12,13 +12,20 @@ from os.path import isfile
 from multiprocessing import Process, Queue
 from time import strftime
 
-from mpi4py import MPI
+#from mpi4py import MPI
 import numpy as np
 
-from parallel import pprint
+#from parallel import pprint
 from autotable import AutoTable
 
-comm = MPI.COMM_WORLD
+
+class MPI_COMM:
+    rank = 0
+    size = 1
+
+
+comm = MPI_COMM()
+
 
 #=============================================================================
 # DataHandler (AbstractBaseClass)
@@ -138,11 +145,11 @@ class TextPrinter(DataHandler):
         pass
 
     def append(self, tblname, value):
-        pprint("  %8s = %s " % (tblname, value))
+        print "  %8s = %s " % (tblname, value)
 
     def append_all(self, valdict):
         for (name,val) in valdict.items():
-            pprint("  %8s = %s \n" % (name, val), end="")
+            print "  %8s = %s \n" % (name, val)
 
 
 #=============================================================================
@@ -229,7 +236,7 @@ class ChildLogger(DataLog):
 
 #-----------------------------------------------------------------------------
 class RootLogger(DataLog):
-    def __init__(self, comm=MPI.COMM_WORLD):
+    def __init__(self, comm=comm):
         self.comm = comm
         self.policy = []             # Ordered list of (tbname, handler)-tuples
         self._lookup_cache = {}      # Cache for tblname -> hanlders lookups
