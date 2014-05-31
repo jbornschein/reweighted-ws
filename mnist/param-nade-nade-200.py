@@ -16,7 +16,7 @@ from learning.nade import NADE, NADETop
 n_vis = 28*28
 
 permute = PermuteColumns()
-dataset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_train', preproc=[permute], n_datapoints=59000)
+dataset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_train', preproc=[permute], n_datapoints=50000)
 valiset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', preproc=[permute], n_datapoints=1000)
 testset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='test', preproc=[permute], n_datapoints=10000)
 

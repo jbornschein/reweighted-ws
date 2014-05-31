@@ -105,7 +105,7 @@ def run_experiment(spec, pickup=None):
     model.setup()
 
     preproc = PermuteColumns()
-    dataset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_train', preproc=[preproc], n_datapoints=59000)
+    dataset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_train', preproc=[preproc], n_datapoints=50000)
     valiset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', preproc=[preproc], n_datapoints=1000)
     testset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='test', preproc=[preproc], n_datapoints=10000)
 
