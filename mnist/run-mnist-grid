@@ -27,40 +27,66 @@ from learning.nade import NADE, NADETop
 TAGS = ['lr13', 'nanguard']
 SPECS = (
 	# name, batch_size, samples, p-layer, q-layer, arch,
-	("sbn-sbn-ws-200", 			25, 1 , SBN, SBN, [200]),
-	("sbn-sbn-ws-500", 			25, 1 , SBN, SBN, [500]),
-	("sbn-sbn-ws-200-200", 		25, 1 , SBN, SBN, [200, 200]),	
-	("sbn-sbn-ws-200-200-200",	25, 1 , SBN, SBN, [200, 200, 200]),		
+	("ws-sbn-sbn-200", 			25, 1 , SBN, SBN, [200]),
+	("ws-sbn-sbn-500", 			25, 1 , SBN, SBN, [500]),
+	("ws-sbn-sbn-500", 			25, 1 , SBN, SBN, [500]),
+	("ws-sbn-sbn-200-200", 		25, 1 , SBN, SBN, [200, 200]),	
+	("ws-sbn-sbn-200-200-10",	25, 1 , SBN, SBN, [200, 200, 10]),		
+
+	("spl02-sbn-sbn-200", 			25,   2 , SBN, SBN, [200]),
+	("spl02-sbn-sbn-200-200", 		25,   2 , SBN, SBN, [200, 200]),	
+	("spl02-sbn-sbn-200-200-10",    25,   2 , SBN, SBN, [200, 200, 10]),	
+	("spl10-sbn-sbn-200", 			25,  10 , SBN, SBN, [200]),
+	("spl10-sbn-sbn-200-200", 		25,  10 , SBN, SBN, [200, 200]),	
+	("spl10-sbn-sbn-200-200-10",	25,  10 , SBN, SBN, [200, 200, 10]),	
+	("spl25-sbn-sbn-200", 			25,  25 , SBN, SBN, [200]),
+	("spl25-sbn-sbn-200-200", 		25,  25 , SBN, SBN, [200, 200]),	
+	("spl25-sbn-sbn-200-200-10", 	25,  25 , SBN, SBN, [200, 200, 10]),	
+	("spl50-sbn-sbn-200", 			25,  50 , SBN, SBN, [200]),
+	("spl50-sbn-sbn-200-200-10", 	25,  50 , SBN, SBN, [200, 200, 10]),	
+	("spl100-sbn-sbn-200", 			25, 100 , SBN, SBN, [200]),
+	("spl100-sbn-sbn-200-200-10", 	25, 100 , SBN, SBN, [200, 200, 10]),	
+
+	("ws-sbn-nade-200-200-10",	    25,   1 , SBN, NADE, [200, 200, 10]),		
+	("spl02-sbn-nade-200-200-10",   25,   2 , SBN, NADE, [200, 200, 10]),	
+	("spl10-sbn-nade-200-200-10",   25,  10 , SBN, NADE, [200, 200, 10]),	
 
 	("sbn-sbn-200", 			25, 5 , SBN, SBN, [200]),
 	("sbn-sbn-500", 			25, 5 , SBN, SBN, [500]),
 	("sbn-sbn-200-200", 		25, 5 , SBN, SBN, [200, 200]),	
-	("sbn-sbn-200-200-200",		25, 5 , SBN, SBN, [200, 200, 200]),		
+	("sbn-sbn-200-200-10",		25, 5 , SBN, SBN, [200, 200, 10]),		
 
 	("sbn-darn-200", 			25, 5 , SBN, DARN, [200]),
 	("sbn-darn-500", 			25, 5 , SBN, DARN, [500]),
 	("sbn-darn-200-200", 		25, 5 , SBN, DARN, [200, 200]),	
-	("sbn-darn-200-200-200", 	25, 5 , SBN, DARN, [200, 200, 200]),		
+	("sbn-darn-200-200-10", 	25, 5 , SBN, DARN, [200, 200, 10]),		
 
-	("sbn-nade-200", 			25, 5 , SBN, DARN, [200]),
-	("sbn-nade-500", 			25, 5 , SBN, DARN, [500]),
-	("sbn-nade-200-200", 		25, 5 , SBN, DARN, [200, 200]),	
-	("sbn-nade-200-200-200", 	25, 5 , SBN, DARN, [200, 200, 200]),		
+	("sbn-nade-200", 			25, 5 , SBN, NADE, [200]),
+	("sbn-nade-500", 			25, 5 , SBN, NADE, [500]),
+	("sbn-nade-200-200", 		25, 5 , SBN, NADE, [200, 200]),	
+	("sbn-nade-200-200-10", 	25, 5 , SBN, NADE, [200, 200, 10]),		
 
 	("darn-darn-200", 			25, 5 , DARN, DARN, [200]),
 	("darn-darn-500", 			25, 5 , DARN, DARN, [500]),
 	("darn-darn-200-200", 		25, 5 , DARN, DARN, [200, 200]),	
-	("darn-darn-200-200-200", 	25, 5 , DARN, DARN, [200, 200, 200]),		
+	("darn-darn-200-200-10", 	25, 5 , DARN, DARN, [200, 200, 10]),		
 
 	("darn-nade-200", 			25, 5 , DARN, NADE, [200]),
 	("darn-nade-500", 			25, 5 , DARN, NADE, [500]),
 	("darn-nade-200-200", 		25, 5 , DARN, NADE, [200, 200]),	
-	("darn-nade-200-200-200", 	25, 5 , DARN, NADE, [200, 200, 200]),			
+	("darn-nade-200-200-10", 	25, 5 , DARN, NADE, [200, 200, 10]),			
 
+	("nade-nade-150", 			25, 5 , NADE, NADE, [150]),
 	("nade-nade-200", 			25, 5 , NADE, NADE, [200]),
+	("nade-nade-250", 			25, 5 , NADE, NADE, [250]),
+	("nade-nade-300", 			25, 5 , NADE, NADE, [300]),
 	("nade-nade-500", 			25, 5 , NADE, NADE, [500]),
 	("nade-nade-200-200", 		25, 5 , NADE, NADE, [200, 200]),	
 	("nade-nade-200-200-200", 	25, 5 , NADE, NADE, [200, 200, 200]),		
+
+	("ws-nade-nade-200",        25, 1 , NADE, NADE, [200]),
+	("spl02-nade-nade-200",     25, 2 , NADE, NADE, [200]),
+	("spl10-nade-nade-200", 	25, 10, NADE, NADE, [200]),
 )
 
 _logger = logging.getLogger()
@@ -130,7 +156,7 @@ def run_experiment(spec, pickup=None):
         anneal=1.,
         dataset=dataset, 
         model=model,
-        termination=EarlyStopping(lookahead=5),
+        termination=EarlyStopping(lookahead=5, min_epochs=160),
 #        termination=EarlyStopping(max_epochs=1),
         epoch_monitors=[MonitorLL(data=valiset, n_samples=100), DLogModelParams(), SampleFromP(n_samples=100)],
         final_monitors=[MonitorLL(data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000])],
@@ -198,7 +224,7 @@ if __name__ == "__main__":
         for spec in SPECS:
             name, batch_size, n_samples, p_layers, q_layers, arch = spec
 
-            if name in args.name:
+            if name == args.name:
                 run_experiment(spec, args.pickup_dir)
 #        	print "%40s (batch_size=%d, n_samples=%d, arch=%s)" % (name, batch_size, n_samples, arch)
 
