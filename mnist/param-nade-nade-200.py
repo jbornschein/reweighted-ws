@@ -46,12 +46,12 @@ model = ISStack(
 )
 
 trainer = Trainer(
-    n_samples=25,
-    learning_rate_p=3e-3,
-    learning_rate_q=3e-3,
-    learning_rate_s=3e-3,
+    n_samples=5,
+    learning_rate_p=1e-3,
+    learning_rate_q=1e-3,
+    learning_rate_s=1e-3,
     layer_discount=1.0,
-    batch_size=20,
+    batch_size=25,
     dataset=dataset, 
     model=model,
     termination=EarlyStopping(min_epochs=250, max_epochs=250),
