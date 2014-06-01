@@ -165,7 +165,7 @@ class Experiment(object):
 
             # Identify last row without NaN's
             LL100 = h5['learning.monitor.100.LL']
-            row = max(np.where(np.isfinite(LL100))[0])
+            row = max(np.where(np.isfinite(LL100))[0])-1
 
             logger.info("Continuing from row %d (%d rows total)" %(row, LL100.shape[0]))
 
