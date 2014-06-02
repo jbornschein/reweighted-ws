@@ -291,13 +291,16 @@ class FromH5(DataSet):
                 n_datapoints = N_total-offset
 
             X = h5[table_X][offset:(offset+n_datapoints)]
+            X = X.astype(floatX)
             if table_Y in h5.keys():
                 Y = h5[table_Y][offset:(offset+n_datapoints)]
+                Y = Y.astype(floatX)
             else:
                 Y = None
+                Y = X[:,0]
 
-        self.X = X.astype(floatX)
-        self.Y = Y.astype(floatX)
+        self.X = X
+        self.Y = Y
         self.n_datapoints = self.X.shape[0]
 
 
