@@ -111,6 +111,7 @@ class Trainer(TrainerBase):
         self.register_hyper_param("beta", default=0.95, help="Momentum factor")
         self.register_hyper_param("anneal", default=1., help="Annealing teperature")
         self.register_hyper_param("batch_size", default=100, help="")
+        self.register_hyper_param("sleep_interleave", default=5, help="")
         self.register_hyper_param("layer_discount", default=1.0, help="Reduce LR for each successive layer by this factor")
         self.register_hyper_param("n_samples", default=10, help="No. samples used during training")
 
@@ -315,11 +316,13 @@ class Trainer(TrainerBase):
 
         self.dlog.append("pstep_L", LL)
 
-        if (self.step % self.n_samples == 0) and (self.learning_rate_s > 0.0):
+        if (self.step % self.sleep_interleave == 0) and (self.learning_rate_s > 0.0):
             self.logger.debug("Epoch %d, step %d (%d steps total): Performing sleep cycle\x1b[K" % (epoch+1, batch_idx, self.step))
-            n_dreams = self.n_samples * self.batch_size
-            LL = self.do_sleep_step(n_dreams)
-            self.dlog.append("psleep_L", LL)
+            n_dreams = self.sleep_interleave * self.batch_size
+            sleep_LL = self.do_sleep_step(n_dreams)
+        else:
+            sleep_LL = np.nan
+        self.dlog.append("psleep_L", sleep_LL)
 
         if (self.step % self.monitor_nth_step == 0) and (len(self.step_monitors) > 0):
             self.logger.info("Epoch %d, step %d (%d steps total): Calling step_monitors...\x1b[K" % (epoch+1, batch_idx, self.step))
