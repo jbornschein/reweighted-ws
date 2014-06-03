@@ -12,7 +12,7 @@ import cPickle as pickle
 
 import numpy as np
 
-_logger = logging.getLogger()
+logger = logging.getLogger()
 
 
 def run_experiment(args):
@@ -113,8 +113,8 @@ def run_experiment(args):
     tags.sort()
     expname = "%s-%s-%s-%s"% ("-".join(tags), args.p_model, args.q_model, "-".join([str(s) for s in layer_sizes]))
 
-    _logger.info("Running %s" % expname)
-    _logger.debug("Arguments %s" % args)
+    logger.info("Running %s" % expname)
+    logger.debug("Arguments %s" % args)
 
     # Dataset
     preproc = PermuteColumns()
