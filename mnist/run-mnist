@@ -29,6 +29,7 @@ def run_experiment(args):
     from learning.nade import NADE, NADETop
 
 
+    logger.debug("Arguments %s" % args)
     tags = []
 
     np.random.seed(23)
@@ -110,19 +111,24 @@ def run_experiment(args):
     sleep_interleave = args.sleep_interleave
     tags += ["si%d"%sleep_interleave]
 
+    # Dataset
+    if args.no_shuffle:
+        preproc = []
+        tags += ["noshuffle"]
+    else:
+        np.random.seed(23)
+        preproc = [PermuteColumns()]
+
     tags.sort()
     expname = "%s-%s-%s-%s"% ("-".join(tags), args.p_model, args.q_model, "-".join([str(s) for s in layer_sizes]))
 
     logger.info("Running %s" % expname)
-    logger.debug("Arguments %s" % args)
 
-    # Dataset
-    preproc = PermuteColumns()
-    dataset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_train', preproc=[preproc], n_datapoints=59000)
-    valiset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', preproc=[preproc], n_datapoints=1000)
+    dataset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_train', preproc=preproc, n_datapoints=59000)
+    valiset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', preproc=preproc, n_datapoints=1000)
     #dataset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_train', preproc=[], n_datapoints=59000)
     #valiset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', preproc=[], n_datapoints=1000)
-    testset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='test', preproc=[preproc], n_datapoints=10000)
+    testset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='test', preproc=preproc, n_datapoints=10000)
 
     
     trainer = Trainer(
@@ -179,6 +185,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--verbose', '-v', action='count')
+    parser.add_argument('--no-shuffle', action='store_true', default=False)
     parser.add_argument('--cont', nargs='?', default=None,
         help="Continue a previous in result_dir")
     parser.add_argument('--samples', default=5, type=int, 
