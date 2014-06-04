@@ -36,7 +36,7 @@ class Monitor(HyperBase):
         """ Called after the model has been initialized; directly before 
             the first learning epoch will be performed 
         """
-        self.on_iter(model)
+        pass
 
     @abc.abstractmethod
     def on_iter(self, model):
@@ -116,7 +116,6 @@ class MonitorLL(Monitor):
 
     def on_init(self, model):
         self.compile(model)
-        self.on_iter(model)
 
     def on_iter(self, model):
         n_samples = self.n_samples
@@ -193,10 +192,7 @@ class SampleFromP(Monitor):
                             name="do_sample")
 
     def on_init(self, model):
-        self.logger.info("SampleFromP.on_init()")
-        
         self.compile(model)
-        self.on_iter(model)
 
     def on_iter(self, model):
         n_samples = self.n_samples

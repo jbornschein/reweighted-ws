@@ -243,6 +243,8 @@ class Trainer(TrainerBase):
 
         for m in self.step_monitors + self.epoch_monitors:
             m.on_init(model)
+            m.on_iter(model)
+        
 
         self.logger.info("Starting epoch 0...")
         L = self.perform_epoch()
@@ -259,6 +261,7 @@ class Trainer(TrainerBase):
         self.logger.info("Calling final_monitors...")
         for m in self.final_monitors:
             m.on_init(model)
+            m.on_iter(model)
 
     #-----------------------------------------------------------------------
     def perform_epoch(self):
