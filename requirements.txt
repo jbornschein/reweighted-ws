@@ -5,4 +5,3 @@ scipy >= 0.7.2
 theano >= 0.5
 nose >= 1.2
 h5py
-mpi4py
