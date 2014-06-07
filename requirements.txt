@@ -4,4 +4,6 @@ numpy >= 1.5.0
 scipy >= 0.7.2 
 theano >= 0.5
 nose >= 1.2
+numexpr >= 2.0
 h5py
+tables
