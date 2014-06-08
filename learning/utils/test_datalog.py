@@ -8,7 +8,7 @@ import tempfile
 import shutil
 import numpy as np
 import unittest
-import tables
+import h5py
 
 import datalog as datalog
 
@@ -28,7 +28,6 @@ class TestDataLog(unittest.TestCase):
         dlog.append("T", 1.)
         dlog.append("T", 2.)
 
-    @unittest.skip("Failing since h5py conversion")
     def append_all_content(self, dlog):
         vals = {"T": 0., "A": 0.}
         dlog.append_all(vals)
@@ -38,12 +37,13 @@ class TestDataLog(unittest.TestCase):
         dlog.append_all(vals)
 
     def check_content(self, fname):
-        h5 = tables.openFile(fname, 'r')
-        T = h5.root.T 
-        self.assertAlmostEqual(T[0], 0.)
-        self.assertAlmostEqual(T[1], 1.)
-        self.assertAlmostEqual(T[2], 2.)
-        h5.close()
+        with h5py.File(fname, 'r') as h5:
+            T = h5['T']
+            self.assertAlmostEqual(T[0], 0.)
+            self.assertAlmostEqual(T[1], 1.)
+            self.assertAlmostEqual(T[2], 2.)
+
+    #------------------------------------------------------------------------
 
     def test_default_dlog(self):
         dlog = datalog.getLogger()
