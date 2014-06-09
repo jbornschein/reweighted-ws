@@ -23,11 +23,19 @@ class Monitor(HyperBase):
     """ Abtract base class to monitor stuff """
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self):   
+    def __init__(self, name=None):   
         """ 
+
+        Parameters
+        ----------
+        name:   str
+            dlog channel to use
         """
-        self.dlog = datalog.getLogger(__name__)
-        self.logger = logging.getLogger(__name__)
+        if name is None:
+            name = self.__class__.__name__
+
+        self.dlog = datalog.getLogger(name)
+        self.logger = logging.getLogger(name)
 
     def compile(self):
         pass
@@ -47,10 +55,12 @@ class Monitor(HyperBase):
 
 #-----------------------------------------------------------------------------
 class DLogHyperParams(Monitor):
-    def __init__(self):
-        super(DLogHyperParams, self).__init__()
+    def __init__(self, name=None):
+        if name is None:
+            name="hyper"
+        super(DLogHyperParams, self).__init__(name)
 
-    def on_iter(self, model):
+    def on_iter(self, model, name=None):
         model.hyper_params_to_dlog(self.dlog)
 
 
@@ -59,8 +69,10 @@ class DLogModelParams(Monitor):
     """
     Write all model parameters to a DataLogger called "model_params".
     """
-    def __init__(self):
-        super(DLogModelParams, self).__init__()
+    def __init__(self, name=None):
+        if name is None:
+            name="model"
+        super(DLogModelParams, self).__init__(name)
 
     def on_iter(self, model):
         self.logger.info("Saving model parameters")
@@ -72,8 +84,8 @@ class MonitorLL(Monitor):
     """ Monitor the LL after each training epoch on an arbitrary 
         test or validation data set
     """
-    def __init__(self, data, n_samples):
-        super(MonitorLL, self).__init__()
+    def __init__(self, data, n_samples, name=None):
+        super(MonitorLL, self).__init__(name)
 
         assert isinstance(data, DataSet)
         self.dataset = data
@@ -155,12 +167,13 @@ class MonitorLL(Monitor):
             Hp /= n_datapoints
             Hq /= n_datapoints
 
-            prefix = "%d." % K
 
             global validation_LL
             validation_LL = L
 
             self.logger.info("MonitorLL (%d datpoints, %d samples): LL=%5.2f KL=%s" % (n_datapoints, K, L, KL))
+
+            prefix = "spl%d." % K
             self.dlog.append_all({
                 prefix+"LL": L,
                 prefix+"KL": KL,
