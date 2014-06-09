@@ -35,7 +35,7 @@ class TrainerBase(HyperBase):
         super(TrainerBase, self).__init__()
 
         self.logger = logging.getLogger(__name__)
-        self.dlog = dlog.getLogger(__name__)
+        self.dlog = dlog.getLogger("trainer")
 
         self.step = 0 
 
