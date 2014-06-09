@@ -1,14 +1,14 @@
 ## Customize the test machine
-machine:
-  # Add some environment variables
-  environment:
-    THEANO_FLAGS: "floatX=float32"
+#machine:
+#  # Add some environment variables
+#  environment:
+#    THEANO_FLAGS: "floatX=float32"
 
 ## Customize dependencies
-dependencies:
-  pre:
-    - echo "[blas]" > $HOME/.theanorc
-    - echo "ldflags = -lblas -lgfortran" >> $HOME/.theanorc
+#dependencies:
+#  pre:
+#    - echo "[blas]" > $HOME/.theanorc
+#    - echo "ldflags = -lblas -lgfortran" >> $HOME/.theanorc
 #
 #  override:
 #    - bundle install: # note ':' here
@@ -22,6 +22,8 @@ dependencies:
 
 ## Customize test commands
 test:
+  pre:
+    - cp theanorc $HOME/.theanorc
   override:
     - nosetests -v 
   post:
