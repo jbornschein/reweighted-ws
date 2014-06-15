@@ -1,8 +1,8 @@
 *.pyc
 .*.swp
 *.h5
-*.txt
 *.state
-data/
+data/*.h5
+data/*.pkl.gz
 notebooks/.ipynb_checkpoints/
 */output/*
