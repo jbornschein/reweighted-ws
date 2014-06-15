@@ -119,16 +119,24 @@ def run_experiment(args):
         np.random.seed(23)
         preproc = [PermuteColumns()]
 
+    if args.default_split:
+        dataset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='train', preproc=preproc, n_datapoints=50000)
+        valiset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='valid', preproc=preproc, n_datapoints=10000)
+        testset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='test', preproc=preproc, n_datapoints=10000)
+        tags += ["ds"]
+    else:
+        dataset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_train', preproc=preproc, n_datapoints=59000)
+        valiset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', preproc=preproc, n_datapoints=1000)
+        #dataset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_train', preproc=[], n_datapoints=59000)
+        #valiset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', preproc=[], n_datapoints=1000)
+        testset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='test', preproc=preproc, n_datapoints=10000)
+
+
+
     tags.sort()
     expname = "%s-%s-%s-%s"% ("-".join(tags), args.p_model, args.q_model, "-".join([str(s) for s in layer_sizes]))
 
     logger.info("Running %s" % expname)
-
-    dataset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_train', preproc=preproc, n_datapoints=59000)
-    valiset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', preproc=preproc, n_datapoints=1000)
-    #dataset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_train', preproc=[], n_datapoints=59000)
-    #valiset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', preproc=[], n_datapoints=1000)
-    testset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='test', preproc=preproc, n_datapoints=10000)
 
     
     trainer = Trainer(
@@ -142,7 +150,7 @@ def run_experiment(args):
         anneal=1.,
         dataset=dataset, 
         model=model,
-        termination=EarlyStopping(lookahead=5, min_epochs=160),
+        termination=EarlyStopping(lookahead=20, min_epochs=160),
         epoch_monitors=[MonitorLL(data=valiset, n_samples=100), DLogModelParams(), SampleFromP(n_samples=100)],
         final_monitors=[MonitorLL(data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000])],
     )
@@ -198,6 +206,8 @@ if __name__ == "__main__":
     parser.add_argument('--lr_p', default=None, type=float, help="p learning rate")
     parser.add_argument('--lr_q', default=None, type=float, help="wake-q-learing rate")
     parser.add_argument('--lr_s', default=None, type=float, help="sleep-q-learning rate")
+    parser.add_argument('--default-split', '--ds', default=False, action="store_true", 
+        help="Use default dataset split");
     parser.add_argument('p_model', default="SBN", 
         help="SBN, DARN or NADE (default: SBN")
     parser.add_argument('q_model', default="SBN",
