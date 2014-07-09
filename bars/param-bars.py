@@ -9,6 +9,7 @@ from learning.darn import DARN, DARNTop
 from learning.nade import NADE, NADETop
 from learning.termination import LogLikelihoodIncrease, EarlyStopping
 from learning.monitor import MonitorLL, DLogModelParams, SampleFromP
+from learning.monitor.bootstrap import BootstrapLL
 
 n_vis = 5*5
 n_hid = 15
@@ -16,6 +17,7 @@ n_qhid = 2*n_hid
 
 dataset = BarsData(which_set='train', n_datapoints=10000)
 valiset = BarsData(which_set='valid', n_datapoints=1000)
+testset = BarsData(which_set='test' , n_datapoints=10000)
 
 p_layers=[
     SBN(      
@@ -50,9 +52,19 @@ trainer = Trainer(
     dataset=dataset, 
     model=model,
     termination=EarlyStopping(),
-    epoch_monitors=[DLogModelParams()],
-    step_monitors=[MonitorLL(data=valiset, n_samples=[1, 5, 25, 100])],
-    final_monitors=[SampleFromP(data=valiset, n_samples=100)],
+    epoch_monitors=[
+        DLogModelParams(),
+        MonitorLL(name="valiset", data=valiset, n_samples=[1, 5, 25, 100]),
+        MonitorLL(name="testset", data=testset, n_samples=[1, 5, 25, 100]),
+    ],
+#    step_monitors=[
+#        MonitorLL(name="valiset", data=valiset, n_samples=[1, 5, 25, 100])
+#    ],
+    final_monitors=[
+        MonitorLL(name="final-valiset", data=valiset, n_samples=[1, 5, 25, 100]),
+        MonitorLL(name="final-testset", data=testset, n_samples=[1, 5, 25, 100]),
+        SampleFromP(data=valiset, n_samples=100),
+    ],
     monitor_nth_step=100
 )
 

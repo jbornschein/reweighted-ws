@@ -56,7 +56,14 @@ trainer = Trainer(
     model=model,
     termination=EarlyStopping(min_epochs=250, max_epochs=250),
     #step_monitors=[MonitorLL(data=smallset, n_samples=[1, 5, 25, 100])],
-    epoch_monitors=[MonitorLL(data=valiset, n_samples=[100]), DLogModelParams(), SampleFromP(n_samples=100)],
-    final_monitors=[MonitorLL(data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000])],
+    epoch_monitors=[
+        DLogModelParams(), 
+        SampleFromP(n_samples=100)
+        MonitorLL(name="valiset", data=valiset, n_samples=[100]),
+    ],
+    final_monitors=[
+        MonitorLL(name="final-valiset", data=valiset, n_samples=[1, 5, 10, 25, 100, 500, 1000]),
+        MonitorLL(name="final-testset", data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000]),
+    ],
     #monitor_nth_step=100,
 )
