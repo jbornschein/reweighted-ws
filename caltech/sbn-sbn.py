@@ -4,6 +4,7 @@ import numpy as np
 from learning.dataset import CalTechSilhouettes
 from learning.termination import LogLikelihoodIncrease, EarlyStopping
 from learning.monitor import MonitorLL, DLogModelParams, SampleFromP
+from learning.monitor.bootstrap import BootstrapLL
 from learning.training import Trainer
 
 from learning.isws import  ISStack
@@ -82,7 +83,15 @@ trainer = Trainer(
     model=model,
     termination=EarlyStopping(),
     #step_monitors=[MonitorLL(data=smallset, n_samples=[1, 5, 25, 100])],
-    epoch_monitors=[MonitorLL(data=testset, n_samples=[100]), MonitorLL(data=valiset, n_samples=[100]), DLogModelParams(), SampleFromP(n_samples=100)],
-    final_monitors=[MonitorLL(data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000])],
+    epoch_monitors=[
+        DLogModelParams(),
+        MonitorLL(name="testset", data=testset, n_samples=[1, 5, 25, 100]), 
+        MonitorLL(name="valiset", data=valiset, n_samples=[1, 5, 25, 100]), 
+        SampleFromP(n_samples=100)
+    ],
+    final_monitors=[
+        MonitorLL(name="final-testset", data=testset, n_samples=[1, 5, 25, 100, 500, 1000]), 
+        MonitorLL(name="final-valiset", data=valiset, n_samples=[1, 5, 25, 100, 500, 1000]), 
+    ],
     monitor_nth_step=100,
 )

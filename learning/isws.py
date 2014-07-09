@@ -230,6 +230,35 @@ class ISStack(Model):
         
         return samples, log_prob
 
+    def sample_q(self, X, Y=None):
+        """ Given a set of observed X, samples from q(H | X) and calculate 
+            both P(X, H) and Q(H | X)
+        """
+        p_layers = self.p_layers
+        q_layers = self.q_layers
+        n_layers = len(p_layers)
+
+        size = X.shape[0]
+
+        # Prepare input for layers
+        samples = [None]*n_layers
+        log_q   = [None]*n_layers
+        log_p   = [None]*n_layers
+
+        samples[0] = X
+        log_q[0]   = T.zeros([size]) 
+
+        # Generate samples (feed-forward)
+        for l in xrange(n_layers-1):
+            samples[l+1], log_q[l+1] = q_layers[l].sample(samples[l])
+        
+        # Get log_probs from generative model
+        log_p[n_layers-1] = p_layers[n_layers-1].log_prob(samples[n_layers-1])
+        for l in xrange(n_layers-1, 0, -1):
+            log_p[l-1] = p_layers[l-1].log_prob(samples[l-1], samples[l])
+
+        return samples, log_p, log_q
+ 
     def log_likelihood(self, X, Y=None, n_samples=None, anneal=1.):
         p_layers = self.p_layers
         q_layers = self.q_layers
@@ -240,22 +269,9 @@ class ISStack(Model):
 
         batch_size = X.shape[0]
 
-        # Prepare input for layers
-        samples = [None]*n_layers
-        log_q   = [None]*n_layers
-        log_p   = [None]*n_layers
-
-        samples[0] = f_replicate_batch(X, n_samples)                   # 
-        log_q[0]   = T.zeros([batch_size*n_samples])+T.log(n_samples)  # 1/n_samples for each replicted X   XXX REALLY XXX
-        
-        # Generate samples (feed-forward)
-        for l in xrange(n_layers-1):
-            samples[l+1], log_q[l+1] = q_layers[l].sample(samples[l])
-        
-        # Get log_probs from generative model
-        log_p[n_layers-1] = p_layers[n_layers-1].log_prob(samples[n_layers-1])
-        for l in xrange(n_layers-1, 0, -1):
-            log_p[l-1] = p_layers[l-1].log_prob(samples[l-1], samples[l])
+        # Get samples
+        X = f_replicate_batch(X, n_samples)
+        samples, log_p, log_q = self.sample_q(X, None)
 
         # Reshape and sum
         log_p_all = T.zeros((batch_size, n_samples))
@@ -264,16 +280,14 @@ class ISStack(Model):
             samples[l] = samples[l].reshape((batch_size, n_samples, p_layers[l].n_X))
             log_q[l] = log_q[l].reshape((batch_size, n_samples))
             log_p[l] = log_p[l].reshape((batch_size, n_samples))
-
             log_p_all += log_p[l]   # agregate all layers
             log_q_all += log_q[l]   # agregate all layers
 
-        # Approximate P(X)
-        log_px = f_logsumexp(log_p_all-log_q_all, axis=1)
+        # Approximate log P(X)
+        log_px = f_logsumexp(log_p_all-log_q_all, axis=1) - T.log(n_samples)
         
-
         # Calculate samplig weights
-        log_pq_annealed = anneal * (log_p_all-log_q_all)
+        log_pq_annealed = anneal * (log_p_all-log_q_all-T.log(n_samples))
         w_norm = f_logsumexp(log_pq_annealed, axis=1)
         w = T.exp(log_pq_annealed-T.shape_padright(w_norm))
 
@@ -391,30 +405,3 @@ class ISStack(Model):
                 key = "%sL%d.Q.%s" % (basekey, n, pname)
                 value = h5[key][row]
                 shvar.set_value(value)
-
-
-#=============================================================================
-
-def get_toy_model():
-    from sbn import SBN, SBNTop
-
-    p_layers = [
-        SBN( 
-            n_X=25,
-            n_Y=10
-        ),
-        SBNTop(
-            n_X=10,
-        )
-    ]
-    q_layers = [
-        SBN(
-            n_X=10,
-            n_Y=25,
-        )
-    ]
-    model = ISStack(
-        p_layers=p_layers,
-        q_layers=q_layers,
-    )
-    return model

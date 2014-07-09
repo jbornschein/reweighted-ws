@@ -20,6 +20,7 @@ def run_experiment(args):
     from learning.training import Trainer
     from learning.termination import EarlyStopping
     from learning.monitor import MonitorLL, DLogModelParams, SampleFromP
+    from learning.monitor.bootstrap import BootstrapLL
     from learning.dataset import MNIST
     from learning.preproc import PermuteColumns
 
@@ -151,8 +152,15 @@ def run_experiment(args):
         dataset=dataset, 
         model=model,
         termination=EarlyStopping(lookahead=20, min_epochs=160),
-        epoch_monitors=[MonitorLL(data=valiset, n_samples=100), DLogModelParams(), SampleFromP(n_samples=100)],
-        final_monitors=[MonitorLL(data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000])],
+        epoch_monitors=[
+            DLogModelParams(), 
+            SampleFromP(n_samples=100),
+            MonitorLL(name="valiset", data=valiset, n_samples=[1, 5, 25, 100]),
+        ],
+        final_monitors=[
+            MonitorLL(name="final-valiset", data=valiset, n_samples=[1, 5, 10, 25, 100, 500, 1000]),
+            MonitorLL(name="final-testset", data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000]),
+        ],
     )
 
     experiment = Experiment()

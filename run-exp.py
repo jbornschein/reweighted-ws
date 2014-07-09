@@ -28,7 +28,7 @@ if __name__ == "__main__":
     from learning.utils.datalog import dlog, StoreToH5, TextPrinter
     from learning.experiment import Experiment
 
-    FORMAT = '[%(asctime)s] %(module)-15s %(message)s'
+    FORMAT = '[%(asctime)s] %(name)-15s %(message)s'
     DATEFMT = "%H:%M:%S"
     logging.basicConfig(format=FORMAT, datefmt=DATEFMT, level=logging.INFO)
 

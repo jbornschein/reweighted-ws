@@ -3,8 +3,7 @@
 import unittest
 
 from learning.training import Trainer
-from learning.dataset import get_toy_data
-from learning.stbp_layers import get_toy_model
+from learning.tests.toys import *
 
 def test_complete():
     t = Trainer(

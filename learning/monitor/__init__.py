@@ -10,13 +10,12 @@ import numpy as np
 import theano 
 import theano.tensor as T
 
-from dataset import DataSet
-from model import Model
-from hyperbase import HyperBase
-import utils.datalog as datalog
+from learning.dataset import DataSet
+from learning.model import Model
+from learning.hyperbase import HyperBase
+import learning.utils.datalog as datalog
 
-_logger = logging.getLogger(__name__)
-
+_logger = logging.getLogger("learning.monitor")
 
 #-----------------------------------------------------------------------------
 class Monitor(HyperBase):
@@ -116,14 +115,15 @@ class MonitorLL(Monitor):
         X_batch, Y_batch = dataset.late_preproc(self.X[first:last], self.Y[first:last])
         
         log_PX, _, _, _, KL, Hp, Hq = model.log_likelihood(X_batch, n_samples=n_samples)
-        batch_log_PX = T.sum(log_PX)
+        batch_L  = T.sum(log_PX)
+        batch_L2 = T.sum(log_PX**2)
         batch_KL = [T.sum(kl) for kl in KL]
         batch_Hp = [T.sum(hp) for hp in Hp]
         batch_Hq = [T.sum(hq) for hq in Hq]
 
         self.do_loglikelihood = theano.function(  
                             inputs=[batch_idx, batch_size, n_samples], 
-                            outputs=[batch_log_PX] + batch_KL + batch_Hp + batch_Hq, 
+                            outputs=[batch_L, batch_L2] + batch_KL + batch_Hp + batch_Hq, 
                             name="do_likelihood")
 
     def on_init(self, model):
@@ -144,7 +144,8 @@ class MonitorLL(Monitor):
     
             n_layers = len(model.p_layers)
 
-            L = 0
+            L  = 0
+            L2 = 0
             KL = np.zeros(n_layers)
             Hp = np.zeros(n_layers)
             Hq = np.zeros(n_layers)
@@ -153,25 +154,29 @@ class MonitorLL(Monitor):
             for batch_idx in xrange(n_datapoints//batch_size):
                 outputs = self.do_loglikelihood(batch_idx, batch_size, K)
                 batch_L , outputs = outputs[0], outputs[1:]
+                batch_L2, outputs = outputs[0], outputs[1:]
                 batch_KL, outputs = outputs[:n_layers], outputs[n_layers:]
                 batch_Hp, outputs = outputs[:n_layers], outputs[n_layers:]
                 batch_Hq          = outputs[:n_layers]
                 
-                L += batch_L
+                L  += batch_L
+                L2 += batch_L2
                 KL += np.array(batch_KL)
                 Hp += np.array(Hp)
                 Hq += np.array(Hq)
                 
-            L /= n_datapoints
+            L_se  = np.sqrt((L2 - (L*L)/n_datapoints) / (n_datapoints - 1)) 
+            L_se *= 1.96 / np.sqrt(n_datapoints)
+
+            L  /= n_datapoints
             KL /= n_datapoints
             Hp /= n_datapoints
             Hq /= n_datapoints
 
-
             global validation_LL
             validation_LL = L
 
-            self.logger.info("MonitorLL (%d datpoints, %d samples): LL=%5.2f KL=%s" % (n_datapoints, K, L, KL))
+            self.logger.info("(%d datpoints, %d samples): LL=%5.2f +-%3.2f; KL=%s" % (n_datapoints, K, L, L_se, KL))
 
             prefix = "spl%d." % K
             self.dlog.append_all({
