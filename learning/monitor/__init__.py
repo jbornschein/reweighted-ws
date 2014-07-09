@@ -10,13 +10,12 @@ import numpy as np
 import theano 
 import theano.tensor as T
 
-from dataset import DataSet
-from model import Model
-from hyperbase import HyperBase
-import utils.datalog as datalog
+from learning.dataset import DataSet
+from learning.model import Model
+from learning.hyperbase import HyperBase
+import learning.utils.datalog as datalog
 
-_logger = logging.getLogger(__name__)
-
+_logger = logging.getLogger("learning.monitor")
 
 #-----------------------------------------------------------------------------
 class Monitor(HyperBase):
@@ -171,7 +170,7 @@ class MonitorLL(Monitor):
             global validation_LL
             validation_LL = L
 
-            self.logger.info("MonitorLL (%d datpoints, %d samples): LL=%5.2f KL=%s" % (n_datapoints, K, L, KL))
+            self.logger.info("(%d datpoints, %d samples): LL=%5.2f KL=%s" % (n_datapoints, K, L, KL))
 
             prefix = "spl%d." % K
             self.dlog.append_all({
