@@ -405,30 +405,3 @@ class ISStack(Model):
                 key = "%sL%d.Q.%s" % (basekey, n, pname)
                 value = h5[key][row]
                 shvar.set_value(value)
-
-
-#=============================================================================
-
-def get_toy_model():
-    from sbn import SBN, SBNTop
-
-    p_layers = [
-        SBN( 
-            n_X=25,
-            n_Y=10
-        ),
-        SBNTop(
-            n_X=10,
-        )
-    ]
-    q_layers = [
-        SBN(
-            n_X=10,
-            n_Y=25,
-        )
-    ]
-    model = ISStack(
-        p_layers=p_layers,
-        q_layers=q_layers,
-    )
-    return model

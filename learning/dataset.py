@@ -303,7 +303,3 @@ class FromH5(DataSet):
         self.Y = Y
         self.n_datapoints = self.X.shape[0]
 
-
-#-----------------------------------------------------------------------------
-def get_toy_data():
-    return BarsData(which_set="train", n_datapoints=500)
