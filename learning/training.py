@@ -233,8 +233,9 @@ class Trainer(TrainerBase):
 
         self.logger.info("Dataset contains %d datapoints in %d mini-batches (%d datapoints per mini-batch)" %
             (n_datapoints, n_batches, self.batch_size))
-        self.logger.info("Using %d samples, lr_p=%3.1e, lr_q=%3.1e, layer_discount=%4.2f" %
-            (self.n_samples, self.learning_rate_p, self.learning_rate_q, self.layer_discount))
+        self.logger.info("Using %d training samples" % self.n_samples)
+        self.logger.info("lr_p=%3.1e, lr_q=%3.1e, lr_s=%3.1e, layer_discount=%4.2f" %
+            (self.learning_rate_p, self.learning_rate_q, self.learning_rate_s, self.layer_discount))
 
         epoch = 0
         # Perform first epoch
