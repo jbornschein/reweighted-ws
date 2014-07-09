@@ -12,15 +12,45 @@ import theano.tensor as T
 
 from learning.dataset import DataSet
 from learning.model import Model
-from learning.hyperbase import HyperBase
 from learning.monitor import Monitor
 from learning.isws import f_replicate_batch, f_logsumexp
-from learning.utils.misc import batch_bootstrap
 import learning.utils.datalog as datalog
+
+from theano.tensor.shared_randomstreams import RandomStreams
+
+floatX = theano.config.floatX
+theano_rng = RandomStreams(seed=2341)
 
 _logger = logging.getLogger(__name__)
 
 #-----------------------------------------------------------------------------
+def batch_bootstrap(data, bootstrap_size, n_bootstraps, bootstrap_func):
+    """
+    """
+    def scan_func(prev_res, prev_res2, data, bootstrap_size):
+        high = data.shape[1]
+        idx = theano_rng.random_integers(size=(bootstrap_size,), low=0, high=(high-1))
+        data_ = data[:,idx]
+        
+        res = bootstrap_func(data_)
+
+        # Reduce
+        prev_res  = prev_res  + T.sum(res)
+        prev_res2 = prev_res2 + T.sum(res**2)
+        #return prev_res, prev_res2
+        return T.sum(res), T.sum(res**2)
+
+    result, updates = theano.scan(fn=scan_func, 
+                        outputs_info=[0., 0.],
+                        non_sequences=[data, bootstrap_size],
+                        n_steps=n_bootstraps, 
+                     )
+    
+    res, res2 = result
+    return res[-1], res2[-1]
+
+#-----------------------------------------------------------------------------
+
 class BootstrapLL(Monitor):
     """ Monitor the LL after each training epoch on an arbitrary 
         test or validation data set
