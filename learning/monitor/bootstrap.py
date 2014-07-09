@@ -35,10 +35,10 @@ def batch_bootstrap(data, bootstrap_size, n_bootstraps, bootstrap_func):
         res = bootstrap_func(data_)
 
         # Reduce
-        prev_res  = prev_res  + T.sum(res)
-        prev_res2 = prev_res2 + T.sum(res**2)
-        #return prev_res, prev_res2
-        return T.sum(res), T.sum(res**2)
+        next_res  = prev_res  + T.sum(res)
+        next_res2 = prev_res2 + T.sum(res**2)
+        return next_res, next_res2
+        #return T.sum(res), T.sum(res**2)
 
     result, updates = theano.scan(fn=scan_func, 
                         outputs_info=[0., 0.],
@@ -122,8 +122,8 @@ class BootstrapLL(Monitor):
 
         def bootstrap_func(log_pq):
             # log_pg has shape (batch_size, samples)
-            #K = log_pq.shape[1]
-            K = 1
+            K = log_pq.shape[1]
+            #K = 1
             log_px = f_logsumexp(log_pq, axis=1) - T.cast(T.log(K), 'float32')
             return log_px
 
@@ -170,7 +170,7 @@ class BootstrapLL(Monitor):
             LL   = log_px[i] / (n_datapoints*n_bootstraps)
             LLse = np.sqrt(log_px2[i] / (n_datapoints*n_bootstraps) - LL**2)
 
-            self.logger.info("(%d datpoints, %d samples, %d bootstraps): LL=%5.2f +-%5.2f" % (n_datapoints, K, n_bootstraps, LL, LLse))
+            self.logger.info("(%d datpoints, %d samples, %d bootstraps): LL=%5.2f +-%4.2f" % (n_datapoints, K, n_bootstraps, LL, LLse))
 
             prefix = "spl%d." % K
             self.dlog.append_all({
