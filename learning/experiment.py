@@ -103,7 +103,8 @@ class Experiment(object):
         results_fname = os.path.join(self.out_dir, "results.h5")
         dlog.set_handler("*", StoreToH5, results_fname)
 
-        FORMAT = '[%(asctime)s] %(module)-15s %(message)s'
+        #FORMAT = '[%(asctime)s] %(module)-15s %(message)s'
+        FORMAT = '[%(asctime)s] %(name)-15s %(message)s'
         DATEFMT = "%H:%M:%S"
 
         formatter = logging.Formatter(FORMAT, DATEFMT)
