@@ -167,8 +167,10 @@ class BootstrapLL(Monitor):
 
         # Calculate final results and display/store
         for i, K in enumerate(n_samples):
-            LL   = log_px[i] / (n_datapoints*n_bootstraps)
-            LLse = np.sqrt(log_px2[i] / (n_datapoints*n_bootstraps) - LL**2)
+            n    = n_datapoints*n_bootstraps
+            LL   = log_px[i] / n
+            LLse = np.sqrt( (log_px2[i] - (log_px[i]**2/n)) / (n-1)) 
+            LLse *= 1.96 / np.sqrt(n)
 
             self.logger.info("(%d datpoints, %d samples, %d bootstraps): LL=%5.2f +-%4.2f" % (n_datapoints, K, n_bootstraps, LL, LLse))
 
