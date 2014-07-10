@@ -6,7 +6,7 @@ import theano
 import theano.tensor as T
 
 import testing
-from test_isws import ISLayerTest, ISTopLayerTest
+from test_rws import RWSLayerTest, RWSTopLayerTest
 
 # Unit Under Test
 from learning.darn import DARN, DARNTop
@@ -14,7 +14,7 @@ from learning.darn import DARN, DARNTop
 
 #-----------------------------------------------------------------------------
 
-class TestDARN(ISTopLayerTest, unittest.TestCase):
+class TestDARN(RWSTopLayerTest, unittest.TestCase):
     def setUp(self):
         self.n_samples = 10
         self.layer = DARNTop(
@@ -22,7 +22,7 @@ class TestDARN(ISTopLayerTest, unittest.TestCase):
                     )
         self.layer.setup()
 
-class TestDARN(ISLayerTest, unittest.TestCase):
+class TestDARN(RWSLayerTest, unittest.TestCase):
     def setUp(self):
         self.n_samples = 10
         self.layer = DARN(

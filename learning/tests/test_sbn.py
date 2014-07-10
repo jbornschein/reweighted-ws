@@ -6,15 +6,14 @@ import theano
 import theano.tensor as T
 
 import testing
-from test_isws import ISLayerTest, ISTopLayerTest
+from test_rws import RWSLayerTest, RWSTopLayerTest
 
 # Unit Under Test
 from learning.sbn import SBN, SBNTop
 
-
 #-----------------------------------------------------------------------------
 
-class TestSBNTop(ISTopLayerTest, unittest.TestCase):
+class TestSBNTop(RWSTopLayerTest, unittest.TestCase):
     def setUp(self):
         self.n_samples = 10
         self.layer = SBNTop(
@@ -22,7 +21,7 @@ class TestSBNTop(ISTopLayerTest, unittest.TestCase):
                     )
         self.layer.setup()
 
-class TestSBN(ISLayerTest, unittest.TestCase):
+class TestSBN(RWSLayerTest, unittest.TestCase):
     def setUp(self):
         self.n_samples = 10
         self.layer = SBN(

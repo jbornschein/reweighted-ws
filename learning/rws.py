@@ -176,9 +176,9 @@ class Module(Model):
         return log_p
 
 
-class ISStack(Model):
+class LayerStack(Model):
     def __init__(self, **hyper_params):     
-        super(ISStack, self).__init__()
+        super(LayerStack, self).__init__()
 
         # Hyper parameters
         self.register_hyper_param('p_layers', help='STBP P layers', default=[])

@@ -8,11 +8,12 @@ import theano.tensor as T
 import testing
 
 # Unit Under Test
-from learning.stbp_layers import *
+from learning.rws import *
+from learning.sbn import SBN, SBNTop
 
 #-----------------------------------------------------------------------------
 
-class ISTopLayerTest(object):
+class RWSTopLayerTest(object):
     def test_basic_log_prob(self):
         n_samples = self.n_samples
         layer = self.layer
@@ -37,7 +38,7 @@ class ISTopLayerTest(object):
         assert log_prob_.shape == (n_samples,)
 
 
-class ISLayerTest(object):
+class RWSLayerTest(object):
     def test_basic_log_prob(self):
         n_samples = self.n_samples
         layer = self.layer
@@ -78,7 +79,7 @@ class ISLayerTest(object):
             
 #-----------------------------------------------------------------------------
 
-class TestSTBTStack(unittest.TestCase):
+class TestLayerStack(unittest.TestCase):
     n_samples = 25
     n_vis = 8
     n_hid = 16
@@ -108,7 +109,7 @@ class TestSTBTStack(unittest.TestCase):
                 n_X=self.n_hid,
             )
         ]
-        self.stack = STBPStack(p_layers=p_layers, q_layers=q_layers)
+        self.stack = LayerStack(p_layers=p_layers, q_layers=q_layers)
         self.stack.setup()
 
     def test_layer_sizes(self):

@@ -9,7 +9,7 @@ def get_toy_data():
     return BarsData(which_set="train", n_datapoints=500)
 
 def get_toy_model():
-    from learning.isws import ISStack
+    from learning.rws import LayerStack
     from learning.sbn import SBN, SBNTop
 
     p_layers = [
@@ -27,7 +27,7 @@ def get_toy_model():
             n_Y=25,
         )
     ]
-    model = ISStack(
+    model = LayerStack(
         p_layers=p_layers,
         q_layers=q_layers,
     )

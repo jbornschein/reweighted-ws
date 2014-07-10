@@ -12,7 +12,7 @@ from theano.printing import Print
 from theano.tensor.shared_randomstreams import RandomStreams
 
 from model import Model, default_weights
-from isws import TopModule, Module, f_replicate_batch, f_logsumexp, theano_rng
+from rws import TopModule, Module, f_replicate_batch, f_logsumexp, theano_rng
 from utils.unrolled_scan import unrolled_scan
 
 _logger = logging.getLogger(__name__)
