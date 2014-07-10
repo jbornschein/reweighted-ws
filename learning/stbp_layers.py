@@ -6,7 +6,7 @@ from __future__ import division
 This file exist for backward compatibility and presets various 
 classes under their old name:
 
-    STBPSTack = ISStack
+    STBPSTack = LayerStack
 
     FactoizedBernoulliTop, SigmoidBeliefLayer = SBNTop, SBN
     NADE, CNADE = NADETop, NADE
@@ -14,13 +14,13 @@ classes under their old name:
 """
 
 
-from isws import *
+from rws import *
 
 from sbn import SBN, SBNTop
 from darn import DARN, DARNTop
 from nade import NADE, NADETop
 
-STBPStack = ISStack
+STBPStack = LayerStack
 
 SigmoidBeliefLayer, FactoizedBernoulliTop = SBN, SBNTop
 CNADE, NADE = NADE, NADETop

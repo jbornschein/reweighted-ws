@@ -28,7 +28,7 @@ def rerun_monitors(args):
     from learning.dataset import MNIST
     from learning.preproc import PermuteColumns
 
-    from learning.isws import ISStack
+    from learning.rws  import LayerStack
     from learning.sbn  import SBN, SBNTop
     from learning.darn import DARN, DARNTop
     from learning.nade import NADE, NADETop
@@ -75,7 +75,7 @@ def rerun_monitors(args):
     p_layers.append( p_top(n_X=n_X, clamp_sigmoid=True) )
             
 
-    model = ISStack(
+    model = LayerStack(
         p_layers=p_layers,
         q_layers=q_layers
     )

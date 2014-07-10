@@ -3,13 +3,14 @@ import numpy as np
 
 from learning.dataset import BarsData, FromModel, MNIST
 from learning.training import Trainer
-from learning.isws import  ISStack
-from learning.sbn import SBN, SBNTop
-from learning.darn import DARN, DARNTop
-from learning.nade import NADE, NADETop
 from learning.termination import LogLikelihoodIncrease, EarlyStopping
 from learning.monitor import MonitorLL, DLogModelParams, SampleFromP
 from learning.monitor.bootstrap import BootstrapLL
+
+from learning.rws import LayerStack
+from learning.sbn import SBN, SBNTop
+from learning.darn import DARN, DARNTop
+from learning.nade import NADE, NADETop
 
 n_vis = 5*5
 n_hid = 15
@@ -38,7 +39,7 @@ q_layers=[
     )
 ]
 
-model = ISStack(
+model = LayerStack(
     p_layers=p_layers,
     q_layers=q_layers,
 )

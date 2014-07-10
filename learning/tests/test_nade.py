@@ -6,7 +6,7 @@ import theano
 import theano.tensor as T
 
 import testing
-from test_isws import ISLayerTest, ISTopLayerTest
+from test_rws import RWSLayerTest, RWSTopLayerTest
 
 # Unit Under Test
 from learning.nade import NADE, NADETop
@@ -14,7 +14,7 @@ from learning.nade import NADE, NADETop
 
 #-----------------------------------------------------------------------------
 
-class TestNADETop(ISTopLayerTest, unittest.TestCase):
+class TestNADETop(RWSTopLayerTest, unittest.TestCase):
     def setUp(self):
         self.n_samples = 10
         self.layer = NADETop(
@@ -23,7 +23,7 @@ class TestNADETop(ISTopLayerTest, unittest.TestCase):
                     )
         self.layer.setup()
 
-class TestNADE(ISLayerTest, unittest.TestCase):
+class TestNADE(RWSLayerTest, unittest.TestCase):
     def setUp(self):
         self.n_samples = 10
         self.layer = NADE(

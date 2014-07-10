@@ -6,7 +6,7 @@ from learning.termination import LogLikelihoodIncrease, EarlyStopping
 from learning.monitor import MonitorLL, DLogModelParams, SampleFromP
 from learning.training import Trainer
 
-from learning.isws import  ISStack
+from learning.rws import LayerStack
 from learning.sbn import SBN, SBNTop
 from learning.darn import DARN, DARNTop
 from learning.nade import NADE, NADETop
@@ -58,7 +58,7 @@ q_layers=[
     )
 ]
 
-model = ISStack(
+model = LayerStack(
     p_layers=p_layers,
     q_layers=q_layers,
 )
