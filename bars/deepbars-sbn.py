@@ -15,11 +15,9 @@ n_vis = 5*5
 n_hid = 15
 n_qhid = 2*n_hid
 
-#dataset = BarsData(which_set='train', n_datapoints=1000)
-#valiset = BarsData(which_set='valid', n_datapoints=100)
 dataset = FromH5(fname="deep-bars-5x5-a.h5", n_datapoints=5000)
 valiset = FromH5(fname="deep-bars-5x5-a.h5", n_datapoints=1000, offset=5000)
-
+testset = FromH5(fname="deep-bars-5x5-a.h5", n_datapoints=5000, offset=6000)
 
 p_layers=[
     SBN( 
@@ -61,8 +59,18 @@ trainer = Trainer(
     dataset=dataset, 
     model=model,
     termination=EarlyStopping(),
-    epoch_monitors=[MonitorLL(data=valiset, n_samples=[1, 5, 25, 100]), DLogModelParams()],
-    #step_monitors=[MonitorLL(data=valiset, n_samples=[1, 5, 25, 100])],
-    #monitor_nth_step=100
+    monitor_nth_step=100,
+    step_monitors=[
+        MonitorLL(name="valiset", data=valiset, n_samples=[1, 5, 25, 100])
+    ],
+    epoch_monitors=[
+        DLogModelParams(),
+        MonitorLL(name="valiset", data=valiset, n_samples=[1, 5, 25, 100]),
+        MonitorLL(name="testset", data=testset, n_samples=[1, 5, 25, 100]),
+    ],
+    final_monitors=[
+        MonitorLL(name="final-valiset", data=valiset, n_samples=[1, 5, 25, 100]),
+        MonitorLL(name="final-testset", data=testset, n_samples=[1, 5, 25, 100]),
+        SampleFromP(data=valiset, n_samples=100),
+    ],
 )
-
