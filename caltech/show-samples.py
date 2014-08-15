@@ -49,13 +49,13 @@ if __name__ == "__main__":
                 
                 samples = h5['learning.monitor.L0'][-1,:,:]
                 log_p = h5['learning.monitor.log_p'][-1,:]    
-                #idx = np.argsort(log_p)[::-1]
-                #samples = samples[idx]
+                idx = np.argsort(log_p)[::-1]
+                samples = samples[idx]
 
                 pylab.figure()
                 for i in xrange(100):
                     pylab.subplot(10, 10, i+1)
-                    pylab.imshow( samples[i,:].reshape((28,28)) )
+                    pylab.imshow( samples[i,:].reshape((28,28)), interpolation="nearest")
                     pylab.gray()
                     pylab.axis('off')
 
@@ -82,5 +82,6 @@ if __name__ == "__main__":
             logger.info("Failed to open %s fname: %s" % (fname, e))
 
     pylab.legend(loc="lower right")
+    pylab.savefig("samples.pdf")
     pylab.show()
 
