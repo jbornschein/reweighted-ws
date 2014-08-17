@@ -59,10 +59,10 @@ trainer = Trainer(
     dataset=dataset, 
     model=model,
     termination=EarlyStopping(),
-    monitor_nth_step=100,
-    step_monitors=[
-        MonitorLL(name="valiset", data=valiset, n_samples=[1, 5, 25, 100])
-    ],
+    #monitor_nth_step=100,
+    #step_monitors=[
+    #    MonitorLL(name="valiset", data=valiset, n_samples=[1, 5, 25, 100])
+    #],
     epoch_monitors=[
         DLogModelParams(),
         MonitorLL(name="valiset", data=valiset, n_samples=[1, 5, 25, 100]),
