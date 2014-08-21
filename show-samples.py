@@ -57,9 +57,11 @@ if __name__ == "__main__":
 
     except KeyError, e:
         logger.info("Failed to read data from %s: %s" % (fname, e))
+        exit(1)
 
     except IOError, e:
         logger.info("Failed to open %s: %s" % (fname, e))
+        exit(1)
 
     shape = tuple([int(s) for s in args.shape.split(",")])
     logger.debug("Using shape: %s -- %s" % (args.shape, shape))

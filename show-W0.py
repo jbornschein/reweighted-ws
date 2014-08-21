@@ -26,9 +26,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--verbose', '-v', action="store_true", default=False)
-    parser.add_argument('--dataset', '-d', default="valiset")
-    parser.add_argument('--samples', '-s', default=100)
-    parser.add_argument('--stacked', action="store_true", default=False)
+    parser.add_argument('--shape', default="28,28",
+            help="Shape for each samples (default: 28,28)")
     parser.add_argument('out_dir', nargs=1)
     args = parser.parse_args()
 
@@ -42,35 +41,43 @@ if __name__ == "__main__":
     logging.basicConfig(format=FORMAT, datefmt=DATEFMT, level=level)
 
     fname = args.out_dir[0]+"/results.h5"
-    table = "%s.spl%d.Hp" % (args.dataset, args.samples)
-
     try:
         with h5py.File(fname, "r") as h5:
-            Hp = h5[table][:]
+
+            logger.debug("Keys:")
+            for k, v in h5.iteritems():
+                logger.debug("  %-30s   %s" % (k, v.shape))
                 
+            W0 = h5['model.L0.P.W'][-1,:,:]
+
     except KeyError, e:
         logger.info("Failed to read data from %s: %s" % (fname, e))
         exit(1)
 
     except IOError, e:
-        logger.info("Failed to open %s fname: %s" % (fname, e))
+        logger.info("Failed to open %s: %s" % (fname, e))
         exit(1)
 
-    epochs = Hp.shape[0]
-    n_layers = Hp.shape[1]
+    shape = tuple([int(s) for s in args.shape.split(",")])
+    H = W0.shape[0]
 
-    if args.stacked:
-        ylim = 2*Hp[-1].sum()
-        pylab.ylim([ylim, 0])
-        pylab.stackplot(np.arange(epochs), Hp[:,::-1].T)
-    else:
-        ylim = 2*Hp[-1].min()
-        pylab.ylim([ylim, 0])
-        pylab.plot(Hp)
+    width = int(np.sqrt(H))
+    height = width
+    if width*height < H:
+        width = width + 1
+    if width*height < H:
+        height = height + 1
+        
+    logger.debug("Using shape: %s -- %s" % (args.shape, shape))
+    assert len(shape) == 2
 
-    #pylab.figsize(12, 8)
-    pylab.xlabel("Epochs")
-    #pylab.ylabel("avg_{x~testdata} log( E_{h~q}[p(x,h)/q(h|x)]")
-    pylab.legend(["layer %d" % i for i in xrange(n_layers)], loc="lower right")
+    pylab.figure()
+    for h in xrange(H):
+        pylab.subplot(width, height, h+1)
+        pylab.imshow( W0[h,:].reshape(shape), interpolation='nearest')
+        pylab.gray()
+        pylab.axis('off')
+
+    pylab.legend(loc="lower right")
     pylab.show()
 

@@ -144,8 +144,8 @@ def run_experiment(args):
         termination=EarlyStopping(lookahead=5, min_epochs=160),
         epoch_monitors=[
             DLogModelParams(), 
-            SampleFromP(n_samples=100)
-            MonitorLL(name="valiset", data=valiset, n_samples=100), 
+            SampleFromP(),
+            MonitorLL(name="valiset", data=valiset, n_samples=[1, 5, 25, 100]), 
         ],
         final_monitors=[
             MonitorLL(name="final-valiset", data=valiset, n_samples=[1, 5, 10, 25, 100, 500, 1000]),
