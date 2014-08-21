@@ -35,6 +35,20 @@ class Experiment(object):
         experiment.load_param_file(fname)
         return experiment
 
+    @classmethod
+    def from_results(cls, path, row=-1):
+        param_fname = path + "/paramfile.py"
+        results_fname = path + "/results.h5"
+
+        experiment = cls()
+        experiment.load_param_file(param_fname)
+        
+        model = experiment.params['model']
+        with h5py.File(results_fname, "r") as h5:
+            model.model_params_from_h5(h5, row, basekey="mode.")
+
+        return experiment
+
     #-------------------------------------------------------------------------
 
     def __init__(self):

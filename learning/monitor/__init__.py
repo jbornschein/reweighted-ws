@@ -162,8 +162,8 @@ class MonitorLL(Monitor):
                 L  += batch_L
                 L2 += batch_L2
                 KL += np.array(batch_KL)
-                Hp += np.array(Hp)
-                Hq += np.array(Hq)
+                Hp += np.array(batch_Hp)
+                Hq += np.array(batch_Hq)
                 
             L_se  = np.sqrt((L2 - (L*L)/n_datapoints) / (n_datapoints - 1)) 
             L_se *= 1.96 / np.sqrt(n_datapoints)
@@ -176,7 +176,7 @@ class MonitorLL(Monitor):
             global validation_LL
             validation_LL = L
 
-            self.logger.info("(%d datpoints, %d samples): LL=%5.2f +-%3.2f; KL=%s" % (n_datapoints, K, L, L_se, KL))
+            self.logger.info("(%d datpoints, %d samples): LL=%5.2f +-%3.2f; Hp=%s" % (n_datapoints, K, L, L_se, Hp))
 
             prefix = "spl%d." % K
             self.dlog.append_all({
