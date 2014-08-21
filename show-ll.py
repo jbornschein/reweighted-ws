@@ -64,9 +64,11 @@ if __name__ == "__main__":
                 
         except KeyError, e:
             logger.info("Failed to read data from %s: %s" % (fname, e))
+            exit(1)
 
         except IOError, e:
             logger.info("Failed to open %s fname: %s" % (fname, e))
+            exit(1)
 
 
     #pylab.figsize(12, 8)
