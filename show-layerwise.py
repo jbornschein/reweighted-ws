@@ -28,6 +28,7 @@ if __name__ == "__main__":
     parser.add_argument('--verbose', '-v', action="store_true", default=False)
     parser.add_argument('--dataset', '-d', default="valiset")
     parser.add_argument('--samples', '-s', default=100)
+    parser.add_argument('--stacked', action="store_true", default=False)
     parser.add_argument('out_dir', nargs=1)
     args = parser.parse_args()
 
@@ -55,14 +56,19 @@ if __name__ == "__main__":
 
     epochs = Hp.shape[0]
     n_layers = Hp.shape[1]
-    ylim = 2*Hp[-1].min()
 
-    pylab.plot(Hp)
+    if args.stacked:
+        ylim = 2*Hp[-1].sum()
+        pylab.ylim([ylim, 0])
+        pylab.stackplot(np.arange(epochs), Hp[:,::-1].T)
+    else:
+        ylim = 2*Hp[-1].min()
+        pylab.ylim([ylim, 0])
+        pylab.plot(Hp)
 
     #pylab.figsize(12, 8)
     pylab.xlabel("Epochs")
     #pylab.ylabel("avg_{x~testdata} log( E_{h~q}[p(x,h)/q(h|x)]")
-    pylab.ylim([ylim, 0])
     pylab.legend(["layer %d" % i for i in xrange(n_layers)], loc="lower right")
     pylab.show()
 
