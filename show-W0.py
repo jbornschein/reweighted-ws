@@ -26,6 +26,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--verbose', '-v', action="store_true", default=False)
+    parser.add_argument('--unshuffle', action="store_true", default=False)
     parser.add_argument('--shape', default="28,28",
             help="Shape for each samples (default: 28,28)")
     parser.add_argument('out_dir', nargs=1)
@@ -49,6 +50,13 @@ if __name__ == "__main__":
                 logger.debug("  %-30s   %s" % (k, v.shape))
                 
             W0 = h5['model.L0.P.W'][-1,:,:]
+            H, D = W0.shape
+
+            if 'preproc.permute_columns.permutation_inv' in h5:
+                logger.debug("Experiment used PermuteColumns preproc -- loading inv_perm")
+                perm_inv = h5['preproc.permute_columns.permutation_inv'][:]
+            else:
+                perm_inv = np.arange(D)
 
     except KeyError, e:
         logger.info("Failed to read data from %s: %s" % (fname, e))
@@ -59,7 +67,6 @@ if __name__ == "__main__":
         exit(1)
 
     shape = tuple([int(s) for s in args.shape.split(",")])
-    H = W0.shape[0]
 
     width = int(np.sqrt(H))
     height = width
@@ -74,7 +81,7 @@ if __name__ == "__main__":
     pylab.figure()
     for h in xrange(H):
         pylab.subplot(width, height, h+1)
-        pylab.imshow( W0[h,:].reshape(shape), interpolation='nearest')
+        pylab.imshow( W0[h,perm_inv].reshape(shape), interpolation='nearest')
         pylab.gray()
         pylab.axis('off')
 

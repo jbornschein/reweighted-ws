@@ -113,9 +113,9 @@ def run_experiment(args):
     tags += ["si%d"%sleep_interleave]
 
     # Dataset
-    if args.no_shuffle:
+    if args.shuffle:
         preproc = []
-        tags += ["noshuffle"]
+        tags += ["shuffle"]
     else:
         np.random.seed(23)
         preproc = [PermuteColumns()]
@@ -201,7 +201,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--verbose', '-v', action='count')
-    parser.add_argument('--no-shuffle', action='store_true', default=False)
+    parser.add_argument('--shuffle', action='store_true', default=False)
     parser.add_argument('--cont', nargs='?', default=None,
         help="Continue a previous in result_dir")
     parser.add_argument('--samples', default=5, type=int, 
