@@ -131,6 +131,8 @@ def run_experiment(args):
         testset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='test', preproc=preproc, n_datapoints=10000)
 
 
+    if args.lookahead != 10:
+        tags += ["lah%d" % args.lookahead]
 
     tags.sort()
     expname = "%s-%s-%s-%s"% ("-".join(tags), args.p_model, args.q_model, "-".join([str(s) for s in layer_sizes]))
@@ -149,7 +151,7 @@ def run_experiment(args):
         anneal=1.,
         dataset=dataset, 
         model=model,
-        termination=EarlyStopping(lookahead=20, min_epochs=160),
+        termination=EarlyStopping(lookahead=args.lookahead, min_epochs=10),
         epoch_monitors=[
             DLogModelParams(), 
             SampleFromP(n_samples=100),
