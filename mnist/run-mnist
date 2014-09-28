@@ -189,7 +189,7 @@ def run_experiment(args):
         experiment.run_experiment()
     else:
         logger.info("Continuing experiment %s ...." % args.cont)
-        experiment.continue_experiment(args.cont+"/results.h5")
+        experiment.continue_experiment(args.cont+"/results.h5", row=-1)
  
     logger.info("Finished. Wrinting metadata")
 

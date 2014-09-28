@@ -167,7 +167,7 @@ class Experiment(object):
 
         self.trainer.perform_learning()
 
-    def continue_experiment(self, results_h5):
+    def continue_experiment(self, results_h5, row=-1):
         logger = self.logger
         self.sanity_check()
 
@@ -175,14 +175,15 @@ class Experiment(object):
         with h5py.File(results_h5, "r") as h5:
             for key in h5.keys():
                 n_rows = h5[key].shape[0]
+                if row > -1:
+                    n_rows = min(n_rows, row)
                 for r in xrange(n_rows):
                     dlog.append(key, h5[key][r])
 
             # Identify last row without NaN's
-            LL100 = h5['learning.monitor.100.LL']
-            row = max(np.where(np.isfinite(LL100))[0])-1
-
-            logger.info("Continuing from row %d (%d rows total)" %(row, LL100.shape[0]))
+            #LL100 = h5['learning.monitor.100.LL']
+            #row = max(np.where(np.isfinite(LL100))[0])-1
+            logger.info("Continuing from row %d" % row)
 
             self.trainer.load_data()
             self.trainer.compile()
