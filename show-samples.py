@@ -80,5 +80,5 @@ if __name__ == "__main__":
         pylab.axis('off')
 
     pylab.legend(loc="lower right")
-    pylab.show()
+    pylab.show(block=True)
 

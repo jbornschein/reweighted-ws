@@ -74,5 +74,5 @@ if __name__ == "__main__":
     pylab.xlabel("Epochs")
     pylab.ylabel("avg_{x~testdata} log( E_{h~q}[p(x,h)/q(h|x)]")
     pylab.legend(loc="lower right")
-    pylab.show()
+    pylab.show(block=True)
 
