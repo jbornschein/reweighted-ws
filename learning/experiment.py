@@ -26,8 +26,6 @@ from training import TrainerBase
 from termination import Termination
 from monitor import DLogModelParams
 
-_logger = logging.getLogger()
-
 class Experiment(object):
     @classmethod
     def from_param_file(cls, fname):
@@ -55,7 +53,7 @@ class Experiment(object):
         self.params = {}
         self.param_fname = None
         self.out_dir = None
-        self.logger = _logger
+        self.logger = logging.getLogger("experiment")
         
     def load_param_file(self, fname):
         self.param_fname = fname

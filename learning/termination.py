@@ -14,7 +14,7 @@ import theano.tensor as T
 
 import monitor
 
-_logger = logging.getLogger(__name__)
+_logger = logging.getLogger("termination")
 
 class Termination(object):
     __metaclass__ = abc.ABCMeta

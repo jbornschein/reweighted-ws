@@ -226,7 +226,7 @@ if __name__ == "__main__":
         help="Comma seperated list of sizes. Layer cosest to the data comes first")
     args = parser.parse_args()
 
-    FORMAT = '[%(asctime)s] %(module)-15s %(message)s'
+    FORMAT = '[%(asctime)s] %(name)-15s %(message)s'
     DATEFMT = "%H:%M:%S"
     logging.basicConfig(format=FORMAT, datefmt=DATEFMT, level=logging.INFO)
 
