@@ -61,6 +61,9 @@ if __name__ == "__main__":
 
                 pylab.plot(LL, label=out_dir[-20:])
                 print "Final LL [%d samples]: %.2f" % (args.samples, LL_final)
+                print "valiset-final [%d samples]: %.2f" % (args.samples, h5["final-valiset.spl1000.LL"][-1])
+                print "testset-final [%d samples]: %.2f" % (args.samples, h5["final-testset.spl1000.LL"][-1])
+
                 
         except KeyError, e:
             logger.info("Failed to read data from %s: %s" % (fname, e))
