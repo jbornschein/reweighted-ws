@@ -11,6 +11,7 @@ from abc import ABCMeta, abstractmethod
 from os.path import isfile
 from multiprocessing import Process, Queue
 from time import strftime
+from six import iteritems
 
 #from mpi4py import MPI
 import numpy as np
@@ -217,7 +218,7 @@ class ChildLogger(DataLog):
         self.root.append(self.prefix+tblname, value)
 
     def append_all(self, valdict):
-        valdict = {(self.prefix+key): val for key, val in valdict.iteritems()}
+        valdict = {(self.prefix+key): val for key, val in iteritems(valdict)}
         self.root.append_all(valdict)
 
     def set_handler(self, tblname, handler_class, *args, **kwargs):

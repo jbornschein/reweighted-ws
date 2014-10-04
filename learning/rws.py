@@ -3,8 +3,9 @@
 from __future__ import division
 
 import logging
-from collections import OrderedDict
+from six import iteritems
 from abc import ABCMeta, abstractmethod
+from collections import OrderedDict
 
 import numpy as np
 
@@ -312,11 +313,11 @@ class LayerStack(Model):
 
         gradients = OrderedDict()
         for nl, layer in enumerate(self.p_layers):
-            for name, shvar in layer.get_model_params().iteritems():
+            for name, shvar in iteritems(layer.get_model_params()):
                 gradients[shvar] = lr_p[nl] * T.grad(cost_p, shvar, consider_constant=[w])
 
         for nl, layer in enumerate(self.q_layers):
-            for name, shvar in layer.get_model_params().iteritems():
+            for name, shvar in iteritems(layer.get_model_params()):
                 gradients[shvar] = lr_q[nl] * T.grad(cost_q, shvar, consider_constant=[w])
 
         return batch_log_PX, gradients
@@ -336,7 +337,7 @@ class LayerStack(Model):
 
         gradients = OrderedDict()
         for nl, layer in enumerate(self.q_layers):
-            for name, shvar in layer.get_model_params().iteritems():
+            for name, shvar in iteritems(layer.get_model_params()):
                 gradients[shvar] = lr_s[nl] * T.grad(cost_q, shvar)
 
         return log_q, gradients
@@ -357,23 +358,23 @@ class LayerStack(Model):
     def model_params_to_dict(self):
         vals = {}
         for n,l in enumerate(self.p_layers):
-            for pname, shvar in l.get_model_params().iteritems():
+            for pname, shvar in iteritems(l.get_model_params()):
                 key = "L%d.P.%s" % (n, pname)
                 vals[key] = shvar.get_value()
         for n,l in enumerate(self.q_layers):                
-            for pname, shvar in l.get_model_params().iteritems():
+            for pname, shvar in iteritems(l.get_model_params()):
                 key = "L%d.Q.%s" % (n, pname)
                 vals[key] = shvar.get_value()
         return vals
 
     def model_params_from_dict(self, vals):
         for n,l in enumerate(self.p_layers):
-            for pname, shvar in l.get_model_params().iteritems():
+            for pname, shvar in iteritems(l.get_model_params()):
                 key = "L%d.P.%s" % (n, pname)
                 value = vals[key]
                 shvar.set_value(value)
         for n,l in enumerate(self.q_layers):                
-            for pname, shvar in l.get_model_params().iteritems():
+            for pname, shvar in iteritems(l.get_model_params()):
                 key = "L%d.Q.%s" % (n, pname)
                 value = vals[key]
                 shvar.set_value(value)

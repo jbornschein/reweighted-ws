@@ -6,6 +6,7 @@ import logging
 from inspect import isfunction
 from collections import OrderedDict
 from recordtype import recordtype
+from six import iteritems
 
 import numpy as np
 
@@ -69,7 +70,7 @@ class HyperBase(object):
         param.value = val
 
     def set_hyper_params(self, d):
-        for key, val in d.iteritems():
+        for key, val in iteritems(d):
             self.set_hyper_param(key, val)
 
     #------------------------------------------------------------------------

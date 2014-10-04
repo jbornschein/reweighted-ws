@@ -6,6 +6,7 @@ import sys
 
 import abc
 import logging
+from six import iteritems
 from collections import OrderedDict
 from time import time
 
@@ -70,7 +71,7 @@ class TrainerBase(HyperBase):
         self.shvar_update_fnc[name] = update_fnc
         
     def update_shvars(self):
-        for key, shvar in self.shvar.iteritems():
+        for key, shvar in iteritems(self.shvar):
             value = self.shvar_update_fnc[key](self)
             if isinstance(value, np.ndarray):
                 if (value.dtype == np.float32) or (value.dtype == np.float64):
@@ -167,12 +168,12 @@ class Trainer(TrainerBase):
 
         # Initialize momentum variables
         gradients_old = {}
-        for shvar, value in gradients.iteritems():
+        for shvar, value in iteritems(gradients):
             name = value.name
             gradients_old[shvar] = theano.shared(shvar.get_value()*0., name=("%s_old"%name))
 
         updates = OrderedDict()
-        for shvar, value in gradients.iteritems():
+        for shvar, value in iteritems(gradients):
             gradient_old = gradients_old[shvar]
 
             dTheta = T.switch(T.isnan(value),
@@ -201,7 +202,7 @@ class Trainer(TrainerBase):
         log_PX = T.sum(log_PX)
 
         updates = OrderedDict()
-        for shvar, value in gradients.iteritems():
+        for shvar, value in iteritems(gradients):
             gradient_old = gradients_old[shvar]
 
             dTheta = T.switch(T.isnan(value),

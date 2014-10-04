@@ -3,6 +3,7 @@
 from __future__ import division
 
 import logging
+from six import iteritems
 from inspect import isfunction
 from collections import OrderedDict
 from recordtype import recordtype
@@ -89,7 +90,7 @@ class Model(object):
         param.value = val
 
     def set_hyper_params(self, d):
-        for key, val in d.iteritems():
+        for key, val in iteritems(d):
             self.set_hyper_param(key, val)
 
     #------------------------------------------------------------------------
@@ -128,7 +129,7 @@ class Model(object):
         param.value = val
      
     def set_model_params(self, d):
-         for key, val in d.iteritems():
+         for key, val in iteritems(d):
             self.set_model_param(key, val)
 
     #------------------------------------------------------------------------
@@ -157,7 +158,7 @@ class Model(object):
     
     def model_params_from_dlog(self, dlog, row=-1):
         """ Load the model params form an open H5 file """
-        for key, param in self._model_params.iteritems():
+        for key, param in iteritems(self._model_params):
             assert isinstance(param, ModelParam)
             value = dlog.load(key, row)
             shvar = para.value
@@ -165,7 +166,7 @@ class Model(object):
 
     def model_params_to_dlog(self, dlog):
         """ Append all model params to dlog """
-        for key, param in self._model_params.iteritems():
+        for key, param in iteritems(self._model_params):
             assert isinstance(param, HyperParam)
             shvar = param.value
             value = shvar.get_value()
@@ -173,14 +174,14 @@ class Model(object):
 
     def hyper_params_from_dlog(self, dlog, row=-1):
         """ Load the hyper params form an open H5 file """
-        for key, param in self._hyper_params.iteritems():
+        for key, param in iteritems(self._hyper_params):
             assert isinstance(param, HyperParam)
             value = dlog.load(key, row)
             self.set_hyper_param(key, value)
 
     def hyper_params_to_dlog(self, dlog):
         """ Append all hyper params to dlog """
-        for key, param in self._hyper_params.iteritems():
+        for key, param in iteritems(self._hyper_params):
             assert isinstance(param, ModelParam)
             shvar = param.value
             value = shvar.get_value()

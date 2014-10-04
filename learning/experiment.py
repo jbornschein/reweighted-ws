@@ -10,6 +10,7 @@ import cPickle as pickle
 import os
 import os.path 
 import errno
+from six import iteritems
 from shutil import copyfile
 
 import numpy as np
@@ -135,7 +136,7 @@ class Experiment(object):
         logger.info("Parameter file:   %s" % self.param_fname)
         logger.info("Output directory: %s" % self.out_dir)
         logger.info("-- Trainer hyperparameter --")
-        for k, v in self.trainer.get_hyper_params().iteritems():
+        for k, v in iteritems(self.trainer.get_hyper_params()):
             if not isinstance(v, (int, float)):
                 continue
             logger.info("  %20s: %s" % (k, v))
