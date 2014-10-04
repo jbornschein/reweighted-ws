@@ -99,6 +99,10 @@ def run_experiment(args):
         lr_s = lr_base
     else:
         tags += lr_tag(lr_s, prefix="ls")
+
+    
+    if args.ldiscount != 1.0:
+        tags += ["ld"]
     
     # Samples
     n_samples = args.samples
@@ -147,7 +151,7 @@ def run_experiment(args):
         learning_rate_p=lr_p,
         learning_rate_q=lr_q,
         learning_rate_s=lr_s,
-        layer_discount=1.0,
+        layer_discount=args.ldiscount,
         anneal=1.,
         dataset=dataset, 
         model=model,
@@ -214,6 +218,7 @@ if __name__ == "__main__":
     parser.add_argument('--lr_p', default=None, type=float, help="p learning rate")
     parser.add_argument('--lr_q', default=None, type=float, help="wake-q-learing rate")
     parser.add_argument('--lr_s', default=None, type=float, help="sleep-q-learning rate")
+    parser.add_argument('--ldiscount', default=1., type=float, help="layer_discount")
     parser.add_argument('--split59k', '--s59k', default=False, action="store_true", 
         help="Use 59k-1k-10k dataset split");
     parser.add_argument('--lookahead', default=10, type=int, 
