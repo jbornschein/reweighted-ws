@@ -166,18 +166,27 @@ class Experiment(object):
 
         self.trainer.perform_learning()
 
-    def continue_experiment(self, results_h5, row=-1):
+    def continue_experiment(self, results_h5, row=-1, keep_orig_data=True):
         logger = self.logger
         self.sanity_check()
 
+        # Never copy these keys from original .h5
+        skip_orig_keys = (
+            "trainer.psleep_L",
+            "trainer.pstep_L"
+        )
+
         logger.info("Copying results from %s" % results_h5)
         with h5py.File(results_h5, "r") as h5:
-            for key in h5.keys():
-                n_rows = h5[key].shape[0]
-                if row > -1:
-                    n_rows = min(n_rows, row)
-                for r in xrange(n_rows):
-                    dlog.append(key, h5[key][r])
+            if keep_orig_data:
+                for key in h5.keys():
+                    if key in skip_orig_keys:
+                        continue
+                    n_rows = h5[key].shape[0]
+                    if row > -1:
+                        n_rows = min(n_rows, row)
+                    for r in xrange(n_rows):
+                        dlog.append("orig."+key, h5[key][r])
 
             # Identify last row without NaN's
             #LL100 = h5['learning.monitor.100.LL']
@@ -187,13 +196,13 @@ class Experiment(object):
             self.trainer.load_data()
             self.trainer.compile()
             self.trainer.model.model_params_from_h5(h5, row=row)
+
         self.trainer.perform_learning()
 
     #---------------------------------------------------------------
     def sanity_check(self):
         if not isinstance(self.trainer, TrainerBase):
             raise ValueError("Trainer not set properly")
-
         
         if not any( [isinstance(m, DLogModelParams) for m in self.trainer.epoch_monitors] ):
             self.logger.warn("DLogModelParams is not setup as an epoch_monitor. Model parameters wouldn't be saved. Adding default DLogModelParams()")

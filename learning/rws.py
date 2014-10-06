@@ -397,22 +397,30 @@ class LayerStack(Model):
  
     def model_params_from_h5(self, h5, row=-1, basekey="model."):
         for n,l in enumerate(self.p_layers):
-            for pname, shvar in l.get_model_params().iteritems():
-                key = "%sL%d.P.%s" % (basekey, n, pname)
-                try:
+            try:
+                for pname, shvar in iteritems(l.get_model_params()):
+                    key = "%sL%d.P.%s" % (basekey, n, pname)
                     value = h5[key][row]
                     shvar.set_value(value)
-                except KeyError:
+            except KeyError:
+                if n >= len(self.p_layers)-2:
+                    _logger.warning("Unable to load top P-layer params %s[%d]... continuing" % (key, row))
+                    continue
+                else:
                     _logger.error("Unable to load %s[%d] from %s" % (key, row, h5.filename))
                     raise
+
         for n,l in enumerate(self.q_layers):                
-            for pname, shvar in l.get_model_params().iteritems():
-                key = "%sL%d.Q.%s" % (basekey, n, pname)
-                try:
+            try:
+                for pname, shvar in iteritems(l.get_model_params()):
+                    key = "%sL%d.Q.%s" % (basekey, n, pname)
                     value = h5[key][row]
                     shvar.set_value(value)
-                except KeyError:
-                    _logger.error("Unable to load %s[%d] from %s" % (key, row, h5.filename))
-                    raise
+            except KeyError:
+                if n == len(self.q_layers)-1:
+                    _logger.warning("Unable to load top Q-layer params %s[%d]... continuing" % (key, row))
+                    continue
+                _logger.error("Unable to load %s[%d] from %s" % (key, row, h5.filename))
+                raise
                     
 
