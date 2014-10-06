@@ -26,9 +26,10 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--verbose', '-v', action="store_true", default=False)
-    parser.add_argument('--unshuffle', action="store_true", default=False)
     parser.add_argument('--shape', default="28,28",
             help="Shape for each samples (default: 28,28)")
+    parser.add_argument('--row', default=-1, type=int,
+            help="Iteration to visualize")
     parser.add_argument('out_dir', nargs=1)
     args = parser.parse_args()
 
@@ -49,7 +50,12 @@ if __name__ == "__main__":
             for k, v in h5.iteritems():
                 logger.debug("  %-30s   %s" % (k, v.shape))
                 
-            W0 = h5['model.L0.P.W'][-1,:,:]
+            
+            row = args.row
+            total_rows = h5['model.L0.P.W'].shape[0]
+            logger.info("Visualizing row %d of %d..." % (args.row, total_rows))
+
+            W0 = h5['model.L0.P.W'][row,:,:]
             H, D = W0.shape
 
             if 'preproc.permute_columns.permutation_inv' in h5:

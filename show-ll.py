@@ -27,7 +27,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--verbose', '-v', action="store_true", default=False)
     parser.add_argument('--dataset', '-d', default="valiset")
-    parser.add_argument('--samples', '-s', default=100)
+    parser.add_argument('--samples', '-s', default=100, type=int)
     parser.add_argument('out_dir', nargs='+')
     args = parser.parse_args()
 
