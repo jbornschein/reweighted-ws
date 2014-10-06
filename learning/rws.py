@@ -385,12 +385,12 @@ class LayerStack(Model):
 
     def model_params_from_dlog(self, dlog, row=-1):
         for n,l in enumerate(self.p_layers):
-            for pname, shvar in l.get_model_params().iteritems():
+            for pname, shvar in iteritems(l.get_model_params()):
                 key = "L%d.P.%s" % (n, pname)
                 value = dlog.load(key)
                 shvar.set_value(value)
         for n,l in enumerate(self.q_layers):                
-            for pname, shvar in l.get_model_params().iteritems():
+            for pname, shvar in iteritems(l.get_model_params()):
                 key = "L%d.Q.%s" % (n, pname)
                 value = dlog.load(key)
                 shvar.set_value(value)
