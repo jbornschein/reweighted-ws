@@ -55,6 +55,14 @@ if __name__ == "__main__":
             samples = h5['SampleFromP.L0'][-1,:,:]
             log_p = h5['SampleFromP.log_p'][-1,:]    
 
+            if 'preproc.permute_columns.permutation_inv' in h5:
+                logger.debug("Experiment used PermuteColumns preproc -- loading inv_perm")
+                perm_inv = h5['preproc.permute_columns.permutation_inv'][:]
+            else:
+                perm_inv = np.arange(D)
+
+
+
     except KeyError, e:
         logger.info("Failed to read data from %s: %s" % (fname, e))
         exit(1)
@@ -75,7 +83,7 @@ if __name__ == "__main__":
     pylab.figure()
     for i in xrange(args.nsamples):
         pylab.subplot(10, 10, i+1)
-        pylab.imshow( samples[i,:].reshape(shape), interpolation='nearest')
+        pylab.imshow( samples[i,perm_inv].reshape(shape), interpolation='nearest')
         pylab.gray()
         pylab.axis('off')
 
