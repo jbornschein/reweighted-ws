@@ -29,6 +29,7 @@ def run_experiment(args):
     from learning.darn import DARN, DARNTop
     from learning.nade import NADE, NADETop
 
+    np.set_printoptions(precision=2)
 
     logger.debug("Arguments %s" % args)
     tags = []

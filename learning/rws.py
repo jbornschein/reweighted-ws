@@ -176,6 +176,7 @@ class Module(Model):
         """
         return log_p
 
+#=============================================================================
 
 class LayerStack(Model):
     def __init__(self, **hyper_params):     
