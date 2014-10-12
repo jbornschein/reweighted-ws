@@ -300,7 +300,7 @@ class LayerStack(Model):
         Hq = [None]*n_layers
         for l in xrange(n_layers):
             KL[l] = T.sum(w*(log_p[l]-log_q[l]), axis=1)
-            Hp[l] = f_logsumexp(log_w+log_p)
+            Hp[l] = f_logsumexp(log_w+log_p, axis=1)
             Hq[l] = T.sum(w*log_q[l], axis=1)
 
         return log_px, w, log_p_all, log_q_all, KL, Hp, Hq
