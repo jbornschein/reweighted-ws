@@ -54,6 +54,7 @@ if __name__ == "__main__":
                 
             samples = h5['SampleFromP.L0'][-1,:,:]
             log_p = h5['SampleFromP.log_p'][-1,:]    
+            _, D = samples.shape
 
             if 'preproc.permute_columns.permutation_inv' in h5:
                 logger.debug("Experiment used PermuteColumns preproc -- loading inv_perm")
