@@ -151,4 +151,22 @@ class SBN(Module):
 
         return X, log_prob
 
+    def prob_sample(self, Y):
+        """ Given samples from the upper layer Y, return 
+            the probability for the individual X elements
+
+        Parameters
+        ----------
+        Y:      T.tensor
+            samples from the upper layer
+
+        Returns
+        -------
+        X:      T.tensor
+        """
+        W, b = self.get_model_params(['W', 'b'])
+
+        prob_X = self.sigmoid(T.dot(Y, W) + b)
+
+        return prob_X
 

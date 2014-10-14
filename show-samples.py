@@ -32,6 +32,8 @@ if __name__ == "__main__":
             help="Number of samples to show")
     parser.add_argument('--sort', default=False, action="store_true", 
             help="Sort samples according to their probability")
+    parser.add_argument('--prob', default=False, action="store_true", 
+            help="Show per-pixel probability rather than sampled values")
     parser.add_argument('out_dir', nargs=1)
     args = parser.parse_args()
 
@@ -52,7 +54,10 @@ if __name__ == "__main__":
             for k, v in h5.iteritems():
                 logger.debug("  %-30s   %s" % (k, v.shape))
                 
-            samples = h5['SampleFromP.L0'][-1,:,:]
+            if args.prob:
+                samples = h5['SampleFromP.L0_prob'][-1,:,:]
+            else:
+                samples = h5['SampleFromP.L0'][-1,:,:]
             log_p = h5['SampleFromP.log_p'][-1,:]    
             _, D = samples.shape
 

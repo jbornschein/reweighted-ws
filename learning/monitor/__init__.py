@@ -204,9 +204,16 @@ class SampleFromP(Monitor):
         n_samples.tag.test_value = self.n_samples
         samples, log_p = model.sample_p(n_samples)
 
+        try:
+            prob_samples = [model.p_layers[0].prob_sample(samples[1])]
+            self.support_prob_samples = True
+        except:
+            prob_samples = []
+            self.support_prob_samples = False
+
         self.do_sample = theano.function(
                             inputs=[n_samples],
-                            outputs=[log_p] + samples,
+                            outputs=[log_p] + samples + prob_samples,
                             name="do_sample")
 
     def on_init(self, model):
@@ -216,13 +223,18 @@ class SampleFromP(Monitor):
         n_samples = self.n_samples
         n_layers = len(model.p_layers)
 
-        outputs = self.do_sample(n_samples)
-        log_p = outputs[0]
-        samples = outputs[1:]
-
         self.logger.info("SampleFromP(n_samples=%d)" % n_samples)
+
+        outputs = self.do_sample(n_samples)
+        log_p, outputs   = outputs[0], outputs[1:]
+        samples, outputs = outputs[0:n_layers], outputs[n_layers:]
+
         self.dlog.append("log_p", log_p)
         for l in xrange(n_layers):
             prefix = "L%d" % l
             self.dlog.append(prefix, samples[l])
 
+        if self.support_prob_samples:
+            prob_samples     = outputs[0]
+            self.dlog.append("L0_prob", prob_samples)
+            
