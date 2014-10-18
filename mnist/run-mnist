@@ -26,6 +26,7 @@ def run_experiment(args):
 
     from learning.rws  import LayerStack
     from learning.sbn  import SBN, SBNTop
+    from learning.dsbn import DSBN
     from learning.darn import DARN, DARNTop
     from learning.nade import NADE, NADETop
 
@@ -39,6 +40,7 @@ def run_experiment(args):
     # Layer models
     layer_models = {
         "sbn" : (SBN, SBNTop),
+        "dsbn": (DSBN, SBNTop),
         "darn": (DARN, DARNTop), 
         "nade": (NADE, NADETop),
     }
@@ -62,13 +64,13 @@ def run_experiment(args):
     for ls in layer_sizes:
         n_Y = ls
         p_layers.append(
-            p_layer(n_X=n_X, n_Y=n_Y, clamp_sigmoid=True)
+            p_layer(n_X=n_X, n_Y=n_Y, n_hid=min(n_X, n_Y))
         )
         q_layers.append(
-            q_layer(n_X=n_Y, n_Y=n_X)
+            q_layer(n_X=n_Y, n_Y=n_X, n_hid=min(n_X, n_Y))
         )
         n_X = n_Y
-    p_layers.append( p_top(n_X=n_X, clamp_sigmoid=True) )
+    p_layers.append( p_top(n_X=n_X) )
             
 
     model = LayerStack(
