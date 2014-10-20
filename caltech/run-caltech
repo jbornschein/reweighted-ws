@@ -1,0 +1,216 @@
+#!/usr/bin/env python 
+
+
+from __future__ import division
+
+import sys
+sys.path.append("../")
+
+import logging
+from time import time
+import cPickle as pickle
+
+import numpy as np
+
+logger = logging.getLogger()
+
+
+def run_experiment(args):
+    from learning.experiment import Experiment
+    from learning.training import Trainer
+    from learning.termination import EarlyStopping
+    from learning.monitor import MonitorLL, DLogModelParams, SampleFromP
+    from learning.dataset import CalTechSilhouettes
+    from learning.preproc import PermuteColumns
+
+    from learning.rws  import LayerStack
+    from learning.sbn  import SBN, SBNTop
+    from learning.dsbn import DSBN
+    from learning.darn import DARN, DARNTop
+    from learning.nade import NADE, NADETop
+
+    np.set_printoptions(precision=2)
+
+    logger.debug("Arguments %s" % args)
+    tags = []
+
+    np.random.seed(23)
+
+    # Layer models
+    layer_models = {
+        "sbn" : (SBN, SBNTop),
+        "dsbn": (DSBN, SBNTop),
+        "darn": (DARN, DARNTop), 
+        "nade": (NADE, NADETop),
+    }
+
+    if not args.p_model in layer_models:
+        raise "Unknown P-layer model %s" % args.p_model
+    p_layer, p_top = layer_models[args.p_model]
+
+    if not args.q_model in layer_models:
+        raise "Unknown P-layer model %s" % args.p_model
+    q_layer, q_top = layer_models[args.q_model]
+
+    # Layer sizes
+    layer_sizes = [int(s) for s in args.layer_sizes.split(",")]
+
+    n_X = 28*28
+
+    p_layers = []
+    q_layers = []
+
+    for ls in layer_sizes:
+        n_Y = ls
+        p_layers.append(
+            p_layer(n_X=n_X, n_Y=n_Y)
+        )
+        q_layers.append(
+            q_layer(n_X=n_Y, n_Y=n_X)
+        )
+        n_X = n_Y
+    p_layers.append( p_top(n_X=n_X) )
+            
+
+    model = LayerStack(
+        p_layers=p_layers,
+        q_layers=q_layers
+    )
+    model.setup()
+
+    # Learning rate
+    def lr_tag(value, prefix):
+        exp = np.floor(np.log10(value))
+        leading = ("%e"%value)[0]
+        return ["%s%s%d" % (prefix, leading, -exp)]
+
+    lr_base = args.lr
+    tags += lr_tag(lr_base, prefix="lr")
+    lr_p = args.lr_p
+    lr_q = args.lr_q
+    lr_s = args.lr_s
+    if lr_p is None:
+        lr_p = lr_base
+    else:
+        tags += lr_tag(lr_p, prefix="lp")
+    if lr_q is None:
+        lr_q = lr_base
+    else:
+        tags += lr_tag(lr_q, prefix="lq")
+    if lr_s is None:
+        lr_s = lr_base
+    else:
+        tags += lr_tag(lr_s, prefix="ls")
+
+    
+    if args.ldiscount != 1.0:
+        tags += ["ld"]
+    
+    # Samples
+    n_samples = args.samples
+    tags += ["spl%d"%n_samples]
+
+    # Batch size
+    batch_size = args.batchsize
+    tags += ["bs%d"%batch_size]
+
+    # Sleep interleave
+    sleep_interleave = args.sleep_interleave
+    tags += ["si%d"%sleep_interleave]
+
+    # Dataset
+    if args.shuffle:
+        np.random.seed(23)
+        preproc = [PermuteColumns()]
+        tags += ["shuffle"]
+    else:
+        preproc = []
+
+    dataset = CalTechSilhouettes(which_set='train')
+    valiset = CalTechSilhouettes(which_set='valid')
+    testset = CalTechSilhouettes(which_set='test')
+
+
+    if args.lookahead != 10:
+        tags += ["lah%d" % args.lookahead]
+
+    tags.sort()
+    expname = "%s-%s-%s-%s"% ("-".join(tags), args.p_model, args.q_model, "-".join([str(s) for s in layer_sizes]))
+
+    logger.info("Running %s" % expname)
+
+    
+    trainer = Trainer(
+        batch_size=batch_size,
+        n_samples=n_samples,
+        sleep_interleave=sleep_interleave,
+        learning_rate_p=lr_p,
+        learning_rate_q=lr_q,
+        learning_rate_s=lr_s,
+        layer_discount=args.ldiscount,
+        anneal=1.,
+        dataset=dataset, 
+        model=model,
+        termination=EarlyStopping(lookahead=args.lookahead, min_epochs=10),
+        epoch_monitors=[
+            DLogModelParams(), 
+            SampleFromP(n_samples=100),
+            MonitorLL(name="valiset", data=valiset, n_samples=[1, 5, 25, 100]),
+        ],
+        final_monitors=[
+            MonitorLL(name="final-valiset", data=valiset, n_samples=[1, 5, 10, 25, 100, 500, 1000]),
+            MonitorLL(name="final-testset", data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000]),
+        ],
+    )
+
+    experiment = Experiment()
+    experiment.trainer = trainer
+    experiment.setup_output_dir(expname)
+    experiment.print_summary()
+    experiment.setup_logging()
+
+    if args.cont is None:
+        experiment.run_experiment()
+    else:
+        logger.info("Continuing experiment %s ...." % args.cont)
+        experiment.continue_experiment(args.cont+"/results.h5", row=-1)
+ 
+    logger.info("Finished. Wrinting metadata")
+
+    experiment.print_summary()
+
+#=============================================================================
+if __name__ == "__main__":
+    import argparse 
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--verbose', '-v', action='count')
+    parser.add_argument('--shuffle', action='store_true', default=False)
+    parser.add_argument('--cont', nargs='?', default=None,
+        help="Continue a previous in result_dir")
+    parser.add_argument('--samples', default=10, type=int, 
+        help="Number of training samples (default: 10)")
+    parser.add_argument('--batchsize', default=100, type=int, 
+        help="Mini batch size (default: 100)")
+    parser.add_argument('--sleep-interleave', '--si', default=2, type=int, 
+        help="Sleep interleave (default: 2)")
+    parser.add_argument('--lr', default=1e-4, type=float, help="Learning rate (default: 1e-4)")
+    parser.add_argument('--lr_p', default=None, type=float, help="p learning rate")
+    parser.add_argument('--lr_q', default=None, type=float, help="wake-q-learing rate")
+    parser.add_argument('--lr_s', default=None, type=float, help="sleep-q-learning rate")
+    parser.add_argument('--ldiscount', default=1., type=float, help="layer_discount")
+    parser.add_argument('--lookahead', default=10, type=int, 
+        help="Termination criteria: # epochs without LL increase")
+    parser.add_argument('p_model', default="SBN", 
+        help="SBN, DARN or NADE (default: SBN")
+    parser.add_argument('q_model', default="SBN",
+        help="SBN, DARN or NADE (default: SBN")
+    parser.add_argument('layer_sizes', default="500,300,100,50,10", 
+        help="Comma seperated list of sizes. Layer cosest to the data comes first")
+    args = parser.parse_args()
+
+    FORMAT = '[%(asctime)s] %(name)-15s %(message)s'
+    DATEFMT = "%H:%M:%S"
+    logging.basicConfig(format=FORMAT, datefmt=DATEFMT, level=logging.INFO)
+
+    run_experiment(args)
