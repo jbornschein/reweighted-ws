@@ -17,7 +17,7 @@ n_vis = 28*28
 preproc = PermuteColumns()
 
 dataset  = CalTechSilhouettes(which_set='train', preproc=[preproc])
-valiset  = CalTechSilhouettes(which_set='valid', preproc=[preproc], n_datapoints=1000)
+valiset  = CalTechSilhouettes(which_set='valid', preproc=[preproc])
 testset  = CalTechSilhouettes(which_set='test', preproc=[preproc])
 
 p_layers=[
@@ -55,13 +55,12 @@ trainer = Trainer(
     #step_monitors=[MonitorLL(data=smallset, n_samples=[1, 5, 25, 100])],
     epoch_monitors=[
         DLogModelParams(),
-        MonitorLL(name="testset", data=testset, n_samples=[1, 5, 25, 100]), 
         MonitorLL(name="valiset", data=valiset, n_samples=[1, 5, 25, 100]), 
         SampleFromP(n_samples=100)
     ],
     final_monitors=[
-        MonitorLL(name="final-testset", data=testset, n_samples=[1, 5, 25, 100, 500, 1000]), 
         MonitorLL(name="final-valiset", data=valiset, n_samples=[1, 5, 25, 100, 500, 1000]), 
+        MonitorLL(name="final-testset", data=testset, n_samples=[1, 5, 25, 100, 500, 1000]), 
     ],
     monitor_nth_step=100,
 )

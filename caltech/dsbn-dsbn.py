@@ -4,10 +4,12 @@ import numpy as np
 from learning.dataset import CalTechSilhouettes
 from learning.termination import LogLikelihoodIncrease, EarlyStopping
 from learning.monitor import MonitorLL, DLogModelParams, SampleFromP
+from learning.monitor.bootstrap import BootstrapLL
 from learning.training import Trainer
 
 from learning.rws import LayerStack
 from learning.sbn import SBN, SBNTop
+from learning.dsbn import DSBN
 from learning.darn import DARN, DARNTop
 from learning.nade import NADE, NADETop
 
@@ -18,19 +20,23 @@ valiset  = CalTechSilhouettes(which_set='valid')
 testset  = CalTechSilhouettes(which_set='test')
 
 p_layers=[
-    SBN( 
+    DSBN( 
         n_X=n_vis,
+        n_Y=500,
+    ),
+    DSBN( 
+        n_X=500,
         n_Y=300,
     ),
-    SBN( 
+    DSBN( 
         n_X=300,
         n_Y=100,
     ),
-    SBN( 
+    DSBN( 
         n_X=100,
         n_Y=50,
     ),
-    SBN( 
+    DSBN( 
         n_X=50,
         n_Y=10,
     ),
@@ -40,19 +46,23 @@ p_layers=[
 ]
 
 q_layers=[
-    NADE(
+    DSBN(
         n_Y=n_vis,
+        n_X=500,
+    ),
+    DSBN(
+        n_Y=500,
         n_X=300,
     ),
-    NADE(
+    DSBN(
         n_Y=300,
         n_X=100,
     ),
-    NADE(
+    DSBN(
         n_Y=100,
         n_X=50,
     ),
-    NADE(
+    DSBN(
         n_Y=50,
         n_X=10,
     )
@@ -64,12 +74,12 @@ model = LayerStack(
 )
 
 trainer = Trainer(
-    n_samples=5,
-    learning_rate_p=1e-3,
-    learning_rate_q=1e-3,
-    learning_rate_s=1e-3,
+    n_samples=10,
+    learning_rate_p=1e-4,
+    learning_rate_q=1e-4,
+    learning_rate_s=1e-4,
     layer_discount=1.0,
-    batch_size=25,
+    batch_size=100,
     dataset=dataset, 
     model=model,
     termination=EarlyStopping(),
