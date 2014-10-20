@@ -25,7 +25,7 @@ class DSBN(Module):
 
         self.register_hyper_param('n_X', help='no. lower-layer binary variables')
         self.register_hyper_param('n_Y', help='no. upper-layer binary variables')
-        self.register_hyper_param('n_hid', help='no. of deterministic hidden units')
+        self.register_hyper_param('n_hid', default=0, help='no. of deterministic hidden units')
         self.register_hyper_param('nonlin', default='tanh', help='non-linearity')
 
         # Sigmoid Belief Layer
@@ -35,6 +35,9 @@ class DSBN(Module):
         self.register_model_param('b',  help='P lower-layer bias', default=lambda: -np.ones(self.n_X))
 
         self.set_hyper_params(hyper_params)
+
+        if self.n_hid == 0:
+            self.n_hid = 2*min(self.n_X, self.n_Y)
 
     def log_prob(self, X, Y):
         """ Evaluate the log-probability for the given samples.
