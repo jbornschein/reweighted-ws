@@ -22,7 +22,7 @@ def run_experiment(args):
     from learning.monitor import MonitorLL, DLogModelParams, SampleFromP
     from learning.monitor.bootstrap import BootstrapLL
     from learning.dataset import MNIST
-    from learning.preproc import PermuteColumns
+    from learning.preproc import PermuteColumns, Binarize
 
     from learning.rws  import LayerStack
     from learning.sbn  import SBN, SBNTop
@@ -127,16 +127,16 @@ def run_experiment(args):
     else:
         preproc = []
 
-    if args.split59k:
-        dataset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_train', preproc=preproc, n_datapoints=59000)
-        valiset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='salakhutdinov_valid', preproc=preproc, n_datapoints=1000)
+    if args.rebinarize:
+        binarize_preproc = preproc + [Binarize(late=True)]
+        dataset = MNIST(which_set='train', preproc=binarize_preproc, n_datapoints=50000)
+        valiset = MNIST(which_set='valid', preproc=binarize_preproc, n_datapoints=10000)
         testset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='test', preproc=preproc, n_datapoints=10000)
-        tags += ["s59k"]
+        tags += ["rb"]
     else:
         dataset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='train', preproc=preproc, n_datapoints=50000)
         valiset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='valid', preproc=preproc, n_datapoints=10000)
         testset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='test', preproc=preproc, n_datapoints=10000)
-
 
     if args.lookahead != 10:
         tags += ["lah%d" % args.lookahead]
@@ -222,8 +222,8 @@ if __name__ == "__main__":
     parser.add_argument('--lr_q', default=None, type=float, help="wake-q-learing rate")
     parser.add_argument('--lr_s', default=None, type=float, help="sleep-q-learning rate")
     parser.add_argument('--ldiscount', default=1., type=float, help="layer_discount")
-    parser.add_argument('--split59k', '--s59k', default=False, action="store_true", 
-        help="Use 59k-1k-10k dataset split");
+    parser.add_argument('--rebinarize', default=False, action="store_true", 
+        help="Resample binary MNIST from orig. dataset during traaining");
     parser.add_argument('--lookahead', default=10, type=int, 
         help="Termination criteria: # epochs without LL increase")
     parser.add_argument('p_model', default="SBN", 
