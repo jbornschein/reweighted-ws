@@ -5,29 +5,26 @@ import numpy as np
 import theano 
 import theano.tensor as T
 
-import testing
 from test_rws import RWSLayerTest, RWSTopLayerTest
 
 # Unit Under Test
-from learning.models.darn import DARN, DARNTop
-
+from learning.models.sbn import SBN, SBNTop
 
 #-----------------------------------------------------------------------------
 
-class TestDARN(RWSTopLayerTest, unittest.TestCase):
+class TestSBNTop(RWSTopLayerTest, unittest.TestCase):
     def setUp(self):
         self.n_samples = 10
-        self.layer = DARNTop(
-                        n_X=8,
+        self.layer = SBNTop(
+                        n_X=8
                     )
         self.layer.setup()
 
-class TestDARN(RWSLayerTest, unittest.TestCase):
+class TestSBN(RWSLayerTest, unittest.TestCase):
     def setUp(self):
         self.n_samples = 10
-        self.layer = DARN(
+        self.layer = SBN(
                         n_X=16,
                         n_Y=8,
                     )
         self.layer.setup()
-

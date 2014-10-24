@@ -5,11 +5,11 @@ import numpy as np
 import theano 
 import theano.tensor as T
 
-import testing
+import learning.tests as testing
 
 # Unit Under Test
-from learning.rws import *
-from learning.sbn import SBN, SBNTop
+from learning.models.rws import *
+from learning.models.sbn import SBN, SBNTop
 
 #-----------------------------------------------------------------------------
 

@@ -5,30 +5,28 @@ import numpy as np
 import theano 
 import theano.tensor as T
 
-import testing
 from test_rws import RWSLayerTest, RWSTopLayerTest
 
 # Unit Under Test
-from learning.models.nade import NADE, NADETop
+from learning.models.darn import DARN, DARNTop
 
 
 #-----------------------------------------------------------------------------
 
-class TestNADETop(RWSTopLayerTest, unittest.TestCase):
+class TestDARN(RWSTopLayerTest, unittest.TestCase):
     def setUp(self):
         self.n_samples = 10
-        self.layer = NADETop(
+        self.layer = DARNTop(
                         n_X=8,
-                        n_hid=8,
                     )
         self.layer.setup()
 
-class TestNADE(RWSLayerTest, unittest.TestCase):
+class TestDARN(RWSLayerTest, unittest.TestCase):
     def setUp(self):
         self.n_samples = 10
-        self.layer = NADE(
+        self.layer = DARN(
                         n_X=16,
                         n_Y=8,
-                        n_hid=8,
                     )
         self.layer.setup()
+

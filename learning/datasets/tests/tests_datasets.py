@@ -2,10 +2,11 @@ import unittest
 
 import numpy as np
 
-from learning.stbp_layers import STBPStack, SigmoidBeliefLayer, FactoizedBernoulliTop, CNADE
+from learning.models.rws import LayerStack
+from learning.models.sbn import SBN, SBNTop
 
 # unit under test
-from learning.dataset import *
+from learning.datasets import *
 
 def skip_check(reason):
     raise unittest.SkipTest(reason)
@@ -75,26 +76,25 @@ def test_FromModel():
     
     # Instantiate model...
     p_layers = [
-        SigmoidBeliefLayer(
+        SBN(
             n_X=n_vis, 
             n_Y=n_hid,
         ),
-        FactoizedBernoulliTop(
+        SBNTop(
             n_X=n_hid
         )
     ]
     q_layers = [
-        CNADE(
+        SBN(
             n_X=n_hid, 
             n_Y=n_vis,
-            n_hid=n_hid
         )
     ]
     p_layers[0].set_model_param('W', W_bars)
     p_layers[0].set_model_param('b', P_b)
     p_layers[1].set_model_param('a', P_a)
 
-    model = STBPStack(
+    model = LayerStack(
         p_layers=p_layers,
         q_layers=q_layers
     )
