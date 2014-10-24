@@ -150,7 +150,7 @@ class SBN(Module):
 
         return X, log_prob
 
-    def prob_sample(self, Y):
+    def sample_expected(self, Y):
         """ Given samples from the upper layer Y, return 
             the probability for the individual X elements
 

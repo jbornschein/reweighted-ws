@@ -205,15 +205,15 @@ class SampleFromP(Monitor):
         samples, log_p = model.sample_p(n_samples)
 
         try:
-            prob_samples = [model.p_layers[0].prob_sample(samples[1])]
-            self.support_prob_samples = True
+            expected_samples = [model.p_layers[0].sample_expected(samples[1])]
+            self.support_sample_expected = True
         except:
-            prob_samples = []
-            self.support_prob_samples = False
+            expected_samples = []
+            self.support_sample_expected = False
 
         self.do_sample = theano.function(
                             inputs=[n_samples],
-                            outputs=[log_p] + samples + prob_samples,
+                            outputs=[log_p] + samples + expected_samples,
                             name="do_sample")
 
     def on_init(self, model):
@@ -234,7 +234,7 @@ class SampleFromP(Monitor):
             prefix = "L%d" % l
             self.dlog.append(prefix, samples[l])
 
-        if self.support_prob_samples:
-            prob_samples     = outputs[0]
-            self.dlog.append("L0_prob", prob_samples)
+        if self.support_sample_expected:
+            expected_samples = outputs[0]
+            self.dlog.append("L0_expected", expected_samples)
             
