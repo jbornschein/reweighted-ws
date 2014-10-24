@@ -3,10 +3,14 @@ import numpy as np
 
 from learning.dataset import BarsData, FromModel, MNIST
 from learning.preproc import Binarize
-from learning.stbp_layers import  STBPStack, SigmoidBeliefLayer, FactoizedBernoulliTop, DARN, DARNTop, CNADE
 from learning.training import Trainer
 from learning.termination import LogLikelihoodIncrease, EarlyStopping
 from learning.monitor import MonitorLL, DLogModelParams, SampleFromP
+
+from learning.models.rws  import LayerStack
+from learning.models.sbn  import SBN, SBNTop
+from learning.models.darn import DARN, DARNTop
+from learning.models.nade import NADE, NADETop
 
 n_vis = 28*28
 
@@ -33,7 +37,7 @@ q_layers=[
     ),
 ]
 
-model = STBPStack(
+model = LayerStack(
     p_layers=p_layers,
     q_layers=q_layers,
 )

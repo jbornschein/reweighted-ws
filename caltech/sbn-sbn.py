@@ -7,10 +7,10 @@ from learning.monitor import MonitorLL, DLogModelParams, SampleFromP
 from learning.monitor.bootstrap import BootstrapLL
 from learning.training import Trainer
 
-from learning.rws import LayerStack
-from learning.sbn import SBN, SBNTop
-from learning.darn import DARN, DARNTop
-from learning.nade import NADE, NADETop
+from learning.models.rws  import LayerStack
+from learning.models.sbn  import SBN, SBNTop
+from learning.models.darn import DARN, DARNTop
+from learning.models.nade import NADE, NADETop
 
 n_vis = 28*28
 
