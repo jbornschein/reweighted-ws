@@ -9,7 +9,7 @@ import testing
 from test_rws import RWSLayerTest, RWSTopLayerTest
 
 # Unit Under Test
-from learning.nade import NADE, NADETop
+from learning.models.nade import NADE, NADETop
 
 
 #-----------------------------------------------------------------------------

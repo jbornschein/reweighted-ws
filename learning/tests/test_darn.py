@@ -9,7 +9,7 @@ import testing
 from test_rws import RWSLayerTest, RWSTopLayerTest
 
 # Unit Under Test
-from learning.darn import DARN, DARNTop
+from learning.models.darn import DARN, DARNTop
 
 
 #-----------------------------------------------------------------------------

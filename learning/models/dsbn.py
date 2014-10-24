@@ -10,16 +10,15 @@ import theano
 import theano.tensor as T
 from theano.printing import Print
 
-from model import Model, default_weights
-from rws import TopModule, Module, theano_rng
-from utils.unrolled_scan import unrolled_scan
+from learning.rws import TopModule, Module, theano_rng
+from learning.model import default_weights
 
 _logger = logging.getLogger(__name__)
 floatX = theano.config.floatX
 
 
 class DSBN(Module):
-    """ SigmoidBeliefLayer """
+    """ Deep SigmoidBeliefLayer """
     def __init__(self, **hyper_params):
         super(DSBN, self).__init__()
 

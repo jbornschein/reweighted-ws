@@ -9,7 +9,7 @@ import testing
 from test_rws import RWSLayerTest, RWSTopLayerTest
 
 # Unit Under Test
-from learning.sbn import SBN, SBNTop
+from learning.models.sbn import SBN, SBNTop
 
 #-----------------------------------------------------------------------------
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env python 
 
 from __future__ import division
 
@@ -14,11 +13,11 @@ classes under their old name:
 """
 
 
-from rws import *
+from learning.models.rws import *
 
-from sbn import SBN, SBNTop
-from darn import DARN, DARNTop
-from nade import NADE, NADETop
+from learning.models.sbn import SBN, SBNTop
+from learning.models.darn import DARN, DARNTop
+from learning.models.nade import NADE, NADETop
 
 STBPStack = LayerStack
 

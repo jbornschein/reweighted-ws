@@ -23,11 +23,11 @@ def run_experiment(args):
     from learning.dataset import CalTechSilhouettes
     from learning.preproc import PermuteColumns
 
-    from learning.rws  import LayerStack
-    from learning.sbn  import SBN, SBNTop
-    from learning.dsbn import DSBN
-    from learning.darn import DARN, DARNTop
-    from learning.nade import NADE, NADETop
+    from learning.models.rws  import LayerStack
+    from learning.models.sbn  import SBN, SBNTop
+    from learning.models.dsbn import DSBN
+    from learning.models.darn import DARN, DARNTop
+    from learning.models.nade import NADE, NADETop
 
     np.set_printoptions(precision=2)
 
