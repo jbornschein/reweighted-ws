@@ -25,6 +25,7 @@ class RWSTopLayerTest(object):
 
         log_prob_ = do_log_prob(X_)
         assert log_prob_.shape == (n_samples,)
+        assert not np.isnan(log_prob_).any()
  
     def test_basic_sample(self):
         n_samples = self.n_samples
@@ -36,6 +37,7 @@ class RWSTopLayerTest(object):
         X_, log_prob_ = do_sample_p()
         assert X_.shape == (n_samples, layer.n_X )
         assert log_prob_.shape == (n_samples,)
+        assert not np.isnan(log_prob_).any()
 
 
 class RWSLayerTest(object):
@@ -51,6 +53,7 @@ class RWSLayerTest(object):
 
         log_prob_ = do_log_prob(X_, Y_)
         assert log_prob_.shape == (n_samples,)
+        assert not np.isnan(log_prob_).any()
 
 
     def test_basic_sample(self):
@@ -65,6 +68,7 @@ class RWSLayerTest(object):
         X_, log_prob_ = do_sample_p(Y_)
         assert X_.shape == (n_samples, layer.n_X )
         assert log_prob_.shape == (n_samples,)
+        assert not np.isnan(log_prob_).any()
 
     #def test_dPdTheta(self):
     #    n_samples = self.n_samples
