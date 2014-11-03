@@ -155,7 +155,6 @@ def run_experiment(args):
         learning_rate_q=lr_q,
         learning_rate_s=lr_s,
         layer_discount=args.ldiscount,
-        anneal=1.,
         dataset=dataset, 
         model=model,
         termination=EarlyStopping(lookahead=args.lookahead, min_epochs=10),

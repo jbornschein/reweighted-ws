@@ -124,8 +124,6 @@ class Trainer(TrainerBase):
         self.mk_shvar('lr_q', np.zeros(2), lambda self: self.calc_learning_rates(self.learning_rate_q))
         self.mk_shvar('lr_s', np.zeros(2), lambda self: self.calc_learning_rates(self.learning_rate_s))
 
-        self.mk_shvar('lamb', 0.01)
-
         self.set_hyper_params(hyper_params)
     
     def calc_learning_rates(self, base_rate):
