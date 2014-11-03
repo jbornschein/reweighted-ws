@@ -110,7 +110,6 @@ class Trainer(TrainerBase):
         self.register_hyper_param("learning_rate_q", default=1e-2, help="Learning rate")
         self.register_hyper_param("learning_rate_s", default=1e-2, help="Learning rate")
         self.register_hyper_param("beta", default=0.95, help="Momentum factor")
-        self.register_hyper_param("anneal", default=1., help="Annealing teperature")
         self.register_hyper_param("batch_size", default=100, help="")
         self.register_hyper_param("sleep_interleave", default=5, help="")
         self.register_hyper_param("layer_discount", default=1.0, help="Reduce LR for each successive layer by this factor")
@@ -125,7 +124,6 @@ class Trainer(TrainerBase):
         self.mk_shvar('batch_size', 100)
         self.mk_shvar('permutation', np.zeros(10), lambda self: np.zeros(10))
         self.mk_shvar('beta', 1.0)
-        self.mk_shvar('anneal', 1.0)
         self.mk_shvar('lr_p', np.zeros(2), lambda self: calc_learning_rates(self.learning_rate_p))
         self.mk_shvar('lr_q', np.zeros(2), lambda self: calc_learning_rates(self.learning_rate_q))
         self.mk_shvar('lr_s', np.zeros(2), lambda self: calc_learning_rates(self.learning_rate_s))
@@ -147,7 +145,6 @@ class Trainer(TrainerBase):
         lr_p = self.shvar['lr_p']
         lr_q = self.shvar['lr_q']
         beta = self.shvar['beta']
-        anneal = self.shvar['anneal']
         batch_size = self.shvar['batch_size']
         n_samples = self.shvar['n_samples']
 
@@ -161,9 +158,11 @@ class Trainer(TrainerBase):
 
         X_batch, _ = self.dataset.late_preproc(X_batch, None)
         
-        batch_log_PX, gradients = model.get_gradients(X_batch, None,
+        batch_log_PX, gradients = model.get_gradients(
+                    X_batch, None,
                     lr_p=lr_p, lr_q=lr_q,
-                    n_samples=n_samples, anneal=anneal)
+                    n_samples=n_samples
+                )
         batch_log_PX = batch_log_PX / batch_size
 
         # Initialize momentum variables

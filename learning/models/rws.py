@@ -260,7 +260,7 @@ class LayerStack(Model):
 
         return samples, log_p, log_q
  
-    def log_likelihood(self, X, Y=None, n_samples=None, anneal=1.):
+    def log_likelihood(self, X, Y=None, n_samples=None):
         p_layers = self.p_layers
         q_layers = self.q_layers
         n_layers = len(p_layers)
@@ -304,9 +304,9 @@ class LayerStack(Model):
 
         return log_px, w, log_p_all, log_q_all, KL, Hp, Hq
 
-    def get_gradients(self, X, Y, lr_p, lr_q, n_samples, anneal=1.):
+    def get_gradients(self, X, Y, lr_p, lr_q, n_samples):
         """ return log_PX and an OrderedDict with parameter gradients """
-        log_PX, w, log_p, log_q, KL, Hp, Hq = self.log_likelihood(X, Y, n_samples=n_samples, anneal=anneal)
+        log_PX, w, log_p, log_q, KL, Hp, Hq = self.log_likelihood(X, Y, n_samples=n_samples)
         
         batch_log_PX = T.sum(log_PX)
         cost_p = T.sum(T.sum(log_p*w, axis=1))
