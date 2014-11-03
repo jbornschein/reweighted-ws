@@ -109,27 +109,30 @@ class Trainer(TrainerBase):
         self.register_hyper_param("learning_rate_p", default=1e-2, help="Learning rate")
         self.register_hyper_param("learning_rate_q", default=1e-2, help="Learning rate")
         self.register_hyper_param("learning_rate_s", default=1e-2, help="Learning rate")
+        self.register_hyper_param("lr_decay", default=1.0, help="Learning rated decau per epoch")
         self.register_hyper_param("beta", default=0.95, help="Momentum factor")
         self.register_hyper_param("batch_size", default=100, help="")
         self.register_hyper_param("sleep_interleave", default=5, help="")
         self.register_hyper_param("layer_discount", default=1.0, help="Reduce LR for each successive layer by this factor")
         self.register_hyper_param("n_samples", default=10, help="No. samples used during training")
 
-        def calc_learning_rates(base_rate):
-            n_layers = len(self.model.p_layers)
-            rng = np.arange(n_layers)
-            return base_rate * self.layer_discount ** rng
-
         self.mk_shvar('n_samples', 100)
         self.mk_shvar('batch_size', 100)
         self.mk_shvar('permutation', np.zeros(10), lambda self: np.zeros(10))
         self.mk_shvar('beta', 1.0)
-        self.mk_shvar('lr_p', np.zeros(2), lambda self: calc_learning_rates(self.learning_rate_p))
-        self.mk_shvar('lr_q', np.zeros(2), lambda self: calc_learning_rates(self.learning_rate_q))
-        self.mk_shvar('lr_s', np.zeros(2), lambda self: calc_learning_rates(self.learning_rate_s))
+        self.mk_shvar('lr_p', np.zeros(2), lambda self: self.calc_learning_rates(self.learning_rate_p))
+        self.mk_shvar('lr_q', np.zeros(2), lambda self: self.calc_learning_rates(self.learning_rate_q))
+        self.mk_shvar('lr_s', np.zeros(2), lambda self: self.calc_learning_rates(self.learning_rate_s))
+
+        self.mk_shvar('lamb', 0.01)
 
         self.set_hyper_params(hyper_params)
     
+    def calc_learning_rates(self, base_rate):
+        n_layers = len(self.model.p_layers)
+        rng = np.arange(n_layers)
+        return base_rate * self.layer_discount ** rng
+
     def compile(self):
         """ Theano-compile neccessary functions """
         model = self.model
@@ -274,6 +277,11 @@ class Trainer(TrainerBase):
 
         self.update_shvars()
         self.shuffle_train_data()
+
+        # Update learning rated
+        self.lr_p = self.calc_learning_rates(self.learning_rate_p / self.lr_decay**epoch)
+        self.lr_q = self.calc_learning_rates(self.learning_rate_q / self.lr_decay**epoch)
+        self.lr_s = self.calc_learning_rates(self.learning_rate_s / self.lr_decay**epoch)
 
         widgets = ["Epoch %d, step "%(epoch+1), pbar.Counter(), ' (', pbar.Percentage(), ') ', pbar.Bar(), ' ', pbar.Timer(), ' ', pbar.ETA()]
         bar = pbar.ProgressBar(widgets=widgets, maxval=n_batches).start()
