@@ -61,14 +61,23 @@ if __name__ == "__main__":
 
                 pylab.plot(LL, label=out_dir[-20:])
                 print "Final LL [%d samples]: %.2f" % (args.samples, LL_final)
-                print "valiset-final [%d samples]: %.2f" % (args.samples, h5["final-valiset.spl1000.LL"][-1])
-                print "testset-final [%d samples]: %.2f" % (args.samples, h5["final-testset.spl1000.LL"][-1])
+
+                for spl in [10000, 5000, 1000, 500, 250, 100, 50, 25, 10]:
+                    try:
+                        final_valiset = h5["final-valiset.spl%d.LL"%spl][-1]
+                        final_testset = h5["final-testset.spl%d.LL"%spl][-1]
+
+                        print "valiset-final [%d samples]: %.2f" % (spl, final_valiset)
+                        print "testset-final [%d samples]: %.2f" % (spl, final_testset)
+                        break
+                    except KeyError as e:
+                        continue
 
                 
-        except KeyError, e:
+        except KeyError as e:
             logger.info("Failed to read data from %s: %s" % (fname, e))
 
-        except IOError, e:
+        except IOError as e:
             logger.info("Failed to open %s fname: %s" % (fname, e))
 
 
