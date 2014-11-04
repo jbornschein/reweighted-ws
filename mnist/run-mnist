@@ -80,32 +80,42 @@ def run_experiment(args):
     model.setup()
 
     # Learning rate
-    def lr_tag(value, prefix):
+    def lr_tag(value):
+        """ Convert a float into a short tag-usable string representation. E.g.:
+            0.1   -> 11
+            0.01  -> 12
+            0.001 -> 13
+            0.005 -> 53
+        """
         exp = np.floor(np.log10(value))
         leading = ("%e"%value)[0]
-        return ["%s%s%d" % (prefix, leading, -exp)]
+        return "%s%d" % (leading, -exp)
 
     lr_base = args.lr
-    tags += lr_tag(lr_base, prefix="lr")
+    tags += ["lr"+lr_tag(lr_base)]
     lr_p = args.lr_p
     lr_q = args.lr_q
     lr_s = args.lr_s
     if lr_p is None:
         lr_p = lr_base
     else:
-        tags += lr_tag(lr_p, prefix="lp")
+        tags += ["lp"+lr_tag(lr_p)]
     if lr_q is None:
         lr_q = lr_base
     else:
-        tags += lr_tag(lr_q, prefix="lq")
+        tags += ["lq"+lr_tag(lr_q)]
     if lr_s is None:
         lr_s = lr_base
     else:
-        tags += lr_tag(lr_s, prefix="ls")
+        tags += ["ls"+lr_tag(lr_s)]
 
-    
+    # Layer discount
     if args.ldiscount != 1.0:
-        tags += ["ld"]
+        tags += ["ldiscount"]
+
+    # LR decay 
+    if args.lrdecay != 1.0:
+        tags += ["lrdecay"+lr_tag(args.lrdecay-1.)]
     
     # Samples
     n_samples = args.samples
@@ -155,6 +165,7 @@ def run_experiment(args):
         learning_rate_q=lr_q,
         learning_rate_s=lr_s,
         layer_discount=args.ldiscount,
+        lr_decay=args.lrdecay,
         dataset=dataset, 
         model=model,
         termination=EarlyStopping(lookahead=args.lookahead, min_epochs=10),
@@ -220,6 +231,7 @@ if __name__ == "__main__":
     parser.add_argument('--lr_p', default=None, type=float, help="p learning rate")
     parser.add_argument('--lr_q', default=None, type=float, help="wake-q-learing rate")
     parser.add_argument('--lr_s', default=None, type=float, help="sleep-q-learning rate")
+    parser.add_argument('--lrdecay', default=1., type=float, help="learning rate decay")
     parser.add_argument('--ldiscount', default=1., type=float, help="layer_discount")
     parser.add_argument('--rebinarize', default=False, action="store_true", 
         help="Resample binary MNIST from orig. dataset during traaining");
