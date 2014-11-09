@@ -67,7 +67,7 @@ class TrainerBase(HyperBase):
             pass
         else:
             raise ArgumentError('Unknown datatype')
-        self.shvar[name] = theano.shared(value, name=name)
+        self.shvar[name] = theano.shared(value, name=name, allow_downcast=True)
         self.shvar_update_fnc[name] = update_fnc
         
     def update_shvars(self):
@@ -235,8 +235,8 @@ class Trainer(TrainerBase):
         self.logger.info("Dataset contains %d datapoints in %d mini-batches (%d datapoints per mini-batch)" %
             (n_datapoints, n_batches, self.batch_size))
         self.logger.info("Using %d training samples" % self.n_samples)
-        self.logger.info("lr_p=%3.1e, lr_q=%3.1e, lr_s=%3.1e, layer_discount=%4.2f" %
-            (self.learning_rate_p, self.learning_rate_q, self.learning_rate_s, self.layer_discount))
+        self.logger.info("lr_p=%3.1e, lr_q=%3.1e, lr_s=%3.1e, lr_decay=%5.1e layer_discount=%4.2f" %
+            (self.learning_rate_p, self.learning_rate_q, self.learning_rate_s, self.lr_decay, self.layer_discount))
 
         epoch = 0
         # Perform first epoch
@@ -277,9 +277,9 @@ class Trainer(TrainerBase):
         self.shuffle_train_data()
 
         # Update learning rated
-        self.lr_p = self.calc_learning_rates(self.learning_rate_p / self.lr_decay**epoch)
-        self.lr_q = self.calc_learning_rates(self.learning_rate_q / self.lr_decay**epoch)
-        self.lr_s = self.calc_learning_rates(self.learning_rate_s / self.lr_decay**epoch)
+        self.shvar['lr_p'].set_value((self.calc_learning_rates(self.learning_rate_p / self.lr_decay**epoch)).astype(floatX))
+        self.shvar['lr_q'].set_value((self.calc_learning_rates(self.learning_rate_q / self.lr_decay**epoch)).astype(floatX))
+        self.shvar['lr_s'].set_value((self.calc_learning_rates(self.learning_rate_s / self.lr_decay**epoch)).astype(floatX))
 
         widgets = ["Epoch %d, step "%(epoch+1), pbar.Counter(), ' (', pbar.Percentage(), ') ', pbar.Bar(), ' ', pbar.Timer(), ' ', pbar.ETA()]
         bar = pbar.ProgressBar(widgets=widgets, maxval=n_batches).start()
