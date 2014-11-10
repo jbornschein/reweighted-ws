@@ -9,10 +9,9 @@ import numpy as np
 import theano 
 import theano.tensor as T
 from theano.printing import Print
-from theano.tensor.shared_randomstreams import RandomStreams
 
-from learning.rws import TopModule, Module, theano_rng
 from learning.model import default_weights
+from learning.models.rws import TopModule, Module, theano_rng
 from learning.utils.unrolled_scan import unrolled_scan
 
 _logger = logging.getLogger(__name__)
@@ -32,8 +31,7 @@ class DARNTop(TopModule):
 
         self.set_hyper_params(hyper_params)
 
-
-    def log_prob(self, X):
+    def log_prob_scan(self, X):
         """ Evaluate the log-probability for the given samples.
 
         Parameters
@@ -70,6 +68,30 @@ class DARNTop(TopModule):
                 )
         assert len(updates) == 0
         return post[-1,:]
+
+    def log_prob(self, X):
+        """ Evaluate the log-probability for the given samples.
+
+        Parameters
+        ----------
+        X:      T.tensor 
+            samples from X
+
+        Returns
+        -------
+        log_p:  T.tensor
+            log-probabilities for the samples in X
+        """
+        n_X, = self.get_hyper_params(['n_X'])
+        b, W = self.get_model_params(['b', 'W'])
+        
+        W = T.tril(W, k=-1)
+
+        prob_X = self.sigmoid(T.dot(X, W) + b)
+        log_prob = X*T.log(prob_X) + (1-X)*T.log(1-prob_X)
+        log_prob = T.sum(log_prob, axis=1)
+
+        return log_prob
 
     def sample(self, n_samples):
         """ Sample from this toplevel module and return X ~ P(X), log(P(X))
@@ -131,6 +153,33 @@ class DARN(Module):
 
 
     def log_prob(self, X, Y):
+        """ Evaluate the log-probability for the given samples.
+
+        Parameters
+        ----------
+        Y:      T.tensor
+            samples from the upper layer
+        X:      T.tensor
+            samples from the lower layer
+
+        Returns
+        -------
+        log_p:  T.tensor
+            log-probabilities for the samples in X and Y
+        """
+        n_X, n_Y = self.get_hyper_params(['n_X', 'n_Y'])
+        b, W, U  = self.get_model_params(['b', 'W', 'U'])
+        
+        W = T.tril(W, k=-1)
+
+        prob_X = self.sigmoid(T.dot(X, W) + T.dot(Y, U) + T.shape_padleft(b))
+        log_prob = X*T.log(prob_X) + (1-X)*T.log(1-prob_X)
+        log_prob = T.sum(log_prob, axis=1)
+
+        return log_prob
+
+
+    def log_prob_scan(self, X, Y):
         """ Evaluate the log-probability for the given samples.
 
         Parameters
