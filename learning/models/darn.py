@@ -31,44 +31,6 @@ class DARNTop(TopModule):
 
         self.set_hyper_params(hyper_params)
 
-    def log_prob_scan(self, X):
-        """ Evaluate the log-probability for the given samples.
-
-        Parameters
-        ----------
-        X:      T.tensor 
-            samples from X
-
-        Returns
-        -------
-        log_p:  T.tensor
-            log-probabilities for the samples in X
-        """
-        n_X, = self.get_hyper_params(['n_X'])
-        b, W = self.get_model_params(['b', 'W'])
-        
-        batch_size = X.shape[0]
-
-        #------------------------------------------------------------------
-    
-        a_init    = T.zeros([batch_size, n_X]) + T.shape_padleft(b)
-        post_init = T.zeros([batch_size], dtype=floatX)
-
-        def one_iter(i, xi, Wi, bi, a, post):
-            pi   = self.sigmoid(a[:,i])
-            post = post + T.log(pi*xi + (1-pi)*(1-xi))            
-            a    = a + T.outer(xi, Wi) 
-            return a, post
-
-        [a, post], updates = unrolled_scan(
-                    fn=one_iter,
-                    sequences=[T.arange(n_X), X.T, W, b],
-                    outputs_info=[a_init, post_init],
-                    unroll=self.unroll_scan
-                )
-        assert len(updates) == 0
-        return post[-1,:]
-
     def log_prob(self, X):
         """ Evaluate the log-probability for the given samples.
 
@@ -92,6 +54,7 @@ class DARNTop(TopModule):
         log_prob = T.sum(log_prob, axis=1)
 
         return log_prob
+
 
     def sample(self, n_samples):
         """ Sample from this toplevel module and return X ~ P(X), log(P(X))
@@ -178,46 +141,6 @@ class DARN(Module):
 
         return log_prob
 
-
-    def log_prob_scan(self, X, Y):
-        """ Evaluate the log-probability for the given samples.
-
-        Parameters
-        ----------
-        Y:      T.tensor
-            samples from the upper layer
-        X:      T.tensor
-            samples from the lower layer
-
-        Returns
-        -------
-        log_p:  T.tensor
-            log-probabilities for the samples in X and Y
-        """
-        n_X, n_Y = self.get_hyper_params(['n_X', 'n_Y'])
-        b, W, U  = self.get_model_params(['b', 'W', 'U'])
-        
-        batch_size = X.shape[0]
-
-        #------------------------------------------------------------------
-    
-        a_init    = T.dot(Y, U) + T.shape_padleft(b)   # shape (batch, n_vis)
-        post_init = T.zeros([batch_size], dtype=floatX)
-
-        def one_iter(i, xi, Wi, bi, a, post):
-            pi   = self.sigmoid(a[:,i])
-            post = post + T.log(pi*xi + (1-pi)*(1-xi))            
-            a    = a + T.outer(xi, Wi) 
-            return a, post
-
-        [a, post], updates = unrolled_scan(
-                    fn=one_iter,
-                    sequences=[T.arange(n_X), X.T, W, b],
-                    outputs_info=[a_init, post_init],
-                    unroll=self.unroll_scan
-                )
-        assert len(updates) == 0
-        return post[-1,:]
 
     def sample(self, Y):
         """ Evaluate the log-probability for the given samples.
