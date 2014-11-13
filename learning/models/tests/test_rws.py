@@ -32,12 +32,28 @@ class RWSTopLayerTest(object):
         layer = self.layer
 
         X, log_prob = layer.sample(n_samples)
-        do_sample_p = theano.function([], [X, log_prob], name="sample_p")
+        do_sample_p = theano.function([], [X, log_prob], name="sample")
         
         X_, log_prob_ = do_sample_p()
         assert X_.shape == (n_samples, layer.n_X )
         assert log_prob_.shape == (n_samples,)
         assert not np.isnan(log_prob_).any()
+
+    def test_sample_expected(self):
+        n_samples = self.n_samples
+        layer = self.layer
+
+        if getattr(layer, "sample_expected", None) is None:
+            raise unittest.SkipTest("sample_expected not implemented")
+
+        X, log_prob = layer.sample_expected(n_samples)
+        do_sample_p = theano.function([], [X, log_prob], name="sample_expected")
+        
+        X_, log_prob_ = do_sample_p()
+        assert X_.shape == (n_samples, layer.n_X )
+        assert log_prob_.shape == (n_samples,)
+        assert not np.isnan(log_prob_).any()
+
 
 
 class RWSLayerTest(object):
@@ -70,17 +86,25 @@ class RWSLayerTest(object):
         assert log_prob_.shape == (n_samples,)
         assert not np.isnan(log_prob_).any()
 
-    #def test_dPdTheta(self):
-    #    n_samples = self.n_samples
-    #    layer = self.layer
-    #
-    #    X, log_prob = layer.sample_p(H)
-    #
-    #    updates = OrderedDict()
-    #    for name,shvar in layer.get_p_params().iteritems():
-    #        print "Taking gradient d P(X, H) / d%s" % name
-    #        updates[shvar] = T.grad(log_prob
-            
+
+    def test_sample_expected(self):
+        n_samples = self.n_samples
+        layer = self.layer
+
+        if getattr(layer, "sample_expected", None) is None:
+            raise unittest.SkipTest("sample_expected not implemented")
+
+        Y, Y_ = testing.fmatrix( (n_samples, layer.n_Y), name="Y")
+
+        X, log_prob = layer.sample(Y)
+        do_sample_p = theano.function([Y], [X, log_prob], name="sample")
+        
+        X_, log_prob_ = do_sample_p(Y_)
+        assert X_.shape == (n_samples, layer.n_X )
+        assert log_prob_.shape == (n_samples,)
+        assert not np.isnan(log_prob_).any()
+
+
 #-----------------------------------------------------------------------------
 
 class TestLayerStack(unittest.TestCase):
