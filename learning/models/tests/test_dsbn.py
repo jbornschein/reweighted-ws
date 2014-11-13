@@ -18,6 +18,6 @@ class TestDSBN(RWSLayerTest, unittest.TestCase):
         self.layer = DSBN(
                         n_X=16,
                         n_Y=8,
-                        n_hid=12,
+                        n_D=12,
                     )
         self.layer.setup()
