@@ -51,7 +51,7 @@ class DSBN(Module):
 
     def setup(self):
         if self.n_D is None:
-            self.n_D = max(self.n_Y, self.n_X)
+            self.n_D = self.n_Y + self.n_X / 2
 
     def log_prob(self, X, Y):
         """ Evaluate the log-probability for the given samples.
