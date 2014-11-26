@@ -40,7 +40,7 @@ if __name__ == "__main__":
     DATEFMT = "%H:%M:%S"
     logging.basicConfig(format=FORMAT, datefmt=DATEFMT, level=level)
 
-    ylim = 0.
+    ylim = +np.inf
     for out_dir in args.out_dir:
         fname = out_dir+"/results.h5"
 
@@ -56,6 +56,7 @@ if __name__ == "__main__":
 
 
                 LL = h5[table][:]
+                LL = LL[np.isfinite(LL)]    # filter NaNs and INFs
                 LL_final = LL[-1]
                 ylim = min(ylim, 2*LL_final)
 
@@ -82,7 +83,10 @@ if __name__ == "__main__":
 
 
     #pylab.figsize(12, 8)
-    pylab.ylim([ylim, 0])
+    if ylim < 0:
+        pylab.ylim([ylim, 0])
+    else:
+        pylab.ylim([0, ylim])
     pylab.xlabel("Epochs")
     pylab.ylabel("avg_{x~testdata} log( E_{h~q}[p(x,h)/q(h|x)]")
     pylab.legend(loc="lower right")
