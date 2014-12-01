@@ -182,7 +182,7 @@ class Trainer(TrainerBase):
             )
 
             updates[gradient_old] = dTheta
-            updates[shvar] = shvar + dTheta
+            updates[shvar] = shvar + dTheta - weight_decay*(shvar+dTheta)
 
         self.do_step = theano.function(  
                             inputs=[batch_idx],
