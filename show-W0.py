@@ -26,6 +26,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--verbose', '-v', action="store_true", default=False)
+    parser.add_argument('--param', default="model.L0.P.W")
+    parser.add_argument('--transpose', '-T', action="store_true", default=False)
     parser.add_argument('--shape', default="28,28",
             help="Shape for each samples (default: 28,28)")
     parser.add_argument('--row', default=-1, type=int,
@@ -43,6 +45,7 @@ if __name__ == "__main__":
     logging.basicConfig(format=FORMAT, datefmt=DATEFMT, level=level)
 
     fname = args.out_dir[0]+"/results.h5"
+    param = args.param
     try:
         with h5py.File(fname, "r") as h5:
 
@@ -50,12 +53,13 @@ if __name__ == "__main__":
             for k, v in h5.iteritems():
                 logger.debug("  %-30s   %s" % (k, v.shape))
                 
-            
             row = args.row
-            total_rows = h5['model.L0.P.W'].shape[0]
+            total_rows = h5[param].shape[0]
             logger.info("Visualizing row %d of %d..." % (args.row, total_rows))
 
-            W0 = h5['model.L0.P.W'][row,:,:]
+            W0 = h5[param][row,:,:]
+            if args.transpose:
+                W0 = W0.T
             H, D = W0.shape
 
             if 'preproc.permute_columns.permutation_inv' in h5:
