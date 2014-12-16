@@ -111,6 +111,7 @@ class Trainer(TrainerBase):
         self.register_hyper_param("learning_rate_s", default=1e-2, help="Learning rate")
         self.register_hyper_param("lr_decay", default=1.0, help="Learning rated decau per epoch")
         self.register_hyper_param("beta", default=0.95, help="Momentum factor")
+        self.register_hyper_param("weight_decay", default=0.0, help="Weight decay")
         self.register_hyper_param("batch_size", default=100, help="")
         self.register_hyper_param("sleep_interleave", default=5, help="")
         self.register_hyper_param("layer_discount", default=1.0, help="Reduce LR for each successive layer by this factor")
@@ -123,6 +124,7 @@ class Trainer(TrainerBase):
         self.mk_shvar('lr_p', np.zeros(2), lambda self: self.calc_learning_rates(self.learning_rate_p))
         self.mk_shvar('lr_q', np.zeros(2), lambda self: self.calc_learning_rates(self.learning_rate_q))
         self.mk_shvar('lr_s', np.zeros(2), lambda self: self.calc_learning_rates(self.learning_rate_s))
+        self.mk_shvar('weight_decay', 0.0)
 
         self.set_hyper_params(hyper_params)
     
@@ -146,6 +148,7 @@ class Trainer(TrainerBase):
         lr_p = self.shvar['lr_p']
         lr_q = self.shvar['lr_q']
         beta = self.shvar['beta']
+        weight_decay = self.shvar['weight_decay']
         batch_size = self.shvar['batch_size']
         n_samples = self.shvar['n_samples']
 
@@ -182,7 +185,7 @@ class Trainer(TrainerBase):
             )
 
             updates[gradient_old] = dTheta
-            updates[shvar] = shvar + dTheta
+            updates[shvar] = shvar + dTheta - weight_decay*(shvar+dTheta)
 
         self.do_step = theano.function(  
                             inputs=[batch_idx],
@@ -211,7 +214,7 @@ class Trainer(TrainerBase):
             )
 
             updates[gradient_old] = dTheta
-            updates[shvar] = shvar + dTheta
+            updates[shvar] = shvar + dTheta - weight_decay*(shvar+dTheta)
 
         self.do_sleep_step = theano.function(  
                             inputs=[n_dreams],
