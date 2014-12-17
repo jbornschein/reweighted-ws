@@ -102,9 +102,6 @@ class MonitorLL(Monitor):
         self.X = theano.shared(X, "X")
         self.Y = theano.shared(Y, "Y")
 
-        batch_idx  = T.iscalar('batch_idx')
-        batch_size = T.iscalar('batch_size')
-
         self.logger.info("compiling do_loglikelihood")
         n_samples = T.iscalar("n_samples")
         batch_idx = T.iscalar("batch_idx")
