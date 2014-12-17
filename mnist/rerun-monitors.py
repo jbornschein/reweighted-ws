@@ -16,6 +16,23 @@ import numpy as np
 logger = logging.getLogger()
 
 
+def find_LL_channel(h5):
+    """ Find and load some LL dataset that we want to use.
+        
+    Returns
+    -------
+        datast name [str] or raise a ValueError
+    """
+    LL_candidates = [
+        'valiset.spl100.LL', 'valiset.spl25.LL', 'valiset.spl10.LL', 'valiset.spl5.LL',
+        'dataset.spl100.LL', 'dataset.spl25.LL', 'dataset.spl10.LL', 'dataset.spl5.LL'
+    ]
+    for name in LL_candidates:
+        if name in h5:
+            return name
+    raise ValueError("Could not find LL dataset")
+    
+
 def run_monitors(model, monitors):
     for m in monitors:
         m.on_iter(model)
@@ -82,12 +99,12 @@ def rerun_monitors(args):
     model.setup()
 
     # Dataset
-    if args.no_shuffle:
-        preproc = []
-        tags += ["noshuffle"]
-    else:
+    if args.shuffle:
         np.random.seed(23)
         preproc = [PermuteColumns()]
+        tags += ["shuffle"]
+    else:
+        preproc = []
 
     tags.sort()
 
@@ -95,7 +112,17 @@ def rerun_monitors(args):
     if expname[-1] == "/":
         expname = expname[:-1]
     
+    logger.info("Loading dataset...")
+    testset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='test', preproc=preproc, n_datapoints=10000)
 
+    #-----------------------------------------------------------------------------
+    logger.info("Setting up monitors...")
+    monitors = [MonitorLL(data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000])]
+    monitors = [BootstrapLL(data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000])]
+    #monitors = [MonitorLL(data=testset, n_samples=[500,])]
+    #monitors = [SampleFromP(n_samples=200)]
+
+    #-----------------------------------------------------------------------------
     result_dir = "reruns/%s" % os.path.basename(expname)
     results_fname = result_dir+"/results.h5"
     logger.info("Output logging to %s" % result_dir)
@@ -105,34 +132,28 @@ def rerun_monitors(args):
     fname = args.cont + "/results.h5" 
     logger.info("Loading from %s" % fname)
     with h5py.File(fname, "r") as h5:
-        LL = h5['learning.monitor.100.LL'][:-1]
+
+        # Find a validation LL to report...
+        LL_dataset = find_LL_channel(h5)
+        LL = h5[LL_dataset][:]
         
-        print("Final on validation:   %5.2f  (iteration %d)" % (LL[-1], LL.shape[0]))
-        print("Best on validation:    %5.2f  (iteration %d)" % (np.max(LL), np.argmax(LL)))
-
-        logger.info("Loading dataset...")
-        testset = MNIST(fname="mnist_salakhutdinov.pkl.gz", which_set='test', preproc=preproc, n_datapoints=10000)
-
-        logger.info("Setting up monitors...")
-        monitors = [MonitorLL(data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000])]
-        #monitors = [MonitorLL(data=testset, n_samples=[500,])]
-        #monitors = [SampleFromP(n_samples=200)]
+        best_rows = list(np.argsort(-LL)[:args.best])
+        
+        logger.info("Read LL from '%s'" % LL_dataset)
+        logger.info("Final validation LL:  %5.2f  (iteration %d)" % (LL[-1], LL.shape[0]))
+        for row in best_rows:
+            logger.info("  validation LL:      %5.2f  (iteration %d)" % (LL[row], row))
 
         for m in monitors:
             m.on_init(model)
 
-        logger.info("Loading model (row %d)..." % -1)
-        logger.info("LL on validation set: %f5.2" % LL[-1])
-        model.model_params_from_h5(h5, row=-1)
-        run_monitors(model, monitors)
-
-        best = np.argsort(LL)[:-5:-1]
-        for row in best:
-            logger.info("Loading model (row %d)..." % row)
-            logger.info("LL on validation set: %f5.2" % LL[row])
-            model.model_params_from_h5(h5, row=row)
+        rows = [-1] + best_rows
+        for row in rows:
+            logger.info("Loading model (row %d)..." % -1)
+            logger.info("LL on validation set: %f5.2" % LL[-1])
+            model.model_params_from_h5(h5, row=-1)
             run_monitors(model, monitors)
-        
+
     logger.info("Finished.")
 
     #experiment.print_summary()
@@ -143,7 +164,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--verbose', '-v', action='count')
-    parser.add_argument('--no-shuffle', action='store_true', default=False)
+    parser.add_argument('--shuffle', action='store_true', default=False)
+    parser.add_argument('--best', type=int, default=1,
+        help="Scan for the N best iterations additionally to the last one")
     parser.add_argument('cont', 
         help="Continue a previous in result_dir")
     parser.add_argument('p_model', default="SBN", 
