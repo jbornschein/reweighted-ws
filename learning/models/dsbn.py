@@ -26,7 +26,7 @@ class DSBN(Module):
         self.register_hyper_param('n_Y', help='no. upper-layer binary variables')
 
         self.register_hyper_param('n_D', help='no. deterministic units')
-        self.register_hyper_param('non_lin', default='tanh', help="nonlinearity for deterministic layer")
+        self.register_hyper_param('non_lin', default='sigmoid', help="nonlinearity for deterministic layer")
 
         # Sigmoid Belief Layer
         self.register_model_param('a', help='deterministic bias', default=lambda: -np.ones(self.n_D))
