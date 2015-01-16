@@ -176,7 +176,7 @@ def run_experiment(args):
         ],
         final_monitors=[
             MonitorLL(name="final-valiset", data=valiset, n_samples=[1, 5, 10, 25, 100, 500, 1000]),
-            MonitorLL(name="final-testset", data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000]),
+            MonitorLL(name="final-testset", data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000, 10000, 100000]),
         ],
     )
 

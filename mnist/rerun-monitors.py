@@ -42,6 +42,7 @@ def rerun_monitors(args):
 
     from learning.experiment import Experiment
     from learning.monitor import MonitorLL, DLogModelParams, SampleFromP
+    from learning.monitor.llbound import LLBound
     from learning.dataset import MNIST
     from learning.preproc import PermuteColumns
 
@@ -117,8 +118,10 @@ def rerun_monitors(args):
 
     #-----------------------------------------------------------------------------
     logger.info("Setting up monitors...")
-    monitors = [MonitorLL(data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000])]
-    monitors = [BootstrapLL(data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000])]
+    #monitors = [MonitorLL(data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000, 10000, 100000])]
+    #monitors = [MonitorLL(data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000]), LLBound(data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000])]
+    monitors = [MonitorLL(data=testset, n_samples=[1, 5, 10, 25, 100]), LLBound(data=testset, n_samples=[1, 5, 10, 25, 100])]
+    #monitors = [BootstrapLL(data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000])]
     #monitors = [MonitorLL(data=testset, n_samples=[500,])]
     #monitors = [SampleFromP(n_samples=200)]
 
