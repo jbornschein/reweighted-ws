@@ -20,6 +20,9 @@ floatX = theano.config.floatX
 #------------------------------------------------------------------------------
 
 def default_weights(n_in, n_out):
+    """ Return a n_in * n_out shaped matrix with uniformly sampled elements 
+        between - and + sqrt(6)/sqrt(n_in+n_out).
+    """
     scale = np.sqrt(6) / np.sqrt(n_in+n_out)
     return scale*(2*np.random.uniform(size=(n_in, n_out))-1) / n_in
 
