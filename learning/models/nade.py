@@ -10,8 +10,8 @@ import theano
 import theano.tensor as T
 from theano.printing import Print
 
-from learning.rws import TopModule, Module, theano_rng
 from learning.model import default_weights
+from learning.models.rws import TopModule, Module, theano_rng
 from learning.utils.unrolled_scan import unrolled_scan
 
 _logger = logging.getLogger(__name__)

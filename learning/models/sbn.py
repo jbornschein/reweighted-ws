@@ -10,7 +10,7 @@ import theano
 import theano.tensor as T
 from theano.printing import Print
 
-from learning.rws import TopModule, Module, theano_rng
+from learning.models.rws import TopModule, Module, theano_rng
 from learning.model import default_weights
 
 _logger = logging.getLogger(__name__)
