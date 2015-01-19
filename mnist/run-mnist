@@ -53,6 +53,15 @@ def run_experiment(args):
         raise "Unknown P-layer model %s" % args.p_model
     q_layer, q_top = layer_models[args.q_model]
 
+    # n_samples to evaluate model
+    n_samples_epoch = [1, 5, 25, 100]
+    n_samples_final = [1, 5, 10, 25, 100, 500, 1000, 10000, 100000]
+    if (args.p_model in ['darn', 'nade']) or (args.q_model in ['darn', 'nade']):
+        n_samples_epoch = [1, 5, 25]
+        n_samples_final = [1, 5, 10, 25, 100, 500]
+
+
+
     # Layer sizes
     layer_sizes = [int(s) for s in args.layer_sizes.split(",")]
 
@@ -172,11 +181,11 @@ def run_experiment(args):
         epoch_monitors=[
             DLogModelParams(), 
             SampleFromP(n_samples=100),
-            MonitorLL(name="valiset", data=valiset, n_samples=[1, 5, 25, 100]),
+            MonitorLL(name="valiset", data=valiset, n_samples=n_samples_epoch),
         ],
         final_monitors=[
-            MonitorLL(name="final-valiset", data=valiset, n_samples=[1, 5, 10, 25, 100, 500, 1000]),
-            MonitorLL(name="final-testset", data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000]),
+            MonitorLL(name="final-valiset", data=valiset, n_samples=n_samples_final),
+            MonitorLL(name="final-testset", data=testset, n_samples=n_samples_final),
         ],
     )
 
