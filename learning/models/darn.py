@@ -27,7 +27,7 @@ class DARNTop(TopModule):
 
         # Model parameters
         self.register_model_param('b', help='sigmoid(b)-bias ', default=lambda: np.zeros(self.n_X))
-        self.register_model_param('W', help='weights (triangular)', default=lambda: default_weights(self.n_X, self.n_X) )
+        self.register_model_param('W', help='weights (triangular)', default=lambda: 0.5*default_weights(self.n_X, self.n_X) )
 
         self.set_hyper_params(hyper_params)
 

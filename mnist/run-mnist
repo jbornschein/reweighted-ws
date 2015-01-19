@@ -195,22 +195,6 @@ def run_experiment(args):
     experiment.print_summary()
     experiment.setup_logging()
 
-    
-    #meta = {
-    #    "tag"         : tagname,
-    #    "tags"        : TAGS,
-    #    "name"        : name,
-    #    "batch_size"  : batch_size,
-    #    "n_samples"   : n_samples,
-    #    "p_layer"     : p_layer,
-    #    "q_layer"     : q_layer,
-    #    "arch"        : arch,
-    #    "out_dir"     : experiment.out_dir
-    #}
-    # 
-    #  with open("run-mnist-grid.%s.state"%tagname, "a") as f:
-    #      pickle.dump(meta, f)
-
     if args.cont is None:
         experiment.run_experiment()
     else:

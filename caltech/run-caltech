@@ -157,8 +157,8 @@ def run_experiment(args):
             MonitorLL(name="valiset", data=valiset, n_samples=[1, 5, 25, 100]),
         ],
         final_monitors=[
-            MonitorLL(name="final-valiset", data=valiset, n_samples=[1, 5, 10, 25, 100, 500, 1000]),
-            MonitorLL(name="final-testset", data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000]),
+            MonitorLL(name="final-valiset", data=valiset, n_samples=[1, 5, 10, 25, 100, 500, 1000, 10000, 100000]),
+            MonitorLL(name="final-testset", data=testset, n_samples=[1, 5, 10, 25, 100, 500, 1000, 10000, 100000]),
         ],
     )
 
