@@ -1,4 +1,4 @@
-http://python-progressbar.googlecode.com/files/progressbar-2.3.tar.gz
+progressbar2
 recordtype
 six >= 1.1.0
 numpy >= 1.5.0
