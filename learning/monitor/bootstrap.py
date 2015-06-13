@@ -13,7 +13,7 @@ import theano.tensor as T
 from learning.dataset import DataSet
 from learning.model import Model
 from learning.monitor import Monitor
-from learning.rws import f_replicate_batch, f_logsumexp
+from learning.models.rws import f_replicate_batch, f_logsumexp
 import learning.utils.datalog as datalog
 
 from theano.tensor.shared_randomstreams import RandomStreams
