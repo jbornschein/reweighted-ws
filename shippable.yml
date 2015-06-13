@@ -1,0 +1,12 @@
+# language setting
+language: python
+
+python:
+    - "2.7"
+
+before_install:
+    - cp theanorc $HOME/.theanorc
+
+install: "pip install -r requirements.txt --use-mirrors"
+
+script: nosetests -v
