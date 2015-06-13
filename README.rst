@@ -1,3 +1,9 @@
+.. image:: https://img.shields.io/shippable/557c82e6edd7f2c05214d9b0/master.svg
+    :target: https://app.shippable.com/projects/557c82e6edd7f2c05214d9b0/builds/latest
+
+.. image:: https://requires.io/github/jbornschein/reweighted-ws/requirements.svg?branch=master
+     :target: https://requires.io/github/jbornschein/reweighted-ws/requirements/?branch=master
+     :alt: Requirements Status
 
 Reweighted Wake-Sleep
 =====================
