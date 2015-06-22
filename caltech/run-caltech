@@ -80,6 +80,8 @@ def run_experiment(args):
 
     # Learning rate
     def lr_tag(value, prefix):
+        if value == 0.0:
+            return "00"
         exp = np.floor(np.log10(value))
         leading = ("%e"%value)[0]
         return ["%s%s%d" % (prefix, leading, -exp)]

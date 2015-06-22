@@ -96,6 +96,8 @@ def run_experiment(args):
             0.001 -> 13
             0.005 -> 53
         """
+        if value == 0.0:
+            return "00"
         exp = np.floor(np.log10(value))
         leading = ("%e"%value)[0]
         return "%s%d" % (leading, -exp)
