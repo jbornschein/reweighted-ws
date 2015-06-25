@@ -1,8 +1,8 @@
-progressbar2
-recordtype
-six >= 1.1.0
-numpy >= 1.5.0
-scipy >= 0.7.2 
-theano >= 0.5
+h5py >= 2.0
 nose >= 1.2
-h5py
+numpy >= 1.8.0
+progressbar2 >= 2.6.0
+recordtype >= 1.0
+scipy >= 0.14.0 
+six >= 1.1.0
+theano >= 0.5

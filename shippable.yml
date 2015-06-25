@@ -1,18 +1,12 @@
-# language setting
-build_image: shippableimages/ubuntu1404_python
+build_image: jbornschein/theano
 
 language: python
 
 python:
     - "2.7"
 
-before_install:
-    - cp theanorc $HOME/.theanorc
-    - shippable_retry apt-get update
-    - shippable_retry apt-get install -y python-numpy python-scipy python-h5py cython gfortran libatlas-dev
-    - virtualenv --system-site-packages -p /usr/bin/python$VIRTUALENV_PYTHON $HOME/new_ve
-    - . $HOME/new_ve/bin/activate
+install:
+    - pip install -r requirements.txt
 
-install: "pip install -r requirements.txt --use-mirrors"
-
-script: nosetests -v
+script:
+    - nosetests -v
