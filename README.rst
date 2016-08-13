@@ -16,6 +16,8 @@ Reweighted Wake-Sleep
 This repository contains the implementation of the machine learning 
 method described in http://arxiv.org/abs/1406.2751 . 
 
+*Note: There is an alternative implementation based on Blocks/Theano in https://github.com/jbornschein/bihm*
+
 Installation & Requirements 
 ---------------------------
 
